@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/session_score.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 //the scre evaluator
 class EvaluationAPIService {
@@ -171,8 +172,7 @@ class EvaluationAPIService {
           Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
           headers: {
             'Content-Type': 'application/json',
-            'Authorization':
-                'Bearer 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',
+            'Authorization': 'Bearer ${dotenv.env['OPENROUTER_API_KEY']}',
           },
           body: jsonEncode({
             "model": "openrouter/free",
