@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
-import 'package:trainixprogram/components/animation_effect/hover_button_homecreen.dart';
+import 'package:trainixprogram/components/animation_effect/hover_button.dart';
 import 'package:trainixprogram/components/background.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
@@ -10,8 +10,7 @@ import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/dev_test_screen.dart';
 import 'package:trainixprogram/screens/mock_call_screen.dart';
-import 'package:trainixprogram/screens/profile_screen.dart';
-import 'package:trainixprogram/screens/settings_screen.dart';
+import 'package:trainixprogram/screens/profile/profile_screen.dart';
 
 //the main screen
 class MainMenuScreen extends StatelessWidget {
@@ -48,16 +47,14 @@ class MainMenuScreen extends StatelessWidget {
                         tooltip: 'Log out',
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const Profile()),
                         ),
                       ),
                       const SizedBox(width: 8),
                       //goes to a test screen
                       HoverIconButton(
                         icon: Icons.bug_report_rounded,
-                        tooltip: 'Developer Test Screen',
+                        tooltip: 'Developer Test',
                         onPressed: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -84,9 +81,7 @@ class MainMenuScreen extends StatelessWidget {
                         'Customize your app preferences and account.',
                         () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const SettingsScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const Profile()),
                         ),
                         'assets/animations/background/card.png',
                         'assets/animations/account.json',
