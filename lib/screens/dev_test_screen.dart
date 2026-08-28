@@ -5,7 +5,7 @@ import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
-import 'package:trainixprogram/screens/mock_call_screen.dart';
+import 'package:trainixprogram/screens/training/mock_call_screen.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
 
 const List<String> _kSectors = [

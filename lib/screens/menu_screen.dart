@@ -9,7 +9,7 @@ import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/dev_test_screen.dart';
-import 'package:trainixprogram/screens/mock_call_screen.dart';
+import 'package:trainixprogram/screens/training/mock_call_screen.dart';
 import 'package:trainixprogram/screens/profile/profile_screen.dart';
 
 //the main screen

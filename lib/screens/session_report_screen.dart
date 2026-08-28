@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
-import 'package:trainixprogram/screens/mock_call_screen.dart';
+import 'package:trainixprogram/screens/menu_screen.dart';
+import 'package:trainixprogram/screens/training/mock_call_screen.dart';
 
 //this shows a complete performance summary for the session
 //that had just ended

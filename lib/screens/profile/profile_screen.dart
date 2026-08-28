@@ -5,7 +5,7 @@ import 'package:trainixprogram/components/animation_effect/hover_button.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
-import 'package:trainixprogram/screens/mock_call_screen.dart';
+import 'package:trainixprogram/screens/training/mock_call_screen.dart';
 import 'package:trainixprogram/screens/profile/components/profile_account.dart';
 import 'package:trainixprogram/screens/profile/components/profile_settings.dart';
 
@@ -123,6 +123,7 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
             color: Color.fromARGB(255, 105, 106, 106),
           ),
           Expanded(
+            //call widget for profile and settings 
             child: KeyedSubtree(
               key: ValueKey(selectNavigation),
               child: buildProfileContent(),

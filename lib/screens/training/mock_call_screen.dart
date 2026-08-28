@@ -7,47 +7,11 @@ import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
+import 'package:trainixprogram/screens/training/class/class.dart';
 import 'package:trainixprogram/services/evaluation_api_service.dart';
 import 'package:trainixprogram/services/open_router_api_service.dart';
 import 'package:trainixprogram/services/speech_to_text_service.dart';
 import 'package:trainixprogram/services/type_cast_api_service.dart';
-
-//enumerations for the phases of the simulation
-enum _SimulationPhase {
-  incoming,
-  active,
-  onHold,
-  afterCallWork,
-  postCallBreak,
-  wrappingUp,
-}
-
-//enumeration for the phases of the voice call
-enum _VoicePhase {
-  idle,
-  customerSpeaking,
-  traineeSpeaking,
-  transcribing,
-  processing,
-  resolved,
-}
-
-//regular expressions for filler words used in Voice Call
-final RegExp _fillerWordPattern = RegExp(
-  r'\b(um+|uh+|hmm+|like|you know|i mean)\b',
-  caseSensitive: false,
-);
-
-//count all the filler words that are present in the text
-//then return the result
-int _countFillerWords(String text) {
-  return _fillerWordPattern.allMatches(text).length;
-}
-
-//enumerations for the phases of the chat conversation
-//afterCallWork mirrors voice's — a manual report step before the grace
-//period, instead of jumping straight from resolution into the countdown
-enum _ChatPhase { active, resolved, afterCallWork, gracePeriod, waitingToEnd }
 
 //simulates a call-center workstation with two simultaneous channels
 //Voice and Call channels
@@ -63,7 +27,8 @@ class MockCallScreen extends StatefulWidget {
 
 class _MockCallScreenState extends State<MockCallScreen> {
   //set the simulation phase to be incoming at the start
-  _SimulationPhase _phase = _SimulationPhase.incoming;
+  // location in class folder simulation
+  SimulationPhase _phase = SimulationPhase.incoming;
 
   //how many full calls were done
   int _completedInteractions = 0;
@@ -287,10 +252,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //get the phase of the voice call
   bool get _voiceCallInProgress =>
-      _phase == _SimulationPhase.active ||
-      _phase == _SimulationPhase.onHold ||
-      _phase == _SimulationPhase.afterCallWork ||
-      _phase == _SimulationPhase.postCallBreak;
+      _phase == SimulationPhase.active ||
+      _phase == SimulationPhase.onHold ||
+      _phase == SimulationPhase.afterCallWork ||
+      _phase == SimulationPhase.postCallBreak;
 
   //when a call ends
   void _onEndCall() {
@@ -304,7 +269,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
       _isMuted = false;
       _elapsedSeconds = 0;
       //then set the phase to after call
-      _phase = _SimulationPhase.afterCallWork;
+      _phase = SimulationPhase.afterCallWork;
     });
   }
 
@@ -325,7 +290,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
     //set the phase to post call break
     setState(() {
-      _phase = _SimulationPhase.postCallBreak;
+      _phase = SimulationPhase.postCallBreak;
       _remainingPostCallSeconds = seconds;
     });
 
@@ -361,7 +326,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
       //own after-work-report/grace-period flow — show wrapping up and
       //let chat's own completion re-check via _handleChatBusyChanged
       if (_chatInProgress) {
-        setState(() => _phase = _SimulationPhase.wrappingUp);
+        setState(() => _phase = SimulationPhase.wrappingUp);
       } else {
         _finishSession();
       }
@@ -372,8 +337,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
     //else, wrap it up
     setState(() {
       _phase = _tryStartNewInteraction()
-          ? _SimulationPhase.incoming
-          : _SimulationPhase.wrappingUp;
+          ? SimulationPhase.incoming
+          : SimulationPhase.wrappingUp;
     });
   }
 
@@ -381,37 +346,24 @@ class _MockCallScreenState extends State<MockCallScreen> {
   @override
   Widget build(BuildContext context) {
     //are we in the active phase?
-    final bool isActive = _phase == _SimulationPhase.active;
+    final bool isActive = _phase == SimulationPhase.active;
 
     //are we in the on hold phase?
-    final bool isOnHold = _phase == _SimulationPhase.onHold;
+    final bool isOnHold = _phase == SimulationPhase.onHold;
 
     //is the call in progress?
     final bool callInProgress = isActive || isOnHold;
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text(
-          //set the text to whatever the chosen sector is
-          'Mock Call Simulation — ${widget.sector}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        actions: [
-          Padding(
-            //show the quota
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              'Customer $_completedInteractions / $_requiredInteractions',
-            ),
-          ),
-          IconButton(onPressed: null, icon: const Icon(Icons.dark_mode)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.settings)),
-        ],
-      ),
       body: Column(
         children: [
+          Row(
+            mainAxisAlignment: .spaceBetween,
+            children: [
+              Text("Mock Call Simulation — ${widget.sector}"),
+              Text('Customer $_completedInteractions / $_requiredInteractions'),
+            ],
+          ),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -437,7 +389,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
                         //start the timer and set the phase to active
                         //when accepting a call
                         _startCallTimer();
-                        setState(() => _phase = _SimulationPhase.active);
+                        setState(() => _phase = SimulationPhase.active);
                       },
                       //add the evaluation to the list of evaluations
                       onEvaluation: _handleEvaluation,
@@ -506,8 +458,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
                     onTap: () {
                       setState(() {
                         _phase = isOnHold
-                            ? _SimulationPhase.active
-                            : _SimulationPhase.onHold;
+                            ? SimulationPhase.active
+                            : SimulationPhase.onHold;
                       });
                     },
                   ),
@@ -583,7 +535,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
 //The voice channel - Voice Calls
 class _VoicePanel extends StatefulWidget {
   //the enum phase
-  final _SimulationPhase phase;
+  final SimulationPhase phase;
 
   //callback
   final VoidCallback onAccept;
@@ -633,7 +585,7 @@ class _VoicePanelState extends State<_VoicePanel> {
   late final SpeechToTextService _sttService;
 
   //set the phase to idle
-  _VoicePhase _voicePhase = _VoicePhase.idle;
+  VoicePhase _voicePhase = VoicePhase.idle;
 
   //for words per minute calculation
   DateTime? _turnStartTime;
@@ -694,37 +646,37 @@ class _VoicePanelState extends State<_VoicePanel> {
       //if the current phase is active and the voice phase is in idle
       //state, then set the voice phase into customer speaking
       //and the call start time to now
-      if (widget.phase == _SimulationPhase.active &&
-          _voicePhase == _VoicePhase.idle) {
+      if (widget.phase == SimulationPhase.active &&
+          _voicePhase == VoicePhase.idle) {
         _callStartTime = DateTime.now();
-        setState(() => _voicePhase = _VoicePhase.customerSpeaking);
+        setState(() => _voicePhase = VoicePhase.customerSpeaking);
       }
 
       //if the current phase is on hold
       //stop the typecast and cancel the speech to text
-      if (widget.phase == _SimulationPhase.onHold) {
+      if (widget.phase == SimulationPhase.onHold) {
         _typeCastService.stop();
         _sttService.cancel();
       }
 
       //if the old phase is on hold but the current phase is active
       //then set the voice phase to customer speaking
-      if (oldWidget.phase == _SimulationPhase.onHold &&
-          widget.phase == _SimulationPhase.active) {
-        setState(() => _voicePhase = _VoicePhase.customerSpeaking);
+      if (oldWidget.phase == SimulationPhase.onHold &&
+          widget.phase == SimulationPhase.active) {
+        setState(() => _voicePhase = VoicePhase.customerSpeaking);
       }
 
       //if the current phase is incoming, then set the voice phase
       //to idle and empty the customer and agent's transcripts
       //as well as the call start time to null
-      if (widget.phase == _SimulationPhase.incoming) {
+      if (widget.phase == SimulationPhase.incoming) {
         _callStartTime = null;
         //reset the voice-only conversation and scenario for the next
         //customer — clears this panel's scoped MessageProvider and
         //regenerates a fresh name/emotion/problem on the next exchange
         _typeCastService.clearMessages(context);
         setState(() {
-          _voicePhase = _VoicePhase.idle;
+          _voicePhase = VoicePhase.idle;
           _customerTranscript = '';
           _traineeTranscript = '';
         });
@@ -736,7 +688,7 @@ class _VoicePanelState extends State<_VoicePanel> {
     //then cancel the speech to text and empty the trainee's transcript
     if (!oldWidget.isMuted &&
         widget.isMuted &&
-        _voicePhase == _VoicePhase.traineeSpeaking) {
+        _voicePhase == VoicePhase.traineeSpeaking) {
       _sttService.cancel();
       setState(() => _traineeTranscript = '');
     }
@@ -753,8 +705,8 @@ class _VoicePanelState extends State<_VoicePanel> {
     //if the voice phase is trainee speaking
     //stop the speech to text service
     //and get the last words spoken
-    if (_voicePhase == _VoicePhase.traineeSpeaking) {
-      setState(() => _voicePhase = _VoicePhase.transcribing);
+    if (_voicePhase == VoicePhase.traineeSpeaking) {
+      setState(() => _voicePhase = VoicePhase.transcribing);
       //stopListening now waits for the actual final transcript instead
       //of returning immediately, so this is no longer a race
       final wordsFromStt = await _sttService.stopListening();
@@ -770,7 +722,7 @@ class _VoicePanelState extends State<_VoicePanel> {
         );
         setState(() {
           _traineeTranscript = '';
-          _voicePhase = _VoicePhase.customerSpeaking;
+          _voicePhase = VoicePhase.customerSpeaking;
         });
         return;
       }
@@ -793,13 +745,13 @@ class _VoicePanelState extends State<_VoicePanel> {
       final wpm = elapsedSeconds > 0 ? (wordCount / elapsedSeconds) * 60 : 0.0;
 
       //when on voice turn, call the function and pass the data
-      widget.onVoiceTurn?.call(wpm, _countFillerWords(words));
+      widget.onVoiceTurn?.call(wpm, countFillerWords(words));
 
       //then refresh the UI to set the transcript of the agent
       //and set the voice phase to processing
       setState(() {
         _traineeTranscript = words;
-        _voicePhase = _VoicePhase.processing;
+        _voicePhase = VoicePhase.processing;
       });
 
       //then send those words to this function
@@ -807,13 +759,13 @@ class _VoicePanelState extends State<_VoicePanel> {
       return;
       //if the voice phase is customer speaking
     }
-    if (_voicePhase == _VoicePhase.customerSpeaking) {
+    if (_voicePhase == VoicePhase.customerSpeaking) {
       //stop the service then get the date
       _typeCastService.stop();
 
       setState(() {
         _traineeTranscript = '';
-        _voicePhase = _VoicePhase.traineeSpeaking;
+        _voicePhase = VoicePhase.traineeSpeaking;
       });
 
       _turnStartTime = DateTime.now();
@@ -821,7 +773,7 @@ class _VoicePanelState extends State<_VoicePanel> {
       //start listening to the words
       await _sttService.startListening(
         onResult: (words) {
-          if (mounted && _voicePhase == _VoicePhase.traineeSpeaking) {
+          if (mounted && _voicePhase == VoicePhase.traineeSpeaking) {
             setState(() => _traineeTranscript = words);
           }
         },
@@ -874,7 +826,7 @@ class _VoicePanelState extends State<_VoicePanel> {
     if (response.callStatus == 'resolved' || response.callStatus == 'ended') {
       setState(() {
         _customerTranscript = response.reply;
-        _voicePhase = _VoicePhase.resolved;
+        _voicePhase = VoicePhase.resolved;
       });
       if (_callStartTime != null) {
         final seconds = DateTime.now()
@@ -889,8 +841,8 @@ class _VoicePanelState extends State<_VoicePanel> {
 
     //if the phase of the current widget is not active
     //set the voice phase to idle, then return back
-    if (widget.phase != _SimulationPhase.active) {
-      setState(() => _voicePhase = _VoicePhase.idle);
+    if (widget.phase != SimulationPhase.active) {
+      setState(() => _voicePhase = VoicePhase.idle);
       return;
     }
 
@@ -898,7 +850,7 @@ class _VoicePanelState extends State<_VoicePanel> {
     //set the voice phase of the customer to customer speaking
     setState(() {
       _customerTranscript = response.reply;
-      _voicePhase = _VoicePhase.customerSpeaking;
+      _voicePhase = VoicePhase.customerSpeaking;
     });
   }
 
@@ -939,26 +891,26 @@ class _VoicePanelState extends State<_VoicePanel> {
   @override
   Widget build(BuildContext context) {
     //if the current phase is incoming, return the incoming UI
-    if (widget.phase == _SimulationPhase.incoming) return _buildIncoming();
+    if (widget.phase == SimulationPhase.incoming) return _buildIncoming();
 
     //if the current phase is on hold, return the on hold UI
-    if (widget.phase == _SimulationPhase.onHold) return _buildOnHold();
+    if (widget.phase == SimulationPhase.onHold) return _buildOnHold();
 
     //if the current phase is after call work, return the after call
     //work UI
-    if (widget.phase == _SimulationPhase.afterCallWork) {
+    if (widget.phase == SimulationPhase.afterCallWork) {
       return _buildAfterCallWork();
     }
 
     //if the current phase is post call break, then return the post call
     //break UI
-    if (widget.phase == _SimulationPhase.postCallBreak) {
+    if (widget.phase == SimulationPhase.postCallBreak) {
       return _buildPostCallBreak();
     }
 
     //if the current phase is wrapping up, then return the wrapping
     //up UI
-    if (widget.phase == _SimulationPhase.wrappingUp) {
+    if (widget.phase == SimulationPhase.wrappingUp) {
       return _buildWrappingUp();
     }
 
@@ -998,11 +950,11 @@ class _VoicePanelState extends State<_VoicePanel> {
   //shows you're on a call with a customer
   Widget _buildActive() {
     //checkers for each voice phase
-    final bool isCustomerSpeaking = _voicePhase == _VoicePhase.customerSpeaking;
-    final bool isTraineeSpeaking = _voicePhase == _VoicePhase.traineeSpeaking;
-    final bool isTranscribing = _voicePhase == _VoicePhase.transcribing;
-    final bool isProcessing = _voicePhase == _VoicePhase.processing;
-    final bool isResolved = _voicePhase == _VoicePhase.resolved;
+    final bool isCustomerSpeaking = _voicePhase == VoicePhase.customerSpeaking;
+    final bool isTraineeSpeaking = _voicePhase == VoicePhase.traineeSpeaking;
+    final bool isTranscribing = _voicePhase == VoicePhase.transcribing;
+    final bool isProcessing = _voicePhase == VoicePhase.processing;
+    final bool isResolved = _voicePhase == VoicePhase.resolved;
 
     //becomes true if the customer is speaking or the agent is speaking
     //and if the mic is not muted, the call isnt resolved yet, and the
@@ -1373,7 +1325,7 @@ class _ChatPanelState extends State<_ChatPanel> {
   int _selectedTab = 0;
 
   //thet phase of the chat
-  _ChatPhase _chatPhase = _ChatPhase.active;
+  ChatPhase _chatPhase = ChatPhase.active;
 
   //remaining seconds of the grace period
   int _remainingSeconds = 0;
@@ -1470,13 +1422,13 @@ class _ChatPanelState extends State<_ChatPanel> {
     //non-active phases take over the whole panel, the same way voice's
     //After Call Work / break / wrapping-up screens replace its content
     //entirely instead of showing as a small banner
-    if (_chatPhase == _ChatPhase.afterCallWork) {
+    if (_chatPhase == ChatPhase.afterCallWork) {
       return _buildAfterCallWork();
     }
-    if (_chatPhase == _ChatPhase.gracePeriod) {
+    if (_chatPhase == ChatPhase.gracePeriod) {
       return _buildGracePeriodScreen();
     }
-    if (_chatPhase == _ChatPhase.waitingToEnd) {
+    if (_chatPhase == ChatPhase.waitingToEnd) {
       return _buildWaitingToEndScreen();
     }
 
@@ -2098,7 +2050,7 @@ class _ChatPanelState extends State<_ChatPanel> {
         _remainingResolvedSeconds--;
         if (_remainingResolvedSeconds <= 0) {
           timer.cancel();
-          _chatPhase = _ChatPhase.afterCallWork;
+          _chatPhase = ChatPhase.afterCallWork;
         }
       });
     });
@@ -2122,7 +2074,7 @@ class _ChatPanelState extends State<_ChatPanel> {
     //entered afterCallWork, and grace period is a continuation of that
     //same manual wrap-up flow)
     setState(() {
-      _chatPhase = _ChatPhase.gracePeriod;
+      _chatPhase = ChatPhase.gracePeriod;
       _remainingSeconds = seconds;
     });
 
@@ -2151,7 +2103,7 @@ class _ChatPanelState extends State<_ChatPanel> {
     //the parent chat is no longer busy — this is what lets the
     //session finish if chat was the last thing blocking it
     if (!canStart) {
-      setState(() => _chatPhase = _ChatPhase.waitingToEnd);
+      setState(() => _chatPhase = ChatPhase.waitingToEnd);
       widget.onBusyChanged?.call(false);
       return;
     }
@@ -2176,7 +2128,7 @@ class _ChatPanelState extends State<_ChatPanel> {
 
     //set the chat phase to active and tell the parent chat is no
     //longer in its wrap-up flow
-    setState(() => _chatPhase = _ChatPhase.active);
+    setState(() => _chatPhase = ChatPhase.active);
     widget.onBusyChanged?.call(false);
 
     //and make the customer chat first again
@@ -2188,7 +2140,7 @@ class _ChatPanelState extends State<_ChatPanel> {
     //if the agent sent nothing, isn't in the active chat phase, or a
     //previous message is still being processed, do nothing
     if (_inputController.text.isEmpty ||
-        _chatPhase != _ChatPhase.active ||
+        _chatPhase != ChatPhase.active ||
         _isSending) {
       return;
     }
@@ -2286,7 +2238,7 @@ class _ChatPanelState extends State<_ChatPanel> {
       //wrapped up — do this
       if ((response.callStatus == 'resolved' ||
               response.callStatus == 'ended') &&
-          _chatPhase == _ChatPhase.active) {
+          _chatPhase == ChatPhase.active) {
         //check first if theres a start time
         //then calculate the seconds had passed
         if (_customerStartTime != null) {
@@ -2309,7 +2261,7 @@ class _ChatPanelState extends State<_ChatPanel> {
         _evaluateResolution();
         widget.onBusyChanged?.call(true);
         setState(() {
-          _chatPhase = _ChatPhase.resolved;
+          _chatPhase = ChatPhase.resolved;
           _selectedTab = 0;
         });
         _startResolvedPause();
@@ -2325,7 +2277,7 @@ class _ChatPanelState extends State<_ChatPanel> {
     //of auto-advancing into After Chat Work instantly — this keeps the
     //resolution message on screen for a beat instead of it vanishing
     //the moment it arrives
-    if (_chatPhase == _ChatPhase.resolved) {
+    if (_chatPhase == ChatPhase.resolved) {
       return _buildResolvedBanner();
     }
 
