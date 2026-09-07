@@ -844,9 +844,9 @@ class ReportUI extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: const Color.fromARGB(255, 21, 21, 22),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -961,9 +961,9 @@ class ReportUI extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: const Color.fromARGB(255, 21, 21, 22),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1043,7 +1043,7 @@ class ReportUI extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1B),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        border: Border.all(color: const Color.fromARGB(255, 35, 36, 37)),
       ),
       child: Column(
         children: [
@@ -1079,7 +1079,7 @@ class ReportUI extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFF1A1A1B),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF1E293B)),
+          border: Border.all(color: const Color.fromARGB(255, 47, 47, 48)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1130,7 +1130,7 @@ class ReportUI extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF111827),
+                  color: const Color.fromARGB(255, 32, 32, 33),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFF334155)),
                 ),

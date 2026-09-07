@@ -224,7 +224,7 @@ class _LeftCallState extends State<LeftCall>
               icon: const Icon(Icons.call_rounded, size: 22),
               label: const Text(
                 'Accept Call',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
               ),
             ),
           ],

@@ -33,29 +33,31 @@ class _AccountLookupViewState extends State<AccountLookupView> {
 
     return Consumer<AccountProvider>(
       builder: (context, accountProvider, child) {
-        return Container(
-          color: bgColor,
+        return Padding(
+          padding: const EdgeInsets.only(top: 20.0, left: 20, right: 20),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Search Input Field
-                _buildSearchInput(accountProvider),
-                const Gap(20),
+            child: Container(
+              color: bgColor,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Search Input Field
+                  _buildSearchInput(accountProvider),
+                  const Gap(20),
 
-                if (accountProvider.accounts.isEmpty)
-                  _buildNoAccountsView(accountProvider)
-                else ...[
-                  _buildAccountsListHeader(accountProvider),
-                  const Gap(12),
-                  _buildAccountsList(accountProvider),
-                  const Gap(24),
-                  if (accountProvider.selectedAccount != null) ...[
-                    _buildAccountDetails(accountProvider),
+                  if (accountProvider.accounts.isEmpty)
+                    _buildNoAccountsView(accountProvider)
+                  else ...[
+                    _buildAccountsListHeader(accountProvider),
+                    const Gap(12),
+                    _buildAccountsList(accountProvider),
+                    const Gap(24),
+                    if (accountProvider.selectedAccount != null) ...[
+                      _buildAccountDetails(accountProvider),
+                    ],
                   ],
                 ],
-              ],
+              ),
             ),
           ),
         );
@@ -254,14 +256,17 @@ class _AccountLookupViewState extends State<AccountLookupView> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFF111827),
+          color: const Color.fromARGB(255, 28, 29, 29),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF1E293B)),
+          border: Border.all(color: const Color.fromARGB(255, 50, 51, 54)),
         ),
         child: const Text(
           'No matching accounts found.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+          style: TextStyle(
+            color: Color.fromARGB(255, 181, 184, 189),
+            fontSize: 13,
+          ),
         ),
       );
     }
@@ -283,12 +288,12 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             decoration: BoxDecoration(
               color: isSelected
                   ? const Color(0xFF1E293B)
-                  : const Color(0xFF111827),
+                  : const Color.fromARGB(255, 28, 29, 29),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected
                     ? const Color(0xFF3B82F6)
-                    : const Color(0xFF1E293B),
+                    : const Color.fromARGB(255, 42, 44, 45),
                 width: isSelected ? 1.5 : 1.0,
               ),
             ),
@@ -364,9 +369,9 @@ class _AccountLookupViewState extends State<AccountLookupView> {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF111827),
+        color: const Color.fromARGB(255, 26, 26, 26),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        border: Border.all(color: const Color.fromARGB(255, 38, 38, 40)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -415,7 +420,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             ],
           ),
           const Gap(16),
-          const Divider(height: 1, color: Color(0xFF1E293B)),
+          const Divider(height: 1, color: Color.fromARGB(255, 94, 95, 96)),
           const Gap(16),
           ...account.details.entries.map((entry) {
             final isIssueField = entry.key == 'Issue' && account.isTarget;
@@ -425,11 +430,11 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isIssueField
-                    ? const Color(0xFF451A03)
-                    : const Color(0x801E293B),
+                    ? const Color(0x80451A03)
+                    : const Color.fromARGB(255, 32, 32, 32),
                 borderRadius: BorderRadius.circular(10),
                 border: isIssueField
-                    ? Border.all(color: const Color(0xFFD97706))
+                    ? Border.all(color: const Color(0xFFB45309))
                     : null,
               ),
               child: Row(
@@ -441,7 +446,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                       entry.key,
                       style: TextStyle(
                         color: isIssueField
-                            ? const Color(0xFFFDE68A)
+                            ? const Color(0xFFFBBF24)
                             : const Color(0xFF9CA3AF),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -453,7 +458,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                       entry.value,
                       style: TextStyle(
                         color: isIssueField
-                            ? const Color(0xFFFEF3C7)
+                            ? const Color(0xFFFBBF24)
                             : Colors.white,
                         fontSize: 13,
                         fontWeight: isIssueField
@@ -504,9 +509,10 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 icon: const Icon(Icons.flash_on_rounded, size: 18),
                 label: Text(_getActionLabel(widget.sector)),
                 style: ElevatedButton.styleFrom(
+                  enabledMouseCursor: SystemMouseCursors.click,
                   backgroundColor: const Color(0xFF2563EB),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

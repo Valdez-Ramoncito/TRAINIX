@@ -211,7 +211,7 @@ class RightMessage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
-                        msg.message,
+                        msg.message.replaceFirst('[AGENT]:', ""),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 14,

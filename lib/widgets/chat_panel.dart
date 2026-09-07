@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
@@ -321,31 +323,74 @@ class _ChatPanelState extends State<ChatPanel> {
 
   //after chat work report UI
   Widget _buildAfterCallWork() {
+    // final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.edit_note, size: 56),
-          const SizedBox(height: 16),
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Color.fromARGB(255, 25, 25, 25),
+              shape: BoxShape.circle,
+              border: Border.all(color: Color.fromARGB(255, 48, 48, 48)),
+            ),
+            child: const Icon(Icons.edit_note, size: 32),
+          ),
+          Gap(20),
           const Text(
             'After Chat Work',
-            style: TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Conversation ended. Jot down a quick report before your next chat.',
+            style: textTheme.bodySmall?.copyWith(
+              color: const Color.fromARGB(255, 244, 243, 243),
+              fontSize: 12,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
+          Gap(40),
           TextField(
             controller: _reportController,
             maxLines: 4,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Chat summary, outcome, notes...',
-              border: OutlineInputBorder(),
+              hintStyle: textTheme.bodyMedium?.copyWith(
+                fontSize: 12,
+                color: const Color.fromARGB(255, 187, 186, 186),
+              ),
+              labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontSize: 12,
+                color: Colors.white,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+                borderSide: const BorderSide(
+                  color: Color.fromARGB(255, 187, 186, 186),
+                  width: .5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(10)),
+                borderSide: BorderSide(
+                  color: Color.fromARGB(255, 255, 255, 255),
+                  width: 1,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 20),
@@ -354,7 +399,16 @@ class _ChatPanelState extends State<ChatPanel> {
               _reportController.clear();
               _startGracePeriod();
             },
-            child: const Text('Send Report'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: const Text('Submit Report'),
           ),
         ],
       ),
@@ -366,8 +420,7 @@ class _ChatPanelState extends State<ChatPanel> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(Icons.hourglass_bottom, size: 56),
-        const SizedBox(height: 16),
+        Lottie.asset('assets/animations/break_loading.json', width: 80),
         const Text('On Break', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text('Next chat in $_remainingSeconds seconds...'),
