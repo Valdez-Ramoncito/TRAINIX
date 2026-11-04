@@ -3,7 +3,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
+import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
+import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
 class AuthService {
   AuthService._();
@@ -23,6 +25,7 @@ class AuthService {
     AppRole fallback = AppRole.trainee,
   }) {
     final s = value?.toString().trim().toLowerCase() ?? '';
+    if (s == 'admin') return AppRole.admin;
     if (s == 'trainer') return AppRole.trainer;
     if (s == 'trainee') return AppRole.trainee;
     return fallback;
@@ -36,11 +39,25 @@ class AuthService {
     final fromProfile = parseRole(profileRole, fallback: AppRole.trainee);
     final fromMeta = parseRole(metadataRole, fallback: AppRole.trainee);
     final e = (email ?? '').trim().toLowerCase();
+    if (fromProfile == AppRole.admin ||
+        fromMeta == AppRole.admin ||
+        isKnownAdminEmail(e)) {
+      return AppRole.admin;
+    }
     if (isKnownTrainerEmail(e)) return AppRole.trainer;
     if (fromProfile == AppRole.trainer || fromMeta == AppRole.trainer) {
       return AppRole.trainer;
     }
     return AppRole.trainee;
+  }
+
+  static bool isKnownAdminEmail(String email) {
+    final e = email.trim().toLowerCase();
+    if (e.isEmpty) return false;
+    if (e == 'admin@trainix.com') return true;
+    if (e == 'admin1@trainix.com') return true;
+    if (e.startsWith('admin') && e.contains('@trainix.com')) return true;
+    return false;
   }
 
   static bool isKnownTrainerEmail(String email) {
@@ -171,6 +188,8 @@ class AuthService {
   Future<void> signOut() async {
     MiniTrainingProgress.resetAll();
     TrainixDebug.resetForLogout();
+    NotificationInboxService.instance.clearLocalOnly();
+    TrainingNotificationCenter.clearToasts();
     if (!SupabaseService.isReady) return;
     try {
       await SupabaseService.client.auth.signOut();

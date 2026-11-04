@@ -677,16 +677,27 @@ class ScenarioPlayView extends StatelessWidget {
                       );
                     },
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 42,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                  Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 42,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: selectedChoice == null
+                              ? null
+                              : onSubmitChoice,
+                          child: const Text('Confirm Choice'),
+                        ),
                       ),
-                      onPressed: selectedChoice == null ? null : onSubmitChoice,
-                      child: const Text('Confirm Choice'),
                     ),
                   ),
                 ],

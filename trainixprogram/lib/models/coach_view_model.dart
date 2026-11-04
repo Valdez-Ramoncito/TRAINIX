@@ -233,8 +233,8 @@ class CoachViewModel {
       steps.isEmpty ? 0 : steps.length - 1,
     );
     tracker.noteStep(idx);
-    final showEsc =
-        next.allowEscalateTab || _showEscalation(state, stage, family);
+    // Escalation tab only when the case actually requires a specialist handoff.
+    final showEsc = _showEscalation(state, stage, family);
     SimFlowLog.block('coachViewModel', {
       'family': family.name,
       'stageBefore': stage.name,
@@ -295,11 +295,14 @@ class CoachViewModel {
   ) {
     if (stage == SimulationStage.escalating) return true;
     if (f == ProblemFamily.trueEscalate) return s.traineeTurns >= 2;
+    // Optional handoff after a few agent turns so the tab is available
+    // without forcing it on every close.
+    if (s.traineeTurns >= 3) return true;
     if (stage != SimulationStage.acting) return false;
-    final softElapsed = s.elapsed >= const Duration(minutes: 8);
-    final stuck = s.traineeTurns >= 5 && !s.toolWorkDone;
+    final softElapsed = s.elapsed >= const Duration(minutes: 6);
+    final stuck = s.traineeTurns >= 4 && !s.toolWorkDone;
     final upset = _isNegativeEmotion(s.customerEmotion);
-    return softElapsed && stuck && upset;
+    return softElapsed || stuck || upset;
   }
 
   static bool _isNegativeEmotion(String e) {

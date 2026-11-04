@@ -14,6 +14,7 @@ import 'package:trainixprogram/widgets/chat_panel.dart';
 import 'package:trainixprogram/widgets/voice_panel.dart';
 import 'package:trainixprogram/widgets/agent_notepad.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 
 //simulates a call-center workstation with two simultaneous channels
@@ -52,8 +53,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
   late final MessageProvider _voiceMessages;
   late final AccountProvider _voiceAccounts;
 
-  //the call timer
-  int _elapsedSeconds = 0;
+  //the call timer (isolated notifier so ticks do not rebuild the full screen)
+  final ValueNotifier<int> _elapsedSeconds = ValueNotifier<int>(0);
 
   //the time ticker for call timer
   Timer? _callTimer;
@@ -89,31 +90,50 @@ class _MockCallScreenState extends State<MockCallScreen> {
   //the trainee away from chat's own manual reporting step either
   bool _chatInProgress = false;
 
-  //get the multitasking score
+  // Session attentiveness: tools, guides, notes, and follow-through.
   double? get _multitaskingScore {
-    //return nothing if both of them is empty
-    if (_voiceResolutionSeconds.isEmpty && _chatResolutionSeconds.isEmpty) {
+    if (_completedInteractions <= 0 &&
+        !_chatInProgress &&
+        !_voiceCallInProgress) {
       return null;
     }
-    if (_voiceResolutionSeconds.isEmpty || _chatResolutionSeconds.isEmpty) {
-      return 0.0;
+    var points = 0.0;
+    var maxPoints = 0.0;
+
+    void add(bool hit, [double weight = 1]) {
+      maxPoints += weight;
+      if (hit) points += weight;
     }
 
-    final avgVoice =
-        _voiceResolutionSeconds.reduce((a, b) => a + b) /
-        _voiceResolutionSeconds.length;
-    final avgChat =
-        _chatResolutionSeconds.reduce((a, b) => a + b) /
-        _chatResolutionSeconds.length;
+    final chatId = _chatAccounts.identityVerified;
+    final chatTool = _chatAccounts.toolWorkDone;
+    final voiceId = _voiceAccounts.identityVerified;
+    final voiceTool = _voiceAccounts.toolWorkDone;
+    final notesUsed = SessionNotesStore.notes.any(
+      (n) => n.body.trim().isNotEmpty,
+    );
 
-    //numerator should never be higher than the denominator
-    //hence we find which of them is the smallest
-    //and which of them is the largest
-    //so that it doesnt go beyond 100%
-    final smaller = avgVoice < avgChat ? avgVoice : avgChat;
-    final larger = avgVoice > avgChat ? avgVoice : avgChat;
-    if (larger <= 0) return 100.0;
-    return (smaller / larger) * 100;
+    if (widget.mode == SimulationMode.chat ||
+        widget.mode == SimulationMode.hybrid) {
+      add(chatId, 1.5);
+      add(chatTool, 2);
+    }
+    if (widget.mode == SimulationMode.voice ||
+        widget.mode == SimulationMode.hybrid) {
+      add(voiceId, 1.5);
+      add(voiceTool, 2);
+    }
+    if (_completedInteractions > 0) {
+      add(true, 1);
+    }
+    // Notes are a small bonus only.
+    if (notesUsed) {
+      points += 0.5;
+      maxPoints += 0.5;
+    }
+
+    if (maxPoints <= 0) return null;
+    return ((points / maxPoints) * 100).clamp(0, 100);
   }
 
   //at the start, set the required calls to a minimum of 3
@@ -134,11 +154,26 @@ class _MockCallScreenState extends State<MockCallScreen> {
     if (mounted) setState(() {});
   }
 
+  Widget _constrainWide(Widget child) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxW = constraints.maxWidth > 1680
+            ? 1680.0
+            : constraints.maxWidth;
+        return Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(width: maxW, child: child),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     TrainixDebug.instance.removeListener(_onDebugChanged);
     _callTimer?.cancel();
     _postCallBreakTimer?.cancel();
+    _elapsedSeconds.dispose();
     _chatMessages.dispose();
     _chatAccounts.dispose();
     _voiceMessages.dispose();
@@ -180,8 +215,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
   //handle the evaluation
   void _handleEvaluation(String channel, SessionEvaluation e) {
     setState(() {
-      //add the evaluation
-      _sessionEvaluations.add(e);
+      final rated = e.withDerivedCustomerRating();
+      _sessionEvaluations.add(rated);
       //increase the completed interactions
       _completedInteractions++;
       //this channel's customer is now counted  free its occupancy
@@ -224,6 +259,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
   void _handleChatBusyChanged(bool busy) {
     setState(() => _chatInProgress = busy);
     if (!busy && _sessionEnding && !_voiceCallInProgress) {
+      if (_phase != SimulationPhase.wrappingUp) {
+        setState(() => _phase = SimulationPhase.wrappingUp);
+      }
+      // Chat already delayed onBusyChanged for last-customer wrap-up dwell.
       _finishSession();
     }
   }
@@ -328,25 +367,25 @@ class _MockCallScreenState extends State<MockCallScreen> {
             : null,
         categoryNotes: {
           'Opening Spiel':
-              'TESDA NC II contact center practice: greeting, agent/company ID, and purpose. Debug score approximates opening quality for this channel.',
+              'Practice greeting, agent and company ID, and a clear purpose for this channel.',
           'Positive Scripting':
-              'Professional, constructive phrasing aligned with basic customer support communication standards.',
+              'Professional, constructive phrasing aligned with basic customer support standards.',
           'Empathy':
-              'Interpersonal skill indicator: acknowledgment of customer feeling before process or policy talk.',
+              'Acknowledgment of the customer feeling before process or policy talk.',
           'Active Listening':
-              'Confirms understanding of stated details rather than generic replies (listening competency).',
+              'Confirms understanding of stated details rather than generic replies.',
           'Problem Identification':
-              'Whether the core issue was identified accurately before solution steps (problem-solving).',
+              'Whether the core issue was identified accurately before solution steps.',
           'Solution Delivery':
-              'Clarity of actions or next steps and fit to the case type within frontline scope.',
+              'Clarity of actions or next steps and fit to the case type.',
           'Communication Clarity':
               'Plain language and structured explanations for the customer.',
           'Tone':
-              'Calm, professional tone consistent with contact center quality expectations.',
+              'Calm, professional tone consistent with call center quality expectations.',
           'Sector Knowledge':
               'Sector-appropriate checks and policy-safe guidance for the assigned industry scenario.',
           'Closing Spiel':
-              'TESDA-aligned close: outcome summary, confirmation, offer of further help, polite end.',
+              'Close with outcome summary, confirmation, offer of further help, and a polite end.',
         },
         categoryQuotes: {
           'Opening Spiel':
@@ -357,15 +396,15 @@ class _MockCallScreenState extends State<MockCallScreen> {
               'Is there anything else I can assist you with today?',
         },
         strengths: [
-          'Opening and structure approximate TESDA contact-center greeting expectations (debug sample).',
-          'Conversation stack retained for review without re-transcription.',
+          'Opening and structure follow expected call center greeting practice.',
+          'Conversation history retained for review without re-transcription.',
         ],
         areasForImprovement: [
-          'Debug scores are illustrative only — run a live session for real TESDA-grounded feedback.',
+          'Debug scores are illustrative only. Run a live session for real coaching feedback.',
           'Practice sector-specific verification and closing confirmation on live customers.',
         ],
         feedback:
-            'Debug report: scores are randomized for UI testing, but each competency note is mapped to TESDA NC II-style contact center criteria (greeting, listening, problem-solving, closing). Not a live evaluation.',
+            'Debug report: scores are randomized for UI testing. Coaching notes cover greeting, listening, problem-solving, and closing. Not a live evaluation.',
         evaluatedAt: DateTime.now(),
         customerName: name,
         channel: channel,
@@ -381,21 +420,24 @@ class _MockCallScreenState extends State<MockCallScreen> {
       );
     }
 
-    final fakeEvaluations = widget.mode == SimulationMode.hybrid
-        ? [
-            buildRandomEval('chat', 'Debug Chat Customer'),
-            buildRandomEval('voice', 'Debug Voice Customer'),
-          ]
-        : [
-            buildRandomEval(
-              widget.mode == SimulationMode.voice ? 'voice' : 'chat',
-              'Debug Customer A',
-            ),
-            buildRandomEval(
-              widget.mode == SimulationMode.voice ? 'voice' : 'chat',
-              'Debug Customer B',
-            ),
-          ];
+    final fakeEvaluations =
+        (widget.mode == SimulationMode.hybrid
+                ? [
+                    buildRandomEval('chat', 'Debug Chat Customer'),
+                    buildRandomEval('voice', 'Debug Voice Customer'),
+                  ]
+                : [
+                    buildRandomEval(
+                      widget.mode == SimulationMode.voice ? 'voice' : 'chat',
+                      'Debug Customer A',
+                    ),
+                    buildRandomEval(
+                      widget.mode == SimulationMode.voice ? 'voice' : 'chat',
+                      'Debug Customer B',
+                    ),
+                  ])
+            .map((e) => e.withDerivedCustomerRating())
+            .toList();
     final fakeMultitasking = 40.0 + random.nextDouble() * 60.0;
     final fakeAvgWpm = 100.0 + random.nextDouble() * 60.0;
     final fakeFillerWords = random.nextInt(10);
@@ -440,7 +482,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
     //start the timer
     _callTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      setState(() => _elapsedSeconds++);
+      _elapsedSeconds.value++;
     });
   }
 
@@ -478,7 +520,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
     _voiceHasActiveCustomer = false;
 
     setState(() {
-      _elapsedSeconds = 0;
+      _elapsedSeconds.value = 0;
       //then set the phase to after call
       _phase = SimulationPhase.afterCallWork;
     });
@@ -493,12 +535,17 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //after sending a report, start the grace period
   void _onSendReport() {
-    // Last customer: skip the break and go straight to session wrap-up.
+    // Last customer: go to session wrap-up, then finish after a short dwell.
     if (_sessionEnding || _completedInteractions >= _requiredInteractions) {
       _sessionEnding = true;
       setState(() => _phase = SimulationPhase.wrappingUp);
       if (!_chatInProgress && !_voiceCallInProgress) {
-        _finishSession();
+        Future.delayed(const Duration(seconds: 4), () {
+          if (!mounted) return;
+          if (_phase == SimulationPhase.wrappingUp) {
+            _finishSession();
+          }
+        });
       }
       return;
     }
@@ -656,48 +703,81 @@ class _MockCallScreenState extends State<MockCallScreen> {
         mode == SimulationMode.chat || mode == SimulationMode.hybrid;
 
     return Scaffold(
-      body: Column(
-        children: [
-          Header(
-            sector: widget.sector,
-            mode: widget.mode,
-            completedInteractions: _completedInteractions,
-            requiredInteractions: _requiredInteractions,
-            onDebugFinish: _debugFinishSimulation,
-            onToggleTheme: () {},
-            onOpenSettings: () {
-              Navigator.of(
-                context,
-              ).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            },
-          ),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (showVoice)
-                  Expanded(
-                    flex: showChat ? 46 : 100,
-                    child: Container(
-                      decoration: showChat
-                          ? const BoxDecoration(
-                              border: Border(
-                                right: BorderSide(
-                                  color: Color(0xFF2A313A),
-                                  width: 1,
+      body: _constrainWide(
+        Column(
+          children: [
+            Header(
+              sector: widget.sector,
+              mode: widget.mode,
+              completedInteractions: _completedInteractions,
+              requiredInteractions: _requiredInteractions,
+              onDebugFinish: _debugFinishSimulation,
+              onToggleTheme: () {
+                ThemeController.instance.toggle();
+              },
+              onOpenSettings: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                );
+              },
+            ),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (showVoice)
+                    Expanded(
+                      flex: showChat ? 46 : 100,
+                      child: Container(
+                        decoration: showChat
+                            ? const BoxDecoration(
+                                border: Border(
+                                  right: BorderSide(
+                                    color: Color(0xFF2A313A),
+                                    width: 1,
+                                  ),
+                                ),
+                              )
+                            : null,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (showChat)
+                              Container(
+                                padding: const EdgeInsets.fromLTRB(
+                                  14,
+                                  8,
+                                  14,
+                                  6,
+                                ),
+                                color: const Color(0xFF12171E),
+                                child: const Text(
+                                  'Voice',
+                                  style: TextStyle(
+                                    color: Color(0xFF9CA3AF),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.4,
+                                  ),
                                 ),
                               ),
-                            )
-                          : null,
+                            Expanded(child: _buildVoicePanel()),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (showChat)
+                    Expanded(
+                      flex: showVoice ? 54 : 100,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (showChat)
+                          if (showVoice)
                             Container(
                               padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
                               color: const Color(0xFF12171E),
                               child: const Text(
-                                'Voice',
+                                'Non-Voice',
                                 style: TextStyle(
                                   color: Color(0xFF9CA3AF),
                                   fontSize: 11,
@@ -706,40 +786,16 @@ class _MockCallScreenState extends State<MockCallScreen> {
                                 ),
                               ),
                             ),
-                          Expanded(child: _buildVoicePanel()),
+                          Expanded(child: _buildChatPanel()),
                         ],
                       ),
                     ),
-                  ),
-                if (showChat)
-                  Expanded(
-                    flex: showVoice ? 54 : 100,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        if (showVoice)
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
-                            color: const Color(0xFF12171E),
-                            child: const Text(
-                              'Non-Voice',
-                              style: TextStyle(
-                                color: Color(0xFF9CA3AF),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 0.4,
-                              ),
-                            ),
-                          ),
-                        Expanded(child: _buildChatPanel()),
-                      ],
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-          if (showVoice) _buildVoiceBottomBar(isOnHold, callInProgress),
-        ],
+            if (showVoice) _buildVoiceBottomBar(isOnHold, callInProgress),
+          ],
+        ),
       ),
     );
   }
@@ -777,19 +833,28 @@ class _MockCallScreenState extends State<MockCallScreen> {
   }
 
   Widget _buildTimerDisplay() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(Icons.timer_outlined, size: 28, color: Color(0xFFE5E7EB)),
-        Text(
-          _formatElapsed(_elapsedSeconds),
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 12,
-            color: Color(0xFFE5E7EB),
-          ),
-        ),
-      ],
+    return ValueListenableBuilder<int>(
+      valueListenable: _elapsedSeconds,
+      builder: (context, seconds, _) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.timer_outlined,
+              size: 28,
+              color: Color(0xFFE5E7EB),
+            ),
+            Text(
+              _formatElapsed(seconds),
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                color: Color(0xFFE5E7EB),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

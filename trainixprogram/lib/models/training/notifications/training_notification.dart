@@ -1,7 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
+import 'package:trainixprogram/screens/page/trainer_session.dart';
+import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/simulation_hub_screen.dart';
+import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
+import 'package:trainixprogram/services/supabase_service.dart';
 
 enum TrainingNotificationType { unlock, progress, success, info }
 
@@ -46,6 +51,10 @@ class TrainingNotificationCenter {
     String? actionType,
     String? actionPayload,
   }) {
+    final signedIn =
+        SupabaseService.isReady &&
+        SupabaseService.client.auth.currentUser != null;
+    if (!signedIn) return;
     final note = TrainingNotification(
       id: 'n_${DateTime.now().microsecondsSinceEpoch}',
       title: title,
@@ -58,6 +67,11 @@ class TrainingNotificationCenter {
     _queue.add(note);
     NotificationInboxService.instance.addFromToast(note);
     _pump();
+  }
+
+  static void clearToasts() {
+    _queue.clear();
+    dismissCurrent();
   }
 
   static void dismissCurrent() {
@@ -232,29 +246,65 @@ class TrainingNotificationCenter {
     required String roomName,
     required bool isPrivate,
     String? designatedTraineeName,
+    String? designatedTraineeUserId,
     String? roomCode,
   }) {
-    if (ProfileData.role != AppRole.trainee) return;
-    if (isPrivate) {
-      final target = designatedTraineeName?.trim().toLowerCase() ?? '';
-      final me = ProfileData.displayName.trim().toLowerCase();
-      if (target.isEmpty || me.isEmpty || target != me) {
-        final t0 = target.split(RegExp(r'\s+')).first;
-        final m0 = me.split(RegExp(r'\s+')).first;
-        if (t0.isEmpty || m0.isEmpty || t0 != m0) return;
-      }
-    }
     final code = roomCode?.trim() ?? '';
-    push(
-      title: isPrivate ? 'Private training invite' : 'Training room available',
-      body: isPrivate
-          ? '$trainerName invited you to "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Tap to open Trainer Session.'
-          : '$trainerName opened "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Tap to open Trainer Session.',
-      locationHint: 'Home > Trainer Session',
-      type: TrainingNotificationType.info,
-      actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
-      actionPayload: code.isEmpty ? null : code,
-    );
+    final title = isPrivate
+        ? 'Private training invite'
+        : 'Training room available';
+    final body = isPrivate
+        ? '$trainerName invited you to "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Open Trainer Session to join.'
+        : '$trainerName opened "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Open Trainer Session to join.';
+    final noteId = 'n_${DateTime.now().microsecondsSinceEpoch}';
+
+    if (isPrivate) {
+      final targetId = designatedTraineeUserId?.trim() ?? '';
+      if (targetId.isNotEmpty) {
+        NotificationInboxService.instance.insertForUser(
+          userId: targetId,
+          id: noteId,
+          title: title,
+          body: body,
+          locationHint: 'Home > Trainer Session',
+          type: TrainingNotificationType.info,
+          actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
+          actionPayload: code.isEmpty ? null : code,
+        );
+      }
+      if (ProfileData.role == AppRole.trainee) {
+        final target = designatedTraineeName?.trim().toLowerCase() ?? '';
+        final me = ProfileData.displayName.trim().toLowerCase();
+        var match = target.isNotEmpty && me.isNotEmpty && target == me;
+        if (!match && target.isNotEmpty && me.isNotEmpty) {
+          final t0 = target.split(RegExp(r'\s+')).first;
+          final m0 = me.split(RegExp(r'\s+')).first;
+          match = t0.isNotEmpty && m0.isNotEmpty && t0 == m0;
+        }
+        if (match) {
+          push(
+            title: title,
+            body: body,
+            locationHint: 'Home > Trainer Session',
+            type: TrainingNotificationType.info,
+            actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
+            actionPayload: code.isEmpty ? null : code,
+          );
+        }
+      }
+      return;
+    }
+
+    if (ProfileData.role == AppRole.trainee) {
+      push(
+        title: title,
+        body: body,
+        locationHint: 'Home > Trainer Session',
+        type: TrainingNotificationType.info,
+        actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
+        actionPayload: code.isEmpty ? null : code,
+      );
+    }
   }
 
   static void notifyLiveRoomStarted({
@@ -308,13 +358,48 @@ class TrainingNotificationCenter {
     );
   }
 
-  static void notifyLiveRoomCancelled({required String roomName}) {
-    push(
-      title: 'Training room closed',
-      body: '"$roomName" was removed by the trainer.',
-      locationHint: 'Home > Trainer Session',
-      type: TrainingNotificationType.info,
-    );
+  static void notifyLiveRoomCancelled({
+    required String roomName,
+    String? designatedTraineeName,
+    String? designatedTraineeUserId,
+    bool isPrivate = false,
+  }) {
+    final title = 'Training room closed';
+    final body = '"$roomName" was removed by the trainer.';
+    final noteId = 'n_${DateTime.now().microsecondsSinceEpoch}';
+
+    if (isPrivate) {
+      final targetId = designatedTraineeUserId?.trim() ?? '';
+      if (targetId.isNotEmpty) {
+        NotificationInboxService.instance.insertForUser(
+          userId: targetId,
+          id: noteId,
+          title: title,
+          body: body,
+          locationHint: 'Home > Trainer Session',
+          type: TrainingNotificationType.info,
+        );
+      }
+      if (ProfileData.role == AppRole.trainee) {
+        final target = designatedTraineeName?.trim().toLowerCase() ?? '';
+        final me = ProfileData.displayName.trim().toLowerCase();
+        var match = target.isNotEmpty && me.isNotEmpty && target == me;
+        if (!match && target.isNotEmpty && me.isNotEmpty) {
+          final t0 = target.split(RegExp(r'\s+')).first;
+          final m0 = me.split(RegExp(r'\s+')).first;
+          match = t0.isNotEmpty && m0.isNotEmpty && t0 == m0;
+        }
+        if (match) {
+          push(
+            title: title,
+            body: body,
+            locationHint: 'Home > Trainer Session',
+            type: TrainingNotificationType.info,
+          );
+        }
+      }
+      return;
+    }
   }
 }
 
@@ -350,71 +435,146 @@ class _NotificationCard extends StatelessWidget {
     }
   }
 
+  bool get _navigable {
+    final action = note.actionType?.trim() ?? '';
+    final hint = (note.locationHint ?? '').toLowerCase();
+    if (action.isNotEmpty) return true;
+    return hint.contains('trainer session') ||
+        hint.contains('mini training') ||
+        hint.contains('scenario practice') ||
+        hint.contains('categories') ||
+        hint.contains('simulation') ||
+        hint.contains('create room');
+  }
+
+  void _openTarget(BuildContext context) {
+    NotificationInboxService.instance.markRead(note.id);
+    final action = note.actionType?.trim();
+    final payload = note.actionPayload?.trim() ?? '';
+    final hint = (note.locationHint ?? '').toLowerCase();
+    final nav = AppNavigator.context;
+    if (nav == null) return;
+
+    void go(Widget page) {
+      onClose();
+      Navigator.of(nav).push(MaterialPageRoute(builder: (_) => page));
+    }
+
+    if (action == 'join_room') {
+      go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      return;
+    }
+    if (action == 'open_trainer_session') {
+      go(const TrainerSession());
+      return;
+    }
+    if (action == 'open_mini_training' ||
+        hint.contains('mini training') ||
+        hint.contains('scenario practice') ||
+        hint.contains('categories')) {
+      go(const MiniTraining());
+      return;
+    }
+    if (action == 'open_simulation' ||
+        hint.contains('training simulation') ||
+        hint.contains('simulation')) {
+      go(const SimulationHubScreen());
+      return;
+    }
+    if (hint.contains('trainer session') || hint.contains('create room')) {
+      go(const TrainerSession());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 360,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _navigable ? () => _openTarget(context) : null,
+        mouseCursor: _navigable
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _accent, width: 1.4),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.45),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+        child: Container(
+          width: 360,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1A1A),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _accent, width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.45),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(_icon, color: _accent, size: 22),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  note.title,
-                  style: TextStyle(
-                    color: _accent,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  note.body,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
-                ),
-                if (note.locationHint != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Where: ${note.locationHint}',
-                    style: const TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      height: 1.3,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(_icon, color: _accent, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      note.title,
+                      style: TextStyle(
+                        color: _accent,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    const SizedBox(height: 4),
+                    Text(
+                      note.body,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                    if (note.locationHint != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Where: ${note.locationHint}',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                    if (_navigable) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        note.actionType == 'join_room'
+                            ? 'Click to open the room'
+                            : 'Click to open',
+                        style: const TextStyle(
+                          color: Color(0xFF70BD8A),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                onPressed: onClose,
+                mouseCursor: SystemMouseCursors.click,
+                icon: const Icon(Icons.close, size: 18, color: Colors.white54),
+              ),
+            ],
           ),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-            onPressed: onClose,
-            icon: const Icon(Icons.close, size: 18, color: Colors.white54),
-          ),
-        ],
+        ),
       ),
     );
   }

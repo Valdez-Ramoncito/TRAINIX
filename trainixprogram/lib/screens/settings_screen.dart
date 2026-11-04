@@ -3,6 +3,7 @@ import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/home/homeScreen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -64,14 +65,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final profileReady = MiniTrainingProgress.isProfileComplete;
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF141414),
-        foregroundColor: Colors.white,
-        title: const Text('Settings'),
-        centerTitle: true,
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
@@ -163,6 +160,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Gap(18),
           _sectionTitle('Display'),
           _card([
+            ListenableBuilder(
+              listenable: ThemeController.instance,
+              builder: (context, _) {
+                final themeCtrl = ThemeController.instance;
+                return _switchTile(
+                  icon: Icons.dark_mode_outlined,
+                  title: 'Dark mode',
+                  subtitle: themeCtrl.isDark
+                      ? 'Dark theme is on (default).'
+                      : 'Light theme is on.',
+                  value: themeCtrl.isDark,
+                  onChanged: (v) async {
+                    await themeCtrl.setDark(v);
+                    _toast(v ? 'Dark mode enabled' : 'Light mode enabled');
+                  },
+                );
+              },
+            ),
             _switchTile(
               icon: Icons.animation_outlined,
               title: 'Reduce motion',
@@ -174,20 +189,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }),
             ),
             ListTile(
-              leading: const Icon(Icons.language, color: Colors.white70),
-              title: const Text(
+              leading: Icon(
+                Icons.language,
+                color: Theme.of(context).listTileTheme.iconColor,
+              ),
+              title: Text(
                 'Language',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               subtitle: Text(
                 AppSettings.preferredLanguage,
-                style: const TextStyle(color: Colors.white54),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
               ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
               onTap: () async {
                 final next = await showModalBottomSheet<String>(
                   context: context,
-                  backgroundColor: const Color(0xFF1A1A1A),
+                  backgroundColor: Theme.of(context).cardColor,
                   builder: (ctx) {
                     return SafeArea(
                       child: Column(
@@ -195,10 +224,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           for (final lang in ['English', 'Filipino'])
                             ListTile(
-                              title: Text(
-                                lang,
-                                style: const TextStyle(color: Colors.white),
-                              ),
+                              title: Text(lang),
                               onTap: () => Navigator.pop(ctx, lang),
                             ),
                         ],
@@ -208,7 +234,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 );
                 if (next != null) {
                   setState(() => AppSettings.preferredLanguage = next);
-                  _toast('Language set to $next (UI language wiring later).');
+                  await AppSettings.save();
+                  _toast('Language saved: $next');
                 }
               },
             ),
@@ -217,16 +244,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _sectionTitle('Account'),
           _card([
             ListTile(
-              leading: const Icon(Icons.person_outline, color: Colors.white70),
+              leading: Icon(
+                Icons.person_outline,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               title: Text(
                 ProfileData.displayName,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
               ),
               subtitle: Text(
                 ProfileData.email.isEmpty ? 'No email set' : ProfileData.email,
-                style: const TextStyle(color: Colors.white54),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
               ),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white38),
+              trailing: Icon(
+                Icons.chevron_right,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.35),
+              ),
               onTap: () {
                 Navigator.push(
                   context,
@@ -235,14 +278,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.work_outline, color: Colors.white70),
+              leading: Icon(
+                Icons.work_outline,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               title: const Text(
                 'Preferred sector',
                 style: TextStyle(color: Colors.white),
               ),
               subtitle: Text(
                 ProfileData.preferredSector,
-                style: const TextStyle(color: Colors.white54),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                ),
               ),
             ),
             ListTile(
@@ -265,16 +317,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Gap(18),
           _sectionTitle('About'),
           _card([
-            const ListTile(
-              leading: Icon(Icons.info_outline, color: Colors.white70),
-              title: Text('TRAINIX', style: TextStyle(color: Colors.white)),
+            ListTile(
+              leading: Icon(
+                Icons.info_outline,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
+              title: Text(
+                'TRAINIX',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
               subtitle: Text(
-                'Contact Center simulation trainer. Scores align to TESDA-style competencies.',
-                style: TextStyle(color: Colors.white54, height: 1.35),
+                'Call center simulation trainer. Scores focus on greeting, listening, problem solving, and closing.',
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.55),
+                  height: 1.35,
+                ),
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.restore, color: Colors.white70),
+              leading: Icon(
+                Icons.restore,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
               title: const Text(
                 'Reset local settings',
                 style: TextStyle(color: Colors.white),
@@ -326,12 +398,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _sectionTitle(String title) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         title,
-        style: const TextStyle(
-          color: Colors.white70,
+        style: TextStyle(
+          color: onSurface.withValues(alpha: 0.7),
           fontWeight: FontWeight.w700,
           fontSize: 13,
         ),
@@ -340,13 +413,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _card(List<Widget> children) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Material(
-      color: const Color(0xFF161616),
+      color: isDark ? const Color(0xFF161616) : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF2A2A2A)),
+          border: Border.all(
+            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
+          ),
         ),
         child: Column(children: children),
       ),
@@ -360,12 +437,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool value,
     ValueChanged<bool>? onChanged,
   }) {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
     return SwitchListTile(
-      secondary: Icon(icon, color: Colors.white70),
-      title: Text(title, style: const TextStyle(color: Colors.white)),
+      secondary: Icon(icon, color: onSurface.withValues(alpha: 0.7)),
+      title: Text(title, style: TextStyle(color: onSurface)),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(color: Colors.white54, fontSize: 12),
+        style: TextStyle(
+          color: onSurface.withValues(alpha: 0.55),
+          fontSize: 12,
+        ),
       ),
       value: value,
       activeColor: const Color(0xFF70BD8A),

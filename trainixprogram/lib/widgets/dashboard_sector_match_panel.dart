@@ -119,7 +119,7 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     _fact(
                       'How selected',
-                      'Highest mean overall score per sector across all evaluations (not a single lucky run).',
+                      'Best average score by sector across all scored customers (not a single lucky run).',
                     ),
                     const Gap(8),
                     const Text(
@@ -283,7 +283,7 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(4),
                     Text(
-                      'Based on $n scored customer(s) in ${e.key}. Average is the mean of overall evaluation scores for that sector only.',
+                      'Based on $n scored customer(s) in ${e.key}. Average is overall score for that sector only.',
                       style: const TextStyle(
                         color: Colors.white38,
                         fontSize: 11,

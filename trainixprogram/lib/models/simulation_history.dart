@@ -3,6 +3,8 @@ import 'package:trainixprogram/services/simulation_session_repository.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
+import 'package:trainixprogram/components/class/trainee_activity_log.dart';
+import 'package:trainixprogram/screens/page/profile.dart';
 
 //represents one full completed play-through
 //This is what Session History and Score Trend should be counting, not individual evaluations.
@@ -91,6 +93,14 @@ class SimulationHistoryProvider with ChangeNotifier {
     //and then return the average
     return _evaluations.map((e) => e.overallScore).reduce((a, b) => a + b) /
         _evaluations.length;
+  }
+
+  /// Average customer CSAT (1-5) across rated evaluations.
+  double? get averageCustomerRating {
+    final rated = _evaluations.where((e) => e.customerRating != null).toList();
+    if (rated.isEmpty) return null;
+    final sum = rated.fold<int>(0, (a, e) => a + (e.customerRating ?? 0));
+    return sum / rated.length;
   }
 
   //get the best overall score out of all evaluations
@@ -209,7 +219,7 @@ class SimulationHistoryProvider with ChangeNotifier {
 
   //add the session evaluation to the list
   void saveEvaluation(SessionEvaluation evaluation) {
-    _evaluations.add(evaluation);
+    _evaluations.add(evaluation.withDerivedCustomerRating());
     notifyListeners();
   }
 
@@ -224,14 +234,17 @@ class SimulationHistoryProvider with ChangeNotifier {
     bool countForGuide = true,
   }) {
     if (evaluations.isEmpty) return;
+    final rated = evaluations
+        .map((e) => e.withDerivedCustomerRating())
+        .toList();
     final played = PlayedSession(
-      evaluations: evaluations,
+      evaluations: rated,
       multitaskingScore: multitaskingScore,
       completedAt: DateTime.now(),
       mode: mode,
     );
     _sessions.add(played);
-    for (final e in evaluations) {
+    for (final e in rated) {
       if (!_evaluations.contains(e)) {
         _evaluations.add(e);
       }
@@ -241,6 +254,23 @@ class SimulationHistoryProvider with ChangeNotifier {
     if (countForGuide) {
       MiniTrainingProgress.markSimulationSessionCompleted();
     }
+    final modeLabel = mode == SimulationMode.voice
+        ? 'Voice'
+        : mode == SimulationMode.chat
+        ? 'Non-Voice'
+        : mode.name;
+    final sector = played.sector.isEmpty ? 'General' : played.sector;
+    TraineeActivityLogStore.instance.log(
+      actorName: ProfileData.displayName.isNotEmpty
+          ? ProfileData.displayName
+          : 'Trainee',
+      actorRole: ProfileData.role.name,
+      category: TraineeLogCategory.simulation,
+      action: 'Completed $modeLabel session',
+      detail:
+          '$sector · ${evaluations.length} customer(s) · score ${played.overallScore.toStringAsFixed(1)}',
+      sessionRef: '${modeLabel}_${played.completedAt.millisecondsSinceEpoch}',
+    );
   }
 
   Future<void> loadFromRemote() async {

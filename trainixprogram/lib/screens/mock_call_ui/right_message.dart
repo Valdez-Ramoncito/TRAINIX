@@ -117,6 +117,7 @@ class RightMessage extends StatelessWidget {
                 ),
                 CollapsibleScriptGuide(
                   initiallyExpanded: scriptGuideExpanded,
+                  notepadBottomInset: 56,
                   child: ScenarioGuideView(
                     sector: sector,
                     emotion: customerEmotion,
@@ -298,17 +299,16 @@ class RightMessage extends StatelessWidget {
     return Column(
       children: [
         if (chatHeader != null) chatHeader!,
-        _buildChatArea(),
-        _buildChatInput(),
+        Expanded(
+          child: RepaintBoundary(
+            child: _AutoScrollMessageList(customerName: customerName),
+          ),
+        ),
+        RepaintBoundary(child: _buildChatInput()),
       ],
     );
   }
 
-  Widget _buildChatArea() {
-    return Expanded(child: _AutoScrollMessageList(customerName: customerName));
-  }
-
-  // Bottom Capsule Message Input Bar
   Widget _buildChatInput() {
     return Container(
       padding: const EdgeInsets.all(20),

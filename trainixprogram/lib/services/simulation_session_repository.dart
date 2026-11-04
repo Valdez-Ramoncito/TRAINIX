@@ -42,6 +42,8 @@ class SimulationSessionRepository {
       'channel': e.channel,
       'problem': e.problem,
       'conversation': e.conversation,
+      'customerRating': e.customerRating,
+      'customerComment': e.customerComment,
     };
   }
 
@@ -90,6 +92,8 @@ class SimulationSessionRepository {
             return <String, String>{};
           }).toList() ??
           const [],
+      customerRating: (m['customerRating'] as num?)?.toInt(),
+      customerComment: m['customerComment'] as String?,
     );
   }
 
@@ -101,19 +105,41 @@ class SimulationSessionRepository {
     }
     try {
       final evals = session.evaluations.map(_evalToMap).toList();
-      await SupabaseService.client.from(_table).insert({
+      final uid = SupabaseService.client.auth.currentUser?.id;
+      final row = <String, dynamic>{
         'mode': session.mode.name,
         'sector': session.sector,
         'overall_score': session.overallScore,
         'multitasking_score': session.multitaskingScore,
         'completed_at': session.completedAt.toUtc().toIso8601String(),
         'evaluations': evals,
-      });
+      };
+      if (uid != null) row['user_id'] = uid;
+      await SupabaseService.client.from(_table).insert(row);
       debugPrint('simulation_sessions insert ok');
       return true;
     } catch (e) {
       lastError = e.toString();
       debugPrint('simulation_sessions insert failed: $lastError');
+      // Retry without user_id if column is missing.
+      if (lastError!.contains('user_id')) {
+        try {
+          final evals = session.evaluations.map(_evalToMap).toList();
+          await SupabaseService.client.from(_table).insert({
+            'mode': session.mode.name,
+            'sector': session.sector,
+            'overall_score': session.overallScore,
+            'multitasking_score': session.multitaskingScore,
+            'completed_at': session.completedAt.toUtc().toIso8601String(),
+            'evaluations': evals,
+          });
+          debugPrint('simulation_sessions insert ok (no user_id)');
+          return true;
+        } catch (e2) {
+          lastError = e2.toString();
+          debugPrint('simulation_sessions insert failed: $lastError');
+        }
+      }
       return false;
     }
   }

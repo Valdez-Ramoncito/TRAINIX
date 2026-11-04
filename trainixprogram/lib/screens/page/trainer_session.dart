@@ -9,8 +9,10 @@ import 'package:trainixprogram/components/decoration/text_field.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/home/homeScreen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/components/class/trainee_activity_log.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
 import 'package:trainixprogram/screens/trainer_page/live_training_room.dart';
 
@@ -26,6 +28,7 @@ class TrainerSession extends StatefulWidget {
 class _TrainerSessionState extends State<TrainerSession> {
   final TextEditingController _codeCtrl = TextEditingController();
   String? _joinError;
+  bool _loadingRooms = false;
 
   @override
   void initState() {
@@ -34,6 +37,41 @@ class _TrainerSessionState extends State<TrainerSession> {
     if (code.isNotEmpty) {
       _codeCtrl.text = code;
     }
+    LiveSessionStore.instance.addListener(_onStoreChanged);
+    _reloadRooms();
+  }
+
+  void _onStoreChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _reloadRooms() async {
+    if (_loadingRooms) return;
+    setState(() => _loadingRooms = true);
+    await LiveSessionStore.instance.loadFromRemote();
+    await NotificationInboxService.instance.loadFromRemote();
+    if (mounted) setState(() => _loadingRooms = false);
+    _tryAutoJoinFromInvite();
+  }
+
+  void _tryAutoJoinFromInvite() {
+    final code = widget.initialRoomCode?.trim() ?? '';
+    if (code.isEmpty) return;
+    final session = LiveSessionStore.instance.findByCode(code);
+    if (session == null) return;
+    if (session.closed) return;
+    if (!canJoinBySchedule(session)) return;
+    final st = computeRoomStatus(session).status;
+    if (st == RoomDisplayStatus.full ||
+        st == RoomDisplayStatus.inSession ||
+        st == RoomDisplayStatus.completed ||
+        st == RoomDisplayStatus.cancelled) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _tryEnter(session);
+    });
   }
 
   List<LiveTrainingSession> get _rooms => LiveSessionStore.instance
@@ -42,7 +80,9 @@ class _TrainerSessionState extends State<TrainerSession> {
   List<LiveTrainingSession> get _upcoming => LiveSessionStore.instance
       .upcomingSessions(traineeName: ProfileData.displayName);
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    _reloadRooms();
+  }
 
   void _checkReminders() {
     for (final s in LiveSessionStore.instance.roomsNeedingReminder()) {
@@ -235,6 +275,7 @@ class _TrainerSessionState extends State<TrainerSession> {
 
   @override
   void dispose() {
+    LiveSessionStore.instance.removeListener(_onStoreChanged);
     _codeCtrl.dispose();
     super.dispose();
   }
@@ -268,15 +309,32 @@ class _TrainerSessionState extends State<TrainerSession> {
                         MenuButton(
                           icon: Icons.person_outline_rounded,
                           label: 'Profile',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const Profile(),
+                              ),
+                            );
+                          },
                         ),
                         MenuButton(
                           icon: Icons.school_outlined,
                           label: 'Trainer Session',
+                          isSelected: true,
                           onTap: () {},
                         ),
                         MenuButton(
                           icon: Icons.settings_outlined,
                           label: 'Settings',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

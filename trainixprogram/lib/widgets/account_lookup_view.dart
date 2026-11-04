@@ -50,6 +50,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
       note = 'Scheduled callback regarding: $issue.';
     } else if (lower.contains('ticket') || lower.contains('review')) {
       note = 'Opened review ticket for: $issue.';
+    } else if (lower.contains('escalat')) {
+      note = 'Escalated to specialist for: $issue.';
     } else {
       note = 'Recorded action for: $issue.';
     }
@@ -401,7 +403,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                   ? null
                   : () => _submitAccountAction(accountProvider),
               icon: const Icon(Icons.task_alt, size: 18),
-              label: const Text('Submit account action'),
+              label: Text(_submitLabelForAction(_selectedAction)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2563EB),
                 foregroundColor: Colors.white,
@@ -815,7 +817,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               child: ElevatedButton.icon(
                 onPressed: () => _submitAccountAction(accountProvider),
                 icon: const Icon(Icons.task_alt, size: 18),
-                label: Text(_getActionLabel(widget.sector)),
+                label: Text(_submitLabelForAction(_selectedAction)),
                 style: ElevatedButton.styleFrom(
                   enabledMouseCursor: SystemMouseCursors.click,
                   backgroundColor: const Color(0xFF2563EB),
@@ -863,17 +865,20 @@ class _AccountLookupViewState extends State<AccountLookupView> {
     );
   }
 
-  // Return the appropriate action-button text for the given sector
-  String _getActionLabel(String sector) {
-    switch (sector) {
-      case 'Finance':
-        return 'Submit billing review request';
-      case 'Healthcare':
-        return 'Process Healthcare Request';
-      case 'Telco':
-        return 'Restore Service';
-      default:
-        return 'Submit technical service request';
+  String _submitLabelForAction(String action) {
+    final lower = action.toLowerCase();
+    if (lower.contains('identity') || lower.contains('verify')) {
+      return 'Confirm identity';
     }
+    if (lower.contains('service request') || lower.contains('file')) {
+      return 'File service request';
+    }
+    if (lower.contains('callback')) {
+      return 'Schedule callback';
+    }
+    if (lower.contains('ticket') || lower.contains('review')) {
+      return 'Open review ticket';
+    }
+    return 'Submit account action';
   }
 }

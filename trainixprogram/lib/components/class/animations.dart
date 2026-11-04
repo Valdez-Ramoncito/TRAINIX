@@ -21,7 +21,7 @@ List<lottieAnimation> animation = [
     background: 'assets/animations/background/card.png',
     title: 'Account Profile',
     subtitle:
-        'View and manage your personal information, and learning details all in one place.',
+        'Update your name, photo, and learning preferences before you start practice.',
   ),
   lottieAnimation(
     id: 2,
@@ -29,15 +29,15 @@ List<lottieAnimation> animation = [
     background: 'assets/animations/background/card4.png',
     title: 'Trainer Session',
     subtitle:
-        'Equips essential skills and knowledge needed to succeed in a BPO environment',
+        'Join a live session with your trainer for guided coaching and feedback.',
   ),
   lottieAnimation(
     id: 3,
     name: 'assets/animations/training.json',
     background: 'assets/animations/background/card1.png',
-    title: 'Training Session',
+    title: 'Simulation Training',
     subtitle:
-        'Equips essential skills and knowledge needed to succeed in a BPO environment',
+        'Practice full customer conversations in Non-Voice or Voice, then review your scores.',
   ),
   lottieAnimation(
     id: 4,
@@ -45,7 +45,7 @@ List<lottieAnimation> animation = [
     background: 'assets/animations/background/card3.png',
     title: 'Mini Training',
     subtitle:
-        'Clear overview of your training journey by tracking assessment scores, and overall performance.',
+        'Short lessons and practice drills that unlock the next part of your path.',
   ),
   lottieAnimation(
     id: 5,
@@ -53,34 +53,30 @@ List<lottieAnimation> animation = [
     background: 'assets/animations/background/card2.png',
     title: 'Progress Dashboard',
     subtitle:
-        'Clear overview of your training journey by tracking assessment scores, and overall performance.',
+        'See your recent scores, strengths, and what to improve after each practice.',
   ),
 ];
 
-//trainer
 List<lottieAnimation> animationTrainer = [
   lottieAnimation(
     id: 1,
     name: 'assets/animations/account.json',
     background: 'assets/animations/background/card.png',
     title: 'Account Profile',
-    subtitle:
-        'View and manage your personal information, and learning details all in one place.',
+    subtitle: 'Update your name and preferences used across trainer tools.',
   ),
   lottieAnimation(
     id: 2,
     name: 'assets/animations/training.json',
     background: 'assets/animations/background/card4.png',
     title: 'Trainee Session',
-    subtitle:
-        'Equips essential skills and knowledge needed to succeed in a BPO environment',
+    subtitle: 'Create or join a live room to coach a trainee in real time.',
   ),
   lottieAnimation(
     id: 3,
     name: 'assets/animations/progress.json',
     background: 'assets/animations/background/card2.png',
     title: 'Log Monitoring',
-    subtitle:
-        'Live session records, trainee activity logs, and coaching proof for trainers.',
+    subtitle: 'Review trainee activity, live rooms, and recent coaching notes.',
   ),
 ];

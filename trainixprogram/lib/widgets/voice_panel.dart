@@ -135,6 +135,7 @@ class _VoicePanelState extends State<VoicePanel> {
   final List<String> _heldOpeningLines = [];
   String _acwDisposition = 'Resolved';
   bool _acwPrepared = false;
+  bool _sessionEscalated = false;
 
   //controller for report
   final TextEditingController _reportController = TextEditingController();
@@ -276,6 +277,7 @@ class _VoicePanelState extends State<VoicePanel> {
           _heldOpeningLines.clear();
           _acwPrepared = false;
           _acwDisposition = 'Resolved';
+          _sessionEscalated = false;
           _coachMessages.clear();
           _sessionController.reset(notify: false);
           _problemFamily = null;
@@ -364,11 +366,23 @@ class _VoicePanelState extends State<VoicePanel> {
       );
       if (pack.needsAccount && accountProvider.accounts.isEmpty) {
         final d = pack.accountDetails;
-        final targetId = (d['Member ID']?.trim().isNotEmpty == true)
-            ? d['Member ID']!.trim()
-            : (d['Card Ending']?.trim().isNotEmpty == true)
-            ? 'ACC-${d['Card Ending']}'
-            : 'ACC-${pack.customerName.hashCode.abs() % 90000 + 10000}';
+        String targetId;
+        final card = d['Card Ending']?.trim() ?? '';
+        final mobile = d['Mobile Ending']?.trim() ?? '';
+        final member = d['Member ID']?.trim() ?? '';
+        if (card.isNotEmpty) {
+          final digits = card.replaceAll(RegExp(r'[^0-9]'), '');
+          targetId = 'ACC-${digits.isNotEmpty ? digits : card}';
+        } else if (mobile.isNotEmpty) {
+          final digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
+          targetId = 'ACC-${digits.isNotEmpty ? digits : mobile}';
+        } else if (member.isNotEmpty) {
+          final digits = member.replaceAll(RegExp(r'[^0-9]'), '');
+          final n = int.tryParse(digits) ?? pack.customerName.hashCode.abs();
+          targetId = 'ACC-${(n % 9000) + 1000}';
+        } else {
+          targetId = 'ACC-${pack.customerName.hashCode.abs() % 9000 + 1000}';
+        }
         accountProvider.generateAccounts(
           sector: pack.sector,
           targetAccountId: targetId,
@@ -504,9 +518,26 @@ class _VoicePanelState extends State<VoicePanel> {
 
       if (_customerConfirmed) {
         _lastTraineeText = words;
+        final wantsEscalation = SimulationCoach.looksLikeEscalation(words);
+        if (wantsEscalation && !_sessionEscalated) {
+          if (mounted) {
+            setState(() {
+              _traineeTranscript = words;
+              _selectedTab = 0;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Open the Escalation tab and submit the handoff before closing.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
         final shouldFinish =
             SimulationCoach.looksLikeClosing(words) ||
-            SimulationCoach.looksLikeEscalation(words);
+            (_sessionEscalated && wantsEscalation);
         if (shouldFinish) {
           setState(() {
             _traineeTranscript = words;
@@ -1074,14 +1105,44 @@ class _VoicePanelState extends State<VoicePanel> {
       customerConfirmed: _customerConfirmed,
       awaitingClosing: _voicePhase == _VoicePhase.awaitingClosing,
       hasTraineeSpoken: _traineeHasSpoken,
-      // Show guide on accept for voice; problem text stays empty until
-      // the customer actually speaks when agent-first.
       hasCustomerSpoken: true,
       toolWorkDone: accountProvider.toolWorkDone,
       traineeTurnCount: _coachMessages.where((m) => m.isTrainee).length,
       lastCustomerMessage: _customerTranscript,
       showEscalationTab: coachVm.showEscalation,
       coachVm: coachVm,
+      isEscalating: _sessionEscalated,
+      onEscalationSubmit: (msg) {
+        _sessionEscalated = true;
+        final accountProvider = Provider.of<AccountProvider>(
+          context,
+          listen: false,
+        );
+        accountProvider.markToolWorkDone(
+          action: 'Escalate to specialist',
+          note: 'Escalation handoff submitted from Escalation tab.',
+        );
+        _coachMessages.add(CoachMessage(isTrainee: true, text: msg));
+        _traineeHasSpoken = true;
+        _lastTraineeText = msg;
+        _traineeTranscript = msg;
+        _sessionController.replaceMessages(
+          List<CoachMessage>.from(_coachMessages),
+          notify: false,
+        );
+        _sessionController.syncFromAccount(
+          identityVerified: accountProvider.identityVerified,
+          toolWorkDone: accountProvider.toolWorkDone,
+          lastToolAction: accountProvider.lastToolAction,
+          notify: false,
+        );
+        if (_sessionController.mission.pendingCustomerLines.isNotEmpty &&
+            !_postingScripted) {
+          _postScriptedCustomerLinesVoice();
+        } else if (mounted) {
+          setState(() {});
+        }
+      },
     );
 
     if (!widget.showScriptGuide) return mainColumn;
@@ -1580,7 +1641,11 @@ class _VoicePanelState extends State<VoicePanel> {
     if (done.contains('guide') || done.contains('confirm')) {
       parts.add('Guidance given and customer response noted.');
     }
-    if (branch == 'escalate' || done.contains('escalate')) {
+    if (branch == 'escalate' ||
+        done.contains('escalate') ||
+        done.contains('handoff') ||
+        _sessionEscalated ||
+        _sessionController.mission.evidence.escalationSubmitted) {
       parts.add('Escalated to specialist path.');
     }
     if (done.contains('close')) {
@@ -1596,6 +1661,9 @@ class _VoicePanelState extends State<VoicePanel> {
     final branch = _sessionController.mission.evidence.branch;
     if (branch == 'escalate' ||
         _sessionController.mission.state.done.contains('escalate') ||
+        _sessionController.mission.state.done.contains('handoff') ||
+        _sessionEscalated ||
+        _sessionController.mission.evidence.escalationSubmitted ||
         _sessionController.mission.pack?.family == ProblemFamily.trueEscalate) {
       return 'Escalated';
     }
@@ -1624,135 +1692,147 @@ class _VoicePanelState extends State<VoicePanel> {
     }
     final textTheme = Theme.of(context).textTheme;
     final suggested = _acwSuggestedNote();
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: const Color(0xFF191919),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF303030)),
-            ),
-            child: const Icon(Icons.edit_note, size: 32, color: Colors.white),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'After Call Work',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Use the suggested disposition and note from this case. Edit if needed, then submit.',
-            style: textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFF4F3F3),
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF15201A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2E4A38)),
-            ),
-            child: Text(
-              'Suggested from this case: $_acwDisposition. $suggested',
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: Color(0xFFD7E8DB),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF191919),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF303030)),
+                ),
+                child: const Icon(
+                  Icons.edit_note,
+                  size: 32,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Disposition',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-          ),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: _acwDisposition,
-            dropdownColor: const Color(0xFF1A1F26),
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF1A1A1A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+              const SizedBox(height: 20),
+              const Text(
+                'After Call Work',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
-              DropdownMenuItem(value: 'Escalated', child: Text('Escalated')),
-              DropdownMenuItem(
-                value: 'Pending customer',
-                child: Text('Pending customer'),
+              const SizedBox(height: 8),
+              Text(
+                'Use the suggested disposition and note from this case. Edit if needed, then submit.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFF4F3F3),
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
               ),
-              DropdownMenuItem(
-                value: 'Information only',
-                child: Text('Information only'),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15201A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF2E4A38)),
+                ),
+                child: Text(
+                  'Suggested from this case: $_acwDisposition. $suggested',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: Color(0xFFD7E8DB),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Disposition',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                value: _acwDisposition,
+                dropdownColor: const Color(0xFF1A1F26),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A1A),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
+                  DropdownMenuItem(
+                    value: 'Escalated',
+                    child: Text('Escalated'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Pending customer',
+                    child: Text('Pending customer'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Information only',
+                    child: Text('Information only'),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _acwDisposition = v);
+                },
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _reportController,
+                maxLines: 4,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Summary, next action, account notes...',
+                  hintStyle: textTheme.bodyMedium?.copyWith(
+                    fontSize: 12,
+                    color: const Color(0xFFBBBBBB),
+                  ),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                    borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  _reportController.clear();
+                  _acwPrepared = false;
+                  widget.onSendReport?.call();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Submit Report'),
               ),
             ],
-            onChanged: (v) {
-              if (v != null) setState(() => _acwDisposition = v);
-            },
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _reportController,
-            maxLines: 4,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Summary, next action, account notes...',
-              hintStyle: textTheme.bodyMedium?.copyWith(
-                fontSize: 12,
-                color: const Color(0xFFBBBBBB),
-              ),
-              border: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-              ),
-              enabledBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-                borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-                borderSide: BorderSide(color: Colors.white, width: 1),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              _reportController.clear();
-              _acwPrepared = false;
-              widget.onSendReport?.call();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: const Text('Submit Report'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1761,7 +1841,12 @@ class _VoicePanelState extends State<VoicePanel> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Lottie.asset('assets/animations/break_loading.json', width: 80),
+        RepaintBoundary(
+          child: Lottie.asset(
+            'assets/animations/break_loading.json',
+            width: 80,
+          ),
+        ),
         const Text('On Break', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text('Next call in ${widget.remainingBreakSeconds}s...'),

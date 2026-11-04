@@ -121,7 +121,12 @@ class SessionHistoryList extends StatelessWidget {
                           horizontal: 18,
                           vertical: 14,
                         ),
-                        decoration: boxDecoration(false, true),
+                        decoration: boxDecoration(
+                          false,
+                          true,
+                          isDark:
+                              Theme.of(context).brightness == Brightness.dark,
+                        ),
                         child: Row(
                           children: [
                             Text(
@@ -265,7 +270,12 @@ class MessagesArchiveList extends StatelessWidget {
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
-                        decoration: boxDecoration(false, true),
+                        decoration: boxDecoration(
+                          false,
+                          true,
+                          isDark:
+                              Theme.of(context).brightness == Brightness.dark,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -309,12 +319,31 @@ class MessagesArchiveList extends StatelessWidget {
                             ),
                             const Gap(8),
                             Text(
-                              '${e.conversation.length} turns · score ${displayScore10(e.overallScore).toStringAsFixed(1)}',
+                              [
+                                '${e.conversation.length} turns',
+                                'score ${displayScore10(e.overallScore).toStringAsFixed(1)}',
+                                if (e.customerRating != null)
+                                  'CSAT ${e.customerRating}/5',
+                              ].join(' · '),
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFF9CA3AF),
                               ),
                             ),
+                            if (e.customerComment != null &&
+                                e.customerComment!.isNotEmpty) ...[
+                              const Gap(4),
+                              Text(
+                                e.customerComment!,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF9CA3AF),
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

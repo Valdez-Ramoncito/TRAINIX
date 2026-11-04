@@ -30,6 +30,17 @@ class AccountGeneratorService {
     'Amelia Bernardo',
   ];
 
+  static String _normalizeListAccountId(String raw, String ownerName) {
+    final t = raw.trim();
+    if (t.toUpperCase().startsWith('ACC-')) return t;
+    final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isNotEmpty) {
+      final n = int.tryParse(digits) ?? ownerName.hashCode.abs();
+      return 'ACC-${(n % 9000) + 1000}';
+    }
+    return 'ACC-${ownerName.hashCode.abs() % 9000 + 1000}';
+  }
+
   static List<Account> generate({
     required String sector,
     required String targetAccountId,
@@ -64,7 +75,7 @@ class AccountGeneratorService {
 
     accounts.add(
       Account(
-        accountId: targetAccountId,
+        accountId: _normalizeListAccountId(targetAccountId, targetOwnerName),
         ownerName: targetOwnerName,
         details: targetDetails,
         isTarget: true,
@@ -88,7 +99,7 @@ class AccountGeneratorService {
       } else if (key == 'Card Ending') {
         out[key] = (1000 + r.nextInt(9000)).toString();
       } else if (key == 'Member ID') {
-        out[key] = 'MS-${10000 + r.nextInt(80000)}';
+        out[key] = 'ACC-${1000 + r.nextInt(8999)}';
       } else if (key == 'Mobile Ending') {
         out[key] = (1000 + r.nextInt(9000)).toString();
       } else if (key == 'Email') {
@@ -121,7 +132,7 @@ class AccountGeneratorService {
         return {
           'Provider': ['PhilHealth', 'Maxicare', 'Medicard'][r.nextInt(3)],
           'Policy No.': 'POL-${r.nextInt(90000) + 10000}',
-          'Member ID': 'MS-${10000 + r.nextInt(80000)}',
+          'Member ID': 'ACC-${1000 + r.nextInt(8999)}',
           'Coverage': 'Active',
           'Last Visit': _randomDate(r),
           'Issue': 'None',
@@ -177,7 +188,7 @@ class AccountGeneratorService {
         return {
           'Provider': 'PhilHealth',
           'Policy No.': 'POL-48291',
-          'Member ID': 'MS-00000',
+          'Member ID': 'ACC-00000',
           'Coverage': problem.toLowerCase().contains('claim')
               ? 'Claim Pending'
               : 'Active',

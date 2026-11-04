@@ -78,17 +78,6 @@ class HomeScreen extends StatelessWidget {
                     );
                   },
                 ),
-                Gap(10),
-                HoverIconButton(
-                  icon: Icons.bug_report_rounded,
-                  tooltip: 'Developer Test',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const DevTestScreen()),
-                    );
-                  },
-                ),
               ],
             ),
           ],
@@ -117,7 +106,14 @@ class HomeScreen extends StatelessWidget {
                     Carousel(
                       highlightCardId: guided ? next.carouselCardId : null,
                     ),
-                    Text("Last Log in"),
+                    const Gap(12),
+                    Text(
+                      'Welcome back, ${ProfileData.displayName}',
+                      style: const TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontSize: 14,
+                      ),
+                    ),
                   ],
                 ),
               ),

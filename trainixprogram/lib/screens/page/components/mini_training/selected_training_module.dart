@@ -388,81 +388,111 @@ class _CategoryModuleState extends State<CategoryModule> {
                 ...buildContent(widget.lesson.content),
                 const Gap(28),
                 if (hasAssessment) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDone
-                            ? const Color(0xFF374151)
-                            : const Color(0xFF16A34A),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: isDone ? null : _startAssessment,
-                      child: Text(
-                        isDone
-                            ? (score != null
-                                  ? 'Assessment Passed ($score%)'
-                                  : 'Assessment Passed')
-                            : 'Start Assessment',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
+                  Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: isDone
+                                ? const Color(0xFF374151)
+                                : const Color(0xFF16A34A),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: isDone ? null : _startAssessment,
+                          child: Text(
+                            isDone
+                                ? (score != null
+                                      ? 'Assessment Passed ($score%)'
+                                      : 'Assessment Passed')
+                                : 'Start Assessment',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
                   if (isDone) ...[
                     const Gap(10),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 44,
-                      child: OutlinedButton(
-                        onPressed: _startAssessment,
-                        child: const Text('Retake Assessment (optional)'),
+                    Align(
+                      alignment: Alignment.center,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 44,
+                          child: OutlinedButton(
+                            onPressed: _startAssessment,
+                            child: const Text('Retake Assessment (optional)'),
+                          ),
+                        ),
                       ),
                     ),
                     if (_nextLesson() != null) ...[
                       const Gap(10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF16A34A),
-                            foregroundColor: Colors.white,
+                      Align(
+                        alignment: Alignment.center,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF16A34A),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: _openNextLesson,
+                              child: const Text('Continue to next lesson'),
+                            ),
                           ),
-                          onPressed: _openNextLesson,
-                          child: const Text('Continue to next lesson'),
                         ),
                       ),
                     ] else ...[
                       const Gap(10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2563EB),
-                            foregroundColor: Colors.white,
+                      Align(
+                        alignment: Alignment.center,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 420),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF2563EB),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => Navigator.of(context).maybePop(),
+                              child: const Text('Back to category'),
+                            ),
                           ),
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          child: const Text('Back to category'),
                         ),
                       ),
                     ],
                   ],
                   if (TrainixDebug.unlocked) ...[
                     const Gap(12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 42,
-                      child: OutlinedButton(
-                        onPressed: isDone ? null : _debugFinishLesson,
-                        child: const Text('DEBUG: Auto-finish this lesson'),
+                    Align(
+                      alignment: Alignment.center,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 42,
+                          child: OutlinedButton(
+                            onPressed: isDone ? null : _debugFinishLesson,
+                            child: const Text('DEBUG: Auto-finish this lesson'),
+                          ),
+                        ),
                       ),
                     ),
                   ],

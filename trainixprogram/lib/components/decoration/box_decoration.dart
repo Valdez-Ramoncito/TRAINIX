@@ -1,20 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:trainixprogram/components/class/animations.dart';
 
-BoxDecoration boxDecoration(bool isComplete, bool isNext) {
+BoxDecoration boxDecoration(
+  bool isComplete,
+  bool isNext, {
+  bool isDark = true,
+}) {
+  final base = isDark ? const Color(0xFF151515) : const Color(0xFFFFFFFF);
+  final completeBg = isDark ? const Color(0xFF152033) : const Color(0xFFEFF6FF);
+  final nextBg = isDark ? const Color(0xFF141C18) : const Color(0xFFECFDF5);
+  final idleBorder = isDark ? const Color(0xFF2F2F2F) : const Color(0xFFE5E7EB);
   return BoxDecoration(
     color: isComplete
-        ? const Color(0xFF152033)
+        ? completeBg
         : isNext
-        ? const Color(0xFF141C18)
-        : const Color(0xFF151515),
+        ? nextBg
+        : base,
     borderRadius: BorderRadius.circular(15),
     border: Border.all(
       color: isComplete
           ? const Color(0xFF3B82F6)
           : isNext
           ? const Color(0xFF70BD8A)
-          : const Color(0xFF2F2F2F),
+          : idleBorder,
       width: 1,
     ),
     boxShadow: isNext

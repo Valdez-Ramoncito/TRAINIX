@@ -128,7 +128,12 @@ class GeminiEvaluationApiService {
       'field MUST quote or cite the exact transcript line or telemetry '
       'value that justified the deduction  no vague reasoning. For a '
       'category that scores a full 10, its _NOTE field must say exactly: '
-      'Full marks.';
+      'Full marks.\n'
+      'USER-FACING LANGUAGE: strength lists, improvement lists, notes, and '
+      'FEEDBACK must be plain coaching language. Never mention Core Unit, '
+      'Common Unit, ICT codes, Basic Competency numbers, TESDA, or NC II '
+      'in those fields. Name the skill in everyday words (greeting, empathy, '
+      'problem solving, closing).';
 
   //build the transcript
   String _buildTranscript(List<Message> messages) {
@@ -324,34 +329,38 @@ class GeminiEvaluationApiService {
     return SessionEvaluation.fallback(sector);
   }
 
-  //sends the prompt to Gemini, retrying up to 3 times on failure or empty
   Future<String?> _sendRequest(String prompt) async {
-    for (int attempt = 0; attempt < 3; attempt++) {
+    for (int attempt = 0; attempt < 2; attempt++) {
       try {
-        final response = await http.post(
-          Uri.parse('$_endpoint?key=$_apiKey'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            "contents": [
-              {
-                "role": "user",
-                "parts": [
-                  {"text": prompt},
+        final response = await http
+            .post(
+              Uri.parse('$_endpoint?key=$_apiKey'),
+              headers: {'Content-Type': 'application/json'},
+              body: jsonEncode({
+                "contents": [
+                  {
+                    "role": "user",
+                    "parts": [
+                      {"text": prompt},
+                    ],
+                  },
                 ],
-              },
-            ],
-            "generationConfig": {
-              "temperature": 0.3,
-              "maxOutputTokens": 3000,
-              "thinkingConfig": {"thinkingLevel": "low"},
-            },
-          }),
-        );
+                "generationConfig": {
+                  "temperature": 0.3,
+                  "maxOutputTokens": 3000,
+                  "thinkingConfig": {"thinkingLevel": "low"},
+                },
+              }),
+            )
+            .timeout(const Duration(seconds: 12));
 
         if (response.statusCode != 200) {
           print(
             "Gemini evaluation error ${response.statusCode}: ${response.body}",
           );
+          if (response.statusCode == 503 || response.statusCode == 429) {
+            return null;
+          }
           continue;
         }
 

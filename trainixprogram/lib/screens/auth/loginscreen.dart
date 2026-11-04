@@ -7,6 +7,7 @@ import 'package:trainixprogram/components/background.dart';
 import 'package:trainixprogram/components/decoration/text_field.dart';
 import 'package:trainixprogram/screens/home/homeScreen.dart';
 import 'package:trainixprogram/screens/home/trainer/home_screen.dart';
+import 'package:trainixprogram/screens/home/admin/admin_home_screen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/components/class/trainee_activity_log.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
@@ -15,6 +16,7 @@ import 'package:trainixprogram/services/training_progress_repository.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/components/class/live_training_session.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
+import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
 //the login screen - no authentication yet
 class LoginScreen extends StatefulWidget {
@@ -36,6 +38,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationInboxService.instance.clearLocalOnly();
+    TrainingNotificationCenter.clearToasts();
     _checkDatabase();
   }
 
@@ -96,19 +100,48 @@ class _LoginScreenState extends State<LoginScreen> {
         await AuthService.saveProfileDetails();
       } catch (_) {}
     }
-    final isTrainer = forceTrainer || ProfileData.role == AppRole.trainer;
+    final forceAdmin =
+        AuthService.isKnownAdminEmail(email) ||
+        AuthService.isKnownAdminEmail(sessionEmail) ||
+        ProfileData.role == AppRole.admin ||
+        sessionMetaRole == 'admin' ||
+        email.startsWith('admin') ||
+        sessionEmail.startsWith('admin') ||
+        name.contains('admin');
+    if (forceAdmin) {
+      ProfileData.role = AppRole.admin;
+      if (ProfileData.email.trim().isEmpty && sessionEmail.isNotEmpty) {
+        ProfileData.email = sessionEmail;
+      }
+      try {
+        await AuthService.saveProfileDetails();
+      } catch (_) {}
+    }
+    final isAdmin = forceAdmin || ProfileData.role == AppRole.admin;
+    final isTrainer =
+        !isAdmin && (forceTrainer || ProfileData.role == AppRole.trainer);
+    if (isAdmin) {
+      ProfileData.role = AppRole.admin;
+    }
     debugPrint(
-      'afterAuth role=${ProfileData.role.name} isTrainer=$isTrainer email=$email sessionEmail=$sessionEmail meta=$sessionMetaRole name=$name',
+      'afterAuth role=${ProfileData.role.name} isAdmin=$isAdmin isTrainer=$isTrainer email=$email sessionEmail=$sessionEmail meta=$sessionMetaRole name=$name',
     );
     TraineeActivityLogStore.instance.log(
       actorName: ProfileData.displayName,
-      actorRole: isTrainer ? 'trainer' : 'trainee',
+      actorRole: isAdmin ? 'admin' : (isTrainer ? 'trainer' : 'trainee'),
       category: TraineeLogCategory.auth,
       action: 'Login',
-      detail: isTrainer ? 'Trainer signed in' : 'Trainee signed in',
+      detail: isAdmin
+          ? 'Admin signed in'
+          : (isTrainer ? 'Trainer signed in' : 'Trainee signed in'),
     );
 
-    if (isTrainer) {
+    if (isAdmin) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminHomeScreen()),
+      );
+    } else if (isTrainer) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const HomeScreenTrainer()),
@@ -183,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "trainixprogram",
+                    "TRAINIX",
                     style: Theme.of(
                       context,
                     ).textTheme.titleLarge?.copyWith(fontSize: 20),
@@ -338,18 +371,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ?.copyWith(fontSize: 13),
                                     ),
                                   ),
-                                ),
-                                const Gap(8),
-                                Text(
-                                  _dbStatus,
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        fontSize: 10,
-                                        color: Colors.white38,
-                                      ),
                                 ),
                                 const Gap(6),
                                 TextButton(

@@ -13,6 +13,7 @@ import 'package:trainixprogram/components/decoration/text_field.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/home/trainer/home_screen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/components/class/trainee_activity_log.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
@@ -20,6 +21,7 @@ import 'package:trainixprogram/screens/trainer_page/components/header.dart';
 import 'package:trainixprogram/screens/trainer_page/live_training_room.dart';
 import 'package:trainixprogram/screens/trainer_page/live_training_history.dart';
 import 'package:trainixprogram/screens/trainer_page/log_monitoring_screen.dart';
+import 'package:trainixprogram/widgets/screen_help_button.dart';
 
 class TraineeSession extends StatefulWidget {
   const TraineeSession({super.key});
@@ -74,8 +76,16 @@ class _TraineeSessionState extends State<TraineeSession> {
                         ),
                         const Gap(40),
                         MenuButton(
-                          icon: Icons.bar_chart_rounded,
+                          icon: Icons.person_outline_rounded,
                           label: 'Profile',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const Profile(),
+                              ),
+                            );
+                          },
                         ),
                         MenuButton(
                           icon: Icons.computer_rounded,
@@ -92,6 +102,14 @@ class _TraineeSessionState extends State<TraineeSession> {
                         MenuButton(
                           icon: Icons.settings_outlined,
                           label: 'Settings',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SettingsScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -131,6 +149,10 @@ class _TraineeSessionState extends State<TraineeSession> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            const ScreenHelpButton(
+                              content: ScreenHelpCatalog.trainerSession,
+                            ),
+                            const Gap(10),
                             CreateButton(
                               text: 'Logs',
                               onTap: () {
@@ -347,7 +369,36 @@ class _TraineeSessionState extends State<TraineeSession> {
                             ?.copyWith(fontSize: context.responsiveFont(6)),
                       ),
                       const Gap(20),
-                      AppTextField(label: 'Room code', controller: codeCtrl),
+                      Text(
+                        'Room code (auto-generated)',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.white54),
+                      ),
+                      const Gap(6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121212),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 49, 48, 48),
+                          ),
+                        ),
+                        child: SelectableText(
+                          codeCtrl.text,
+                          style: const TextStyle(
+                            color: Color(0xFF93C5FD),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ),
                       const Gap(12),
                       AppTextField(label: 'Room name', controller: nameCtrl),
                       const Gap(12),
@@ -496,7 +547,7 @@ class _TraineeSessionState extends State<TraineeSession> {
                       ],
                       const Gap(16),
                       Text(
-                        'Mode',
+                        'Session type',
                         style: Theme.of(
                           context,
                         ).textTheme.bodySmall?.copyWith(color: Colors.white54),
@@ -506,8 +557,11 @@ class _TraineeSessionState extends State<TraineeSession> {
                         spacing: 8,
                         runSpacing: 8,
                         children: LiveSessionMode.values.map((m) {
+                          final label = m.name.isEmpty
+                              ? m.name
+                              : '${m.name[0].toUpperCase()}${m.name.substring(1)}';
                           return _ChoiceChip(
-                            label: m.name,
+                            label: label,
                             selected: mode == m,
                             onTap: () => setLocal(() => mode = m),
                           );
@@ -586,6 +640,7 @@ class _TraineeSessionState extends State<TraineeSession> {
                                   ? 'Training room'
                                   : nameCtrl.text.trim();
                               String? designated;
+                              String? designatedUserId;
                               if (visibility == LiveSessionVisibility.private) {
                                 final typed = traineeCtrl.text.trim();
                                 if (typed.isEmpty) {
@@ -622,6 +677,7 @@ class _TraineeSessionState extends State<TraineeSession> {
                                   return;
                                 }
                                 designated = match.displayName;
+                                designatedUserId = match.id;
                                 traineeCtrl.text = match.displayName;
                               }
                               final now = DateTime.now();
@@ -668,6 +724,7 @@ class _TraineeSessionState extends State<TraineeSession> {
                                   isPrivate: session.isPrivate,
                                   designatedTraineeName:
                                       session.designatedTraineeName,
+                                  designatedTraineeUserId: designatedUserId,
                                   roomCode: session.id,
                                 );
                               }
@@ -714,12 +771,24 @@ class _TraineeSessionState extends State<TraineeSession> {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
+              final designatedName = session.designatedTraineeName;
+              String? designatedUserId;
+              if (session.isPrivate &&
+                  designatedName != null &&
+                  designatedName.trim().isNotEmpty) {
+                final match = await ProfileDirectoryService.instance
+                    .resolveTrainee(designatedName);
+                designatedUserId = match?.id;
+              }
               LiveSessionStore.instance.remove(session.id);
               TrainingNotificationCenter.notifyLiveRoomCancelled(
                 roomName: session.name,
+                designatedTraineeName: designatedName,
+                designatedTraineeUserId: designatedUserId,
+                isPrivate: session.isPrivate,
               );
-              Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
               _refresh();
             },
             child: const Text(

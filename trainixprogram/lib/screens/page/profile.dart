@@ -6,16 +6,18 @@ import 'package:trainixprogram/components/button/menu_button_training.dart';
 import 'package:trainixprogram/components/button/profile_button.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/home/homeScreen.dart';
+import 'package:trainixprogram/screens/home/trainer/home_screen.dart';
 import 'package:trainixprogram/screens/page/training.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/services/auth_service.dart';
 import 'package:trainixprogram/widgets/next_step_banner.dart';
 
-enum AppRole { trainee, trainer }
+enum AppRole { trainee, trainer, admin }
 
 class AppUser {
   final String id;
@@ -222,8 +224,14 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   late final TextEditingController _bioController;
   String _sector = ProfileData.preferredSector;
   String _gender = ProfileData.gender;
-  bool _editing = true;
-  bool _savedOnce = MiniTrainingProgress.isProfileComplete;
+  // Open in view mode when the profile was already completed/saved.
+  // First-time trainees still land in edit mode until they finish the profile.
+  bool _editing = ProfileData.role == AppRole.trainee
+      ? !MiniTrainingProgress.isProfileComplete
+      : false;
+  bool _savedOnce =
+      MiniTrainingProgress.isProfileComplete ||
+      ProfileData.role != AppRole.trainee;
 
   static const _sectors = ['Tech Support', 'Healthcare', 'Finance', 'Telco'];
 
@@ -343,8 +351,10 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
     return Scaffold(
       body: Column(
         children: [
-          if (widget.requireCompletion ||
-              !MiniTrainingProgress.isProfileComplete)
+          if ((widget.requireCompletion ||
+                  !MiniTrainingProgress.isProfileComplete) &&
+              ProfileData.role != AppRole.trainer &&
+              ProfileData.role != AppRole.admin)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -375,129 +385,195 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                 ],
               ),
             ),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: NextStepBanner(
-              screen: TraineeNextStepScreen.profile,
-              showSkipGuide: true,
+          if (ProfileData.role != AppRole.trainer &&
+              ProfileData.role != AppRole.admin)
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: NextStepBanner(
+                screen: TraineeNextStepScreen.profile,
+                showSkipGuide: true,
+              ),
             ),
-          ),
           Expanded(
             child: Row(
               children: [
-                SizedBox(
-                  width: 260,
-                  height: double.infinity,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 15,
-                      vertical: 20,
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          children: [
-                            Text(
-                              'TRAINIX',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontSize: context.responsiveFont(7),
-                                  ),
-                            ),
-                            const Gap(40),
-                            MenuButton(
-                              icon: Icons.school_outlined,
-                              label: 'Mini Training',
-                              onTap: () {
-                                if (!MiniTrainingProgress.isProfileComplete) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Complete or skip profile first.',
-                                      ),
+                if (ProfileData.role == AppRole.trainer)
+                  SizedBox(
+                    width: 260,
+                    height: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 20,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                'TRAINIX',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontSize: context.responsiveFont(7),
+                                    ),
+                              ),
+                              const Gap(40),
+                              MenuButton(
+                                icon: Icons.home_outlined,
+                                label: 'Trainer Home',
+                                onTap: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const HomeScreenTrainer(),
                                     ),
                                   );
-                                  return;
-                                }
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const MiniTraining(),
-                                  ),
-                                );
-                              },
-                            ),
-                            MenuButton(
-                              icon: Icons.computer_rounded,
-                              label: 'Training Session',
-                              onTap: _openTraining,
-                            ),
-                            MenuButton(
-                              icon: Icons.bar_chart_rounded,
-                              label: 'Progress Dashboard',
-                              onTap: () {
-                                if (!MiniTrainingProgress.isProfileComplete) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        'Complete or skip profile first.',
-                                      ),
+                                },
+                              ),
+                              MenuButton(
+                                icon: Icons.settings_outlined,
+                                label: 'Settings',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SettingsScreen(),
                                     ),
                                   );
-                                  return;
-                                }
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const DashboardScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            MenuButton(
-                              icon: Icons.settings_outlined,
-                              label: 'Settings',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const SettingsScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                        TrainingBackButton(
-                          onTap: () {
-                            if (!MiniTrainingProgress.isProfileComplete) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Complete or skip profile first before opening the main menu.',
-                                  ),
+                                },
+                              ),
+                            ],
+                          ),
+                          TrainingBackButton(
+                            onTap: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomeScreenTrainer(),
                                 ),
                               );
-                              return;
-                            }
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const HomeScreen(),
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (ProfileData.role != AppRole.admin)
+                  SizedBox(
+                    width: 260,
+                    height: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 15,
+                        vertical: 20,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            children: [
+                              Text(
+                                'TRAINIX',
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      fontSize: context.responsiveFont(7),
+                                    ),
                               ),
-                            );
-                          },
-                        ),
-                      ],
+                              const Gap(40),
+                              MenuButton(
+                                icon: Icons.school_outlined,
+                                label: 'Mini Training',
+                                onTap: () {
+                                  if (!MiniTrainingProgress.isProfileComplete) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Complete or skip profile first.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const MiniTraining(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              MenuButton(
+                                icon: Icons.computer_rounded,
+                                label: 'Training Session',
+                                onTap: _openTraining,
+                              ),
+                              MenuButton(
+                                icon: Icons.bar_chart_rounded,
+                                label: 'Progress Dashboard',
+                                onTap: () {
+                                  if (!MiniTrainingProgress.isProfileComplete) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Complete or skip profile first.',
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const DashboardScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              MenuButton(
+                                icon: Icons.settings_outlined,
+                                label: 'Settings',
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SettingsScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ],
+                          ),
+                          TrainingBackButton(
+                            onTap: () {
+                              if (!MiniTrainingProgress.isProfileComplete) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Complete or skip profile first before opening the main menu.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const HomeScreen(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                const VerticalDivider(
-                  width: .5,
-                  thickness: .3,
-                  color: Color.fromARGB(255, 105, 106, 106),
-                ),
+                if (ProfileData.role != AppRole.admin)
+                  const VerticalDivider(
+                    width: .5,
+                    thickness: .3,
+                    color: Color.fromARGB(255, 105, 106, 106),
+                  ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(10),
@@ -526,10 +602,22 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                   ),
                                 ),
                               ),
-                              const Positioned(
+                              Positioned(
                                 top: 15,
                                 right: 20,
-                                child: LogoutButton(),
+                                child: LogoutButton(
+                                  onTap: () async {
+                                    await AuthService.instance.signOut();
+                                    if (!context.mounted) return;
+                                    Navigator.pushAndRemoveUntil(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const LoginScreen(),
+                                      ),
+                                      (_) => false,
+                                    );
+                                  },
+                                ),
                               ),
                               Positioned(
                                 top: 90,
@@ -661,118 +749,123 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   Widget _buildEditForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Edit profile',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
-          ),
-          const Gap(6),
-          const Text(
-            'Email comes from your login and cannot be changed here.',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-          const Gap(16),
-          TextField(
-            controller: _nameController,
-            style: const TextStyle(color: Colors.white),
-            textInputAction: TextInputAction.next,
-            decoration: _fieldDecoration('Display name'),
-          ),
-          const Gap(12),
-          TextField(
-            controller: _emailController,
-            readOnly: true,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: Colors.white54),
-            decoration: _fieldDecoration('Email (from login)'),
-          ),
-          const Gap(12),
-          const Text(
-            'Gender',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-          const Gap(8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _genders.map((g) {
-              final selected = _gender == g;
-              return ChoiceChip(
-                label: Text(g),
-                selected: selected,
-                onSelected: (_) => setState(() => _gender = g),
-                selectedColor: const Color(0xFF166534),
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
-                ),
-                backgroundColor: const Color(0xFF1A1A1A),
-              );
-            }).toList(),
-          ),
-          const Gap(12),
-          TextField(
-            controller: _phoneController,
-            style: const TextStyle(color: Colors.white),
-            textInputAction: TextInputAction.next,
-            decoration: _fieldDecoration('Phone (optional)'),
-          ),
-          const Gap(12),
-          TextField(
-            controller: _bioController,
-            maxLines: 3,
-            style: const TextStyle(color: Colors.white),
-            decoration: _fieldDecoration('Short bio / training goal'),
-          ),
-          const Gap(12),
-          const Text(
-            'Preferred sector',
-            style: TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-          const Gap(8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _sectors.map((s) {
-              final selected = _sector == s;
-              return ChoiceChip(
-                label: Text(s),
-                selected: selected,
-                onSelected: (_) => setState(() => _sector = s),
-                selectedColor: const Color(0xFF166534),
-                labelStyle: TextStyle(
-                  color: selected ? Colors.white : Colors.white70,
-                ),
-                backgroundColor: const Color(0xFF1A1A1A),
-              );
-            }).toList(),
-          ),
-          const Gap(20),
-          Row(
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ElevatedButton(
-                onPressed: _saveLocal,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF166534),
-                  foregroundColor: Colors.white,
+              const Text(
+                'Edit profile',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
                 ),
-                child: const Text('Save profile'),
               ),
-              if (TrainixDebug.unlocked) ...[
-                const Gap(12),
-                OutlinedButton(
-                  onPressed: () => _finishProfile(debug: true),
-                  child: const Text('DEBUG: Save and unlock modes'),
-                ),
-              ],
+              const Gap(6),
+              const Text(
+                'Email comes from your login and cannot be changed here.',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const Gap(16),
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(color: Colors.white),
+                textInputAction: TextInputAction.next,
+                decoration: _fieldDecoration('Display name'),
+              ),
+              const Gap(12),
+              TextField(
+                controller: _emailController,
+                readOnly: true,
+                enableInteractiveSelection: true,
+                style: const TextStyle(color: Colors.white54),
+                decoration: _fieldDecoration('Email (from login)'),
+              ),
+              const Gap(12),
+              const Text(
+                'Gender',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const Gap(8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _genders.map((g) {
+                  final selected = _gender == g;
+                  return ChoiceChip(
+                    label: Text(g),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _gender = g),
+                    selectedColor: const Color(0xFF166534),
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : Colors.white70,
+                    ),
+                    backgroundColor: const Color(0xFF1A1A1A),
+                  );
+                }).toList(),
+              ),
+              const Gap(12),
+              TextField(
+                controller: _phoneController,
+                style: const TextStyle(color: Colors.white),
+                textInputAction: TextInputAction.next,
+                decoration: _fieldDecoration('Phone (optional)'),
+              ),
+              const Gap(12),
+              TextField(
+                controller: _bioController,
+                maxLines: 3,
+                style: const TextStyle(color: Colors.white),
+                decoration: _fieldDecoration('Short bio / training goal'),
+              ),
+              const Gap(12),
+              const Text(
+                'Preferred sector',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const Gap(8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _sectors.map((s) {
+                  final selected = _sector == s;
+                  return ChoiceChip(
+                    label: Text(s),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _sector = s),
+                    selectedColor: const Color(0xFF166534),
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.white : Colors.white70,
+                    ),
+                    backgroundColor: const Color(0xFF1A1A1A),
+                  );
+                }).toList(),
+              ),
+              const Gap(20),
+              Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: _saveLocal,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF166534),
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Save profile'),
+                  ),
+                  if (TrainixDebug.unlocked) ...[
+                    const Gap(12),
+                    OutlinedButton(
+                      onPressed: () => _finishProfile(debug: true),
+                      child: const Text('DEBUG: Save and unlock modes'),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }

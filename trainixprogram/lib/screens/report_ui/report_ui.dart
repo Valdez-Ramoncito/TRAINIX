@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/mock_call_screen.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 double displayScore10(double raw) {
   if (raw.isNaN) return 0;
@@ -424,9 +425,11 @@ class ReportUI extends StatelessWidget {
                 : e.overallScore >= 5
                 ? const Color(0xFFF59E0B)
                 : const Color(0xFFEF4444);
-            final topStrength = e.strengths.isNotEmpty ? e.strengths.first : '';
+            final topStrength = e.strengths.isNotEmpty
+                ? friendlyEvalText(e.strengths.first)
+                : '';
             final topGap = e.areasForImprovement.isNotEmpty
-                ? e.areasForImprovement.first
+                ? friendlyEvalText(e.areasForImprovement.first)
                 : '';
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -521,8 +524,26 @@ class ReportUI extends StatelessWidget {
                                   ? const Color(0xFFEF4444)
                                   : const Color(0xFF70BD8A),
                             ),
+                          if (e.customerRating != null)
+                            _miniBadge(
+                              'CSAT ${e.customerRating}/5',
+                              const Color(0xFFFBBF24),
+                            ),
                         ],
                       ),
+                      if (e.customerComment != null &&
+                          e.customerComment!.isNotEmpty) ...[
+                        const Gap(8),
+                        Text(
+                          e.customerComment!,
+                          style: const TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
                       if (e.problem.isNotEmpty) ...[
                         const Gap(8),
                         Text(
@@ -672,7 +693,7 @@ class ReportUI extends StatelessWidget {
                 ),
                 const Gap(4),
                 const Text(
-                  'Aggregated score calculated from TESDA NC II customer support rubric evaluation metrics across active channels.',
+                  'Overall practice score from this session across greeting, empathy, problem solving, clarity, and close.',
                   style: TextStyle(
                     color: Color(0xFF9CA3AF),
                     fontSize: 10,
@@ -794,8 +815,24 @@ class ReportUI extends StatelessWidget {
     );
   }
 
-  // Interaction Stats Card (WPM, Fillers, Multitasking)
+  bool get _hasChatChannel =>
+      evaluations.any((e) => e.channel.toLowerCase() == 'chat');
+
+  bool get _hasVoiceChannel =>
+      evaluations.any((e) => e.channel.toLowerCase() == 'voice');
+
+  // Interaction Stats Card (channel-aware)
   Widget _buildInteractionStatsCard() {
+    final showVoicePace = _hasVoiceChannel;
+    final showTypingPace = _hasChatChannel;
+    final showFillers = _hasVoiceChannel;
+    final hasAny =
+        showVoicePace ||
+        showTypingPace ||
+        showFillers ||
+        multitaskingScore != null;
+    if (!hasAny) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -823,40 +860,47 @@ class ReportUI extends StatelessWidget {
           const Gap(16),
           const Divider(height: 1, color: Color.fromARGB(255, 75, 75, 75)),
           const Gap(16),
-          _buildStatTile(
-            icon: Icons.mic_rounded,
-            title: 'Speaking Pace (Voice)',
-            value: averageWpm != null
-                ? '${averageWpm!.toStringAsFixed(0)} WPM'
-                : 'Not recorded',
-            subtitle: 'Recommended range: 130-160 WPM',
-          ),
-          const Gap(10),
-          _buildStatTile(
-            icon: Icons.keyboard_rounded,
-            title: 'Typing Pace (Chat)',
-            value: averageTypingWpm != null
-                ? '${averageTypingWpm!.toStringAsFixed(0)} WPM'
-                : 'Not recorded',
-            subtitle: 'TESDA benchmark: 40+ WPM',
-          ),
-          const Gap(10),
-          _buildStatTile(
-            icon: Icons.record_voice_over_rounded,
-            title: 'Filler Words (Voice)',
-            value: fillerWordCount != null
-                ? '$fillerWordCount used'
-                : 'Not recorded',
-            subtitle: 'Target: Minimal filler usage ("um", "uh")',
-          ),
-          const Gap(10),
+          if (showVoicePace) ...[
+            _buildStatTile(
+              icon: Icons.mic_rounded,
+              title: 'Speaking Pace',
+              value: averageWpm != null
+                  ? '${averageWpm!.toStringAsFixed(0)} WPM'
+                  : 'Not recorded',
+              subtitle: 'Recommended range: 130-160 WPM',
+            ),
+            const Gap(10),
+          ],
+          if (showTypingPace) ...[
+            _buildStatTile(
+              icon: Icons.keyboard_rounded,
+              title: 'Typing Pace',
+              value: averageTypingWpm != null
+                  ? '${averageTypingWpm!.toStringAsFixed(0)} WPM'
+                  : 'Not recorded',
+              subtitle: 'Target: 40+ words per minute',
+            ),
+            const Gap(10),
+          ],
+          if (showFillers) ...[
+            _buildStatTile(
+              icon: Icons.record_voice_over_rounded,
+              title: 'Filler Words',
+              value: fillerWordCount != null
+                  ? '$fillerWordCount used'
+                  : 'Not recorded',
+              subtitle: 'Target: minimal fillers ("um", "uh")',
+            ),
+            const Gap(10),
+          ],
           _buildStatTile(
             icon: Icons.alt_route_rounded,
-            title: 'Multitasking Efficiency',
+            title: 'Session attentiveness',
             value: multitaskingScore != null
                 ? '${multitaskingScore!.toStringAsFixed(0)}%'
                 : 'Not recorded',
-            subtitle: 'Channel resolution time balance score',
+            subtitle:
+                'Identity checks, tool use, and follow-through in this session',
           ),
           if (multitaskingScore != null) ...[
             const Gap(12),
@@ -868,7 +912,7 @@ class ReportUI extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF334155)),
               ),
               child: const Text(
-                'TESDA Note: Aligned with Basic Competency 500311107 (Time & Priority Management). Evaluates channel balance.',
+                'Based on identity verification, Account Lookup actions, and completing required tool steps. Taking notes is a small bonus, not required.',
                 style: TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontSize: 11,
@@ -1199,7 +1243,7 @@ class ReportUI extends StatelessWidget {
               ),
               Gap(8),
               Text(
-                'Chat Telemetry (TESDA NC II)',
+                'Chat typing metrics',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -1210,7 +1254,7 @@ class ReportUI extends StatelessWidget {
           ),
           const Gap(4),
           const Text(
-            'Scored against TESDA Common Unit 2 (ICT311203) keystroke & accuracy standards.',
+            'Measures typing speed and accuracy during the chat interaction.',
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
           ),
           const Gap(16),
@@ -1316,7 +1360,7 @@ class ReportUI extends StatelessWidget {
               ),
               Gap(8),
               Text(
-                'Voice Telemetry (TESDA NC II)',
+                'Voice delivery metrics',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
@@ -1327,7 +1371,7 @@ class ReportUI extends StatelessWidget {
           ),
           const Gap(4),
           const Text(
-            'Scored from recorded audio against TESDA Core Unit 1 (ICT313365) standards.',
+            'Measures pace, clarity, and delivery from the recorded voice interaction.',
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
           ),
           const Gap(16),
@@ -1599,7 +1643,9 @@ class CustomerReportDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Overall ${displayScore10(e.overallScore).toStringAsFixed(1)}',
+                  e.customerRating == null
+                      ? 'Overall ${displayScore10(e.overallScore).toStringAsFixed(1)}'
+                      : 'Overall ${displayScore10(e.overallScore).toStringAsFixed(1)} · CSAT ${e.customerRating}/5',
                   style: const TextStyle(
                     color: Color(0xFF70BD8A),
                     fontSize: 24,
@@ -1617,11 +1663,28 @@ class CustomerReportDetailScreen extends StatelessWidget {
                   ].where((s) => s.toString().isNotEmpty).join(' · '),
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
+                if (e.customerComment != null &&
+                    e.customerComment!.isNotEmpty) ...[
+                  const Gap(10),
+                  Text(
+                    '"${e.customerComment}"',
+                    style: const TextStyle(
+                      color: Color(0xFFFBBF24),
+                      fontSize: 13,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
                 if (e.feedback.isNotEmpty) ...[
                   const Gap(12),
                   Text(
-                    e.feedback,
-                    style: const TextStyle(color: Colors.white, height: 1.4),
+                    friendlyEvalText(e.feedback),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      height: 1.45,
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ],
@@ -1629,7 +1692,7 @@ class CustomerReportDetailScreen extends StatelessWidget {
           ),
           const Gap(16),
           const Text(
-            'Competency scores',
+            'Skill scores',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -1728,11 +1791,11 @@ class CustomerReportDetailScreen extends StatelessWidget {
                   ),
                   const Gap(10),
                   Text(
-                    note.isNotEmpty ? note : fallback,
+                    friendlyEvalText(note.isNotEmpty ? note : fallback),
                     style: const TextStyle(
                       color: Colors.white70,
-                      fontSize: 12,
-                      height: 1.4,
+                      fontSize: 13,
+                      height: 1.45,
                     ),
                   ),
                   if (quote.isNotEmpty) ...[
@@ -1746,7 +1809,7 @@ class CustomerReportDetailScreen extends StatelessWidget {
                         border: Border.all(color: const Color(0xFF334155)),
                       ),
                       child: Text(
-                        'Evidence from conversation: "$quote"',
+                        'From the conversation: "$quote"',
                         style: const TextStyle(
                           color: Color(0xFF93C5FD),
                           fontSize: 12,
@@ -1760,49 +1823,85 @@ class CustomerReportDetailScreen extends StatelessWidget {
               ),
             );
           }),
-          if (e.strengths.isNotEmpty) ...[
+          if (e.strengths
+              .where((s) => friendlyEvalText(s).isNotEmpty)
+              .isNotEmpty) ...[
             const Gap(8),
             const Text(
-              'Strengths',
+              'What went well',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const Gap(8),
-            ...e.strengths.map(
-              (s) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '• $s',
-                  style: const TextStyle(color: Colors.white70),
+            ...e.strengths.map((s) {
+              final text = friendlyEvalText(s);
+              if (text.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '•  ',
+                      style: TextStyle(color: Color(0xFF70BD8A)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            }),
           ],
-          if (e.areasForImprovement.isNotEmpty) ...[
+          if (e.areasForImprovement
+              .where((s) => friendlyEvalText(s).isNotEmpty)
+              .isNotEmpty) ...[
             const Gap(12),
             const Text(
-              'Areas for improvement',
+              'What to practice next',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
               ),
             ),
             const Gap(8),
-            ...e.areasForImprovement.map(
-              (s) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  '• $s',
-                  style: const TextStyle(color: Colors.white70),
+            ...e.areasForImprovement.map((s) {
+              final text = friendlyEvalText(s);
+              if (text.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '•  ',
+                      style: TextStyle(color: Color(0xFFF59E0B)),
+                    ),
+                    Expanded(
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            }),
           ],
           const Gap(16),
           const Text(
-            'Conversation history',
+            'Conversation',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -1812,33 +1911,113 @@ class CustomerReportDetailScreen extends StatelessWidget {
           const Gap(10),
           if (e.conversation.isEmpty)
             const Text(
-              'No conversation stack was stored for this customer.',
+              'No messages were saved for this customer.',
               style: TextStyle(color: Colors.white54),
             )
           else
-            ...e.conversation.map((turn) {
-              final isAgent = turn['role'] == 'agent';
-              return Align(
-                alignment: isAgent
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  constraints: const BoxConstraints(maxWidth: 520),
-                  decoration: BoxDecoration(
-                    color: isAgent
-                        ? const Color(0xFF1D4ED8)
-                        : const Color.fromARGB(255, 40, 40, 40),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    turn['text'] ?? '',
-                    style: const TextStyle(color: Colors.white, height: 1.35),
-                  ),
-                ),
-              );
-            }),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1419),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF1F2937)),
+              ),
+              child: Column(
+                children: e.conversation.map((turn) {
+                  final isAgent = turn['role'] == 'agent';
+                  final label = isAgent ? 'You' : 'Customer';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: isAgent
+                          ? MainAxisAlignment.end
+                          : MainAxisAlignment.start,
+                      children: [
+                        if (!isAgent) ...[
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: const Color(0xFF374151),
+                            child: Text(
+                              label[0],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: isAgent
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  color: Color(0xFF9CA3AF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isAgent
+                                      ? const Color(0xFF1D4ED8)
+                                      : const Color(0xFF1F2937),
+                                  borderRadius: BorderRadius.only(
+                                    topLeft: const Radius.circular(12),
+                                    topRight: const Radius.circular(12),
+                                    bottomLeft: Radius.circular(
+                                      isAgent ? 12 : 4,
+                                    ),
+                                    bottomRight: Radius.circular(
+                                      isAgent ? 4 : 12,
+                                    ),
+                                  ),
+                                ),
+                                child: Text(
+                                  turn['text'] ?? '',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    height: 1.4,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        if (isAgent) ...[
+                          const SizedBox(width: 8),
+                          const CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Color(0xFF1D4ED8),
+                            child: Text(
+                              'Y',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
           const Gap(24),
         ],
       ),

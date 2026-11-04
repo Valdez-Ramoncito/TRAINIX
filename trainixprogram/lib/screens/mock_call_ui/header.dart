@@ -4,6 +4,7 @@ import 'package:trainixprogram/components/animation_effect/hover_button.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 
 class Header extends StatelessWidget {
   final String sector;
@@ -43,11 +44,14 @@ class Header extends StatelessWidget {
       requiredInteractions > 0 ? requiredInteractions : 1,
     );
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Color.fromARGB(255, 105, 106, 106),
+            color: isDark
+                ? const Color.fromARGB(255, 105, 106, 106)
+                : const Color(0xFFD1D5DB),
             width: 0.3,
           ),
         ),
@@ -149,10 +153,20 @@ class Header extends StatelessWidget {
                 ),
                 const Gap(4),
               ],
-              ToolbarIcon(
-                icon: Icons.wb_sunny_outlined,
-                tooltip: 'Theme (coming later)',
-                onTap: onToggleTheme,
+              ListenableBuilder(
+                listenable: ThemeController.instance,
+                builder: (context, _) {
+                  final dark = ThemeController.instance.isDark;
+                  return ToolbarIcon(
+                    icon: dark
+                        ? Icons.wb_sunny_outlined
+                        : Icons.dark_mode_outlined,
+                    tooltip: dark
+                        ? 'Switch to light mode'
+                        : 'Switch to dark mode',
+                    onTap: onToggleTheme,
+                  );
+                },
               ),
               const Gap(4),
               ToolbarIcon(

@@ -212,7 +212,7 @@ class SessionHistoryPanel extends StatelessWidget {
                       if (session.multitaskingScore != null) ...[
                         const Gap(8),
                         Text(
-                          'Hybrid balance score: ${session.multitaskingScore!.toStringAsFixed(0)} (how evenly chat and voice handle times compared).',
+                          'Session attentiveness: ${session.multitaskingScore!.toStringAsFixed(0)}% (Account Lookup, guides, notes, and tool follow-through).',
                           style: const TextStyle(
                             color: Colors.white38,
                             fontSize: 11,

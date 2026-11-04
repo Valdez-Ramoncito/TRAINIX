@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:trainixprogram/components/app_theme.dart';
 import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
+import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/screens/page/components/notification_bell.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 
@@ -17,6 +19,7 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
   await SupabaseService.initialize();
   await AppSettings.load();
+  await ThemeController.instance.load();
 
   runApp(const MyApp());
 }
@@ -28,50 +31,39 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        //This is where conversations are stored by Voice and Chat channels
+        ChangeNotifierProvider<ThemeController>.value(
+          value: ThemeController.instance,
+        ),
         ChangeNotifierProvider(create: (_) => MessageProvider()),
-
-        //Where generated accounts are generated as well as the 'Issue resolved' created
         ChangeNotifierProvider(create: (_) => AccountProvider()),
-
-        //Where history of all evaluations + multitasking scores are stored (still no memory persistence.)
-        //Then gets sent into Dashboard and sector Match
         ChangeNotifierProvider(create: (_) => SimulationHistoryProvider()),
-
-        //This is the sector picker. So the agent does not get the same sector twice in a row until all sectors are covered
         ChangeNotifierProvider(create: (_) => SimulationProvider()),
       ],
-      child: MaterialApp(
-        title: 'TRAINIX',
-        theme: ThemeData(
-          colorScheme: const ColorScheme.dark(
-            onSurface: Colors.white,
-            onPrimary: Colors.white,
-          ),
-          textTheme: GoogleFonts.poppinsTextTheme().apply().copyWith(
-            titleLarge: GoogleFonts.poppins(fontWeight: FontWeight.w800),
-            titleMedium: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-            titleSmall: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            bodyLarge: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-            bodyMedium: GoogleFonts.poppins(fontWeight: FontWeight.w400),
-            bodySmall: GoogleFonts.poppins(fontWeight: FontWeight.w100),
-          ),
-        ),
-        debugShowCheckedModeBanner: false,
-        navigatorKey: AppNavigator.key,
-        builder: (context, child) {
-          return Stack(
-            children: [
-              child ?? const SizedBox.shrink(),
-              const Positioned(
-                right: 16,
-                bottom: 20,
-                child: SafeArea(child: NotificationBellAnchor()),
-              ),
-            ],
+      child: ListenableBuilder(
+        listenable: ThemeController.instance,
+        builder: (context, _) {
+          return MaterialApp(
+            title: 'TRAINIX',
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: ThemeController.instance.mode,
+            debugShowCheckedModeBanner: false,
+            navigatorKey: AppNavigator.key,
+            builder: (context, child) {
+              return Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const Positioned(
+                    right: 16,
+                    bottom: 20,
+                    child: SafeArea(child: NotificationBellAnchor()),
+                  ),
+                ],
+              );
+            },
+            home: const LoginScreen(),
           );
         },
-        home: const LoginScreen(),
       ),
     );
   }

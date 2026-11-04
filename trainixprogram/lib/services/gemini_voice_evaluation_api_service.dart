@@ -127,7 +127,12 @@ class GeminiVoiceEvaluationApiService {
       'field MUST cite the exact transcript quote or an approximate '
       'audio timestamp/description justifying the deduction  no vague '
       'reasoning. For a category scoring a full 10, its _NOTE field must '
-      'say exactly: Full marks.';
+      'say exactly: Full marks.\n'
+      'USER-FACING LANGUAGE: strength lists, improvement lists, notes, and '
+      'FEEDBACK must be plain coaching language. Never mention Core Unit, '
+      'Common Unit, ICT codes, Basic Competency numbers, TESDA, or NC II '
+      'in those fields. Name the skill in everyday words (greeting, empathy, '
+      'problem solving, closing).';
 
   //build the transcript
   String _buildTranscript(List<Message> messages) {

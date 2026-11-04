@@ -11,7 +11,6 @@ import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/dev_test_screen.dart';
 import 'package:trainixprogram/screens/page/training.dart';
-import 'package:trainixprogram/screens/profile_screen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 
 //the main screen
@@ -48,20 +47,7 @@ class MainMenuScreen extends StatelessWidget {
                         tooltip: 'Log out',
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      HoverIconButton(
-                        icon: Icons.bug_report_rounded,
-                        tooltip: 'Developer Test',
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const DevTestScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const Profile()),
                         ),
                       ),
                     ],
@@ -81,9 +67,7 @@ class MainMenuScreen extends StatelessWidget {
                         'Customize your app preferences and account.',
                         () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const ProfileScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const Profile()),
                         ),
                         'assets/animations/background/card.png',
                         'assets/animations/account.json',

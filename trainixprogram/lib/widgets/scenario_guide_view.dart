@@ -63,23 +63,41 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
   String _stepProblemKey = '';
   final ScrollController _scriptScrollController = ScrollController();
   final GlobalKey _highlightKey = GlobalKey();
+  final GlobalKey _suggestedSectionKey = GlobalKey();
   String? _lastHighlight;
 
   void _scrollToHighlight() {
     void run() {
-      final ctx = _highlightKey.currentContext;
-      if (ctx == null) return;
-      Scrollable.ensureVisible(
-        ctx,
-        duration: const Duration(milliseconds: 320),
-        curve: Curves.easeOut,
-        alignment: 0.05,
-      );
+      final activeCtx = _highlightKey.currentContext;
+      final sectionCtx = _suggestedSectionKey.currentContext;
+      final ctx = activeCtx ?? sectionCtx;
+      if (ctx != null) {
+        Scrollable.ensureVisible(
+          ctx,
+          duration: const Duration(milliseconds: 320),
+          curve: Curves.easeOut,
+          alignment: 0.08,
+        );
+        return;
+      }
+      if (_scriptScrollController.hasClients) {
+        final max = _scriptScrollController.position.maxScrollExtent;
+        if (max > 0) {
+          _scriptScrollController.animateTo(
+            max,
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOut,
+          );
+        }
+      }
     }
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       run();
-      Future.delayed(const Duration(milliseconds: 120), () {
+      Future.delayed(const Duration(milliseconds: 180), () {
+        if (mounted) run();
+      });
+      Future.delayed(const Duration(milliseconds: 400), () {
         if (mounted) run();
       });
     });
@@ -90,8 +108,28 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     super.didUpdateWidget(oldWidget);
     if (widget.reminders.length > oldWidget.reminders.length) {
       setState(() => _subTab = 1);
-    } else if (widget.isEscalating && !oldWidget.isEscalating) {
-      setState(() => _subTab = 2);
+    }
+
+    final tipChanged =
+        (widget.coachTip ?? '') != (oldWidget.coachTip ?? '') ||
+        (widget.coachVm?.tip ?? '') != (oldWidget.coachVm?.tip ?? '');
+    final stepChanged =
+        (widget.coachVm?.currentObjectiveLabel ?? '') !=
+        (oldWidget.coachVm?.currentObjectiveLabel ?? '');
+    final turnChanged = widget.traineeTurnCount != oldWidget.traineeTurnCount;
+    final oldEx = oldWidget.coachVm?.examples ?? const [];
+    final newEx = widget.coachVm?.examples ?? const [];
+    final examplesChanged =
+        oldEx.length != newEx.length ||
+        (oldEx.isNotEmpty &&
+            newEx.isNotEmpty &&
+            oldEx.first.text != newEx.first.text);
+    if (tipChanged || stepChanged || turnChanged || examplesChanged) {
+      _lastHighlight = null;
+      _scrollToHighlight();
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) _scrollToHighlight();
+      });
     }
   }
 
@@ -399,10 +437,12 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     );
 
     final stepLabel = widget.coachVm?.currentObjectiveLabel ?? '';
-    final scrollToken = '$highlight|$stepLabel|${lines.length}';
+    final firstLine = lines.isNotEmpty ? lines.first.text : '';
+    final scrollToken =
+        '$highlight|$stepLabel|${lines.length}|$firstLine|${widget.traineeTurnCount}';
     if (scrollToken != _lastHighlight) {
       _lastHighlight = scrollToken;
-      if (highlight.isNotEmpty || lines.isNotEmpty) {
+      if (lines.isNotEmpty || highlight.isNotEmpty) {
         _scrollToHighlight();
       }
     }
@@ -579,15 +619,18 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           ),
           const Gap(12),
         ],
-        const Text(
+        Text(
+          key: _suggestedSectionKey,
           'Suggested replies',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
         ),
         const Gap(8),
         ...() {
           var keyed = false;
           final typeable = lines.where((l) => l.tag != 'step').toList();
-          return typeable.map((line) {
+          return typeable.toList().asMap().entries.map((entry) {
+            final i = entry.key;
+            final line = entry.value;
             final active =
                 highlight.isNotEmpty &&
                 (line.tag == highlight ||
@@ -595,9 +638,10 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
                     (highlight == 'closing' &&
                         (line.tag == 'closing' || line.tag == 'confirm')) ||
                     (highlight == 'say' && line.tag == 'say') ||
-                    (highlight == 'step' && line.tag == 'step'));
-            final card = _lineCard(line, active);
-            if (active && !keyed) {
+                    (highlight == 'step' && line.tag == 'step') ||
+                    (highlight == 'guide' && line.tag == 'guide'));
+            final card = _lineCard(line, active || i == 0);
+            if (!keyed && (active || i == 0)) {
               keyed = true;
               return KeyedSubtree(key: _highlightKey, child: card);
             }
@@ -744,6 +788,17 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     final name = widget.customerName ?? 'Customer';
     final depts = SimulationCoach.escalationDepartments(sector);
     _selectedDept ??= depts.first['id'];
+    if (_impactCtrl.text.trim().isEmpty) {
+      _impactCtrl.text =
+          'Customer is affected by: $problem. Needs specialist follow-up.';
+    }
+    if (_triedCtrl.text.trim().isEmpty) {
+      _triedCtrl.text =
+          'First-line steps were already guided with the customer.';
+    }
+    if (_callbackCtrl.text.trim().isEmpty) {
+      _callbackCtrl.text = 'Use the contact method on file for $name.';
+    }
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 4, 14, 72),
@@ -757,7 +812,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             border: Border.all(color: const Color(0xFFF59E0B)),
           ),
           child: const Text(
-            'Collect details in chat first, then complete this handoff. Empty fields are left out of the customer message. Choose the team that owns the next step.',
+            'Use this when first-line steps are not enough. Pick a team, review the summary fields, then submit. After submit, tell the customer the case is with a specialist, then close.',
             style: TextStyle(
               fontSize: 12,
               color: Color(0xFFFBBF24),
@@ -1002,11 +1057,13 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
 class CollapsibleScriptGuide extends StatefulWidget {
   final Widget child;
   final bool initiallyExpanded;
+  final double notepadBottomInset;
 
   const CollapsibleScriptGuide({
     super.key,
     required this.child,
     this.initiallyExpanded = true,
+    this.notepadBottomInset = 12,
   });
 
   @override
@@ -1057,7 +1114,7 @@ class _CollapsibleScriptGuideState extends State<CollapsibleScriptGuide> {
                 ),
               ),
             ),
-          const AgentNotepad(),
+          AgentNotepad(bottomInset: widget.notepadBottomInset),
         ],
       ),
     );

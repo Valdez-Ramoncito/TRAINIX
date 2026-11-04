@@ -411,27 +411,35 @@ class _CategoryTrainState extends State<CategoryTrain> {
           if (finalUnlocked)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: categoryCompleted
-                        ? const Color(0xFF374151)
-                        : const Color(0xFF16A34A),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: categoryCompleted ? null : _openFinalAssessment,
-                  child: Text(
-                    categoryCompleted
-                        ? 'Category Final Assessment · Completed'
-                        : 'Take Category Final Assessment',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+              child: Align(
+                alignment: Alignment.center,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: categoryCompleted
+                            ? const Color(0xFF374151)
+                            : const Color(0xFF16A34A),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: categoryCompleted
+                          ? null
+                          : _openFinalAssessment,
+                      child: Text(
+                        categoryCompleted
+                            ? 'Category Final Assessment · Completed'
+                            : 'Take Category Final Assessment',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -441,25 +449,31 @@ class _CategoryTrainState extends State<CategoryTrain> {
             const Gap(10),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2563EB),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _goToNextCategory,
-                  child: Text(
-                    _nextCategoryName() != null
-                        ? 'Continue to ${_nextCategoryName()}'
-                        : 'Back to categories',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
+              child: Align(
+                alignment: Alignment.center,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF2563EB),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: _goToNextCategory,
+                      child: Text(
+                        _nextCategoryName() != null
+                            ? 'Continue to ${_nextCategoryName()}'
+                            : 'Back to categories',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                 ),

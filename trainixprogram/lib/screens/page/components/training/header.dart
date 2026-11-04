@@ -39,38 +39,49 @@ class Header extends StatelessWidget {
               ),
             ),
             const ScreenHelpButton(content: ScreenHelpCatalog.simulationHub),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(ProfileData.displayName),
-                const Gap(10),
-                Stack(
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const Profile()));
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircleAvatar(
-                      backgroundImage: const AssetImage(
-                        'assets/images/defaultProfile.png',
-                      ),
-                      radius: context.responsiveWidth(6).clamp(14, 22),
-                    ),
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: const Color.fromARGB(255, 138, 251, 9),
-                          border: Border.all(
-                            color: const Color.fromARGB(255, 23, 23, 23),
-                            width: 2,
+                    Text(ProfileData.displayName),
+                    const Gap(10),
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFF374151),
+                          backgroundImage: const AssetImage(
+                            'assets/images/defaultProfile.png',
+                          ),
+                          radius: 18,
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color.fromARGB(255, 138, 251, 9),
+                              border: Border.all(
+                                color: const Color.fromARGB(255, 23, 23, 23),
+                                width: 1.5,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ],
         ),

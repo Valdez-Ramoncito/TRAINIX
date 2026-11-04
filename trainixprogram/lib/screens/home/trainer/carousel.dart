@@ -140,9 +140,11 @@ class _CarouselState extends State<Carousel> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Expanded(
-                                child: Lottie.asset(
-                                  data.name,
-                                  fit: BoxFit.contain,
+                                child: RepaintBoundary(
+                                  child: Lottie.asset(
+                                    data.name,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
                               ),
                               const Gap(12),

@@ -273,7 +273,7 @@ class SimMissionCatalog {
       problemSummary: 'Needs status on a submitted claim',
       emotion: 'concerned',
       accountDetails: const {
-        'Member ID': 'MS-44108',
+        'Member ID': 'ACC-44108',
         'Coverage': 'Claim Pending',
       },
       openingCustomerLine:
@@ -309,7 +309,7 @@ class SimMissionCatalog {
             'full',
             'hold',
           ],
-          customerLineAfterPass: 'Maria Santos, member ID MS-44108.',
+          customerLineAfterPass: 'Maria Santos, member ID ACC-44108.',
         ),
         SimStep(
           id: 'verify',
@@ -476,7 +476,7 @@ class SimMissionCatalog {
           ],
           passPhrases: ['trainix', 'help', 'sign', 'login', 'understand'],
           customerLineAfterPass:
-              'Hi Alex, I am still locked out because I did not receive the password reset email. Can you help me resend it or reset my access?',
+              'Hi [name], I am still locked out because I did not receive the password reset email. Can you help me resend it or reset my access?',
         ),
         SimStep(
           id: 'ask_id',

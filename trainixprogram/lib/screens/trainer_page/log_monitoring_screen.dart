@@ -10,9 +10,20 @@ import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/session_score.dart';
+import 'package:trainixprogram/widgets/screen_help_button.dart';
 
 class LogMonitoringScreen extends StatefulWidget {
-  const LogMonitoringScreen({super.key});
+  const LogMonitoringScreen({
+    super.key,
+    this.showAllRoles = false,
+    this.embedded = false,
+  });
+
+  /// When true, show trainee + trainer + admin activity (admin view).
+  final bool showAllRoles;
+
+  /// When true, hide the outer Scaffold chrome for embedding in Admin.
+  final bool embedded;
 
   @override
   State<LogMonitoringScreen> createState() => _LogMonitoringScreenState();
@@ -22,14 +33,24 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
   int _tab = 0;
   String _logFilter = 'All';
   String _actorFilter = 'All';
+  String _roleFilter = 'All';
 
   List<LiveTrainingHistoryEntry> get _history =>
       LiveSessionStore.instance.historyEntries();
 
+  List<TraineeActivityLogEntry> get _baseLogs {
+    final all = TraineeActivityLogStore.instance.entries;
+    if (widget.showAllRoles) return all;
+    return all.where((e) => e.actorRole.toLowerCase() == 'trainee').toList();
+  }
+
   List<TraineeActivityLogEntry> get _logs {
-    var list = TraineeActivityLogStore.instance.entries
-        .where((e) => e.actorRole.toLowerCase() == 'trainee')
-        .toList();
+    var list = List<TraineeActivityLogEntry>.from(_baseLogs);
+    if (_roleFilter != 'All') {
+      list = list
+          .where((e) => e.actorRole.toLowerCase() == _roleFilter.toLowerCase())
+          .toList();
+    }
     if (_actorFilter != 'All') {
       list = list.where((e) => e.actorName == _actorFilter).toList();
     }
@@ -47,12 +68,9 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
   Widget build(BuildContext context) {
     final history = _history;
     final logs = _logs;
-    final logStore = TraineeActivityLogStore.instance;
-    final traineeLogs = logStore.entries
-        .where((e) => e.actorRole.toLowerCase() == 'trainee')
-        .toList();
-    final actors = ['All', ...traineeLogs.map((e) => e.actorName).toSet()];
-    final traineeToday = traineeLogs.where((e) {
+    final scoped = _baseLogs;
+    final actors = ['All', ...scoped.map((e) => e.actorName).toSet()];
+    final traineeToday = scoped.where((e) {
       final now = DateTime.now();
       return e.at.year == now.year &&
           e.at.month == now.month &&
@@ -70,129 +88,162 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
                   ? 1
                   : history.where((e) => e.rating != null).length);
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Log Monitoring',
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontSize: context.responsiveFont(6)),
+    final body = Padding(
+      padding: EdgeInsets.fromLTRB(
+        widget.embedded ? 20 : 24,
+        widget.embedded ? 8 : 18,
+        widget.embedded ? 20 : 24,
+        widget.embedded ? 8 : 14,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!widget.embedded) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Log Monitoring',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontSize: context.responsiveFont(6),
                         ),
-                        const Gap(4),
-                        Text(
-                          'Live session records and trainee activity for coaching proof and review.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white54, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                  CreateButton(text: 'Refresh', onTap: () => setState(() {})),
-                  const Gap(10),
-                  CreateButton(text: 'Seed demo logs', onTap: _seedDemoLogs),
-                ],
-              ),
-              const Gap(16),
-              Row(
-                children: [
-                  _StatCard(
-                    label: 'Ended sessions',
-                    value: '$endedCount',
-                    tone: const Color(0xFF0D82FE),
-                  ),
-                  const Gap(12),
-                  _StatCard(
-                    label: 'Follow-ups',
-                    value: '$followUps',
-                    tone: const Color(0xFFFFB74D),
-                  ),
-                  const Gap(12),
-                  _StatCard(
-                    label: 'Avg rating',
-                    value: history.isEmpty ? '-' : avgRating.toStringAsFixed(1),
-                    tone: const Color(0xFF8AFB09),
-                  ),
-                  const Gap(12),
-                  _StatCard(
-                    label: 'Activity today',
-                    value: '$traineeToday',
-                    tone: Colors.white70,
-                  ),
-                  const Gap(12),
-                  _StatCard(
-                    label: 'Trainee logs',
-                    value: '${traineeLogs.length}',
-                    tone: Colors.white54,
-                  ),
-                ],
-              ),
-              const Gap(16),
-              Row(
-                children: [
-                  _TabChip(
-                    label: 'Overview',
-                    selected: _tab == 0,
-                    onTap: () => setState(() => _tab = 0),
-                  ),
-                  const Gap(8),
-                  _TabChip(
-                    label: 'Live sessions',
-                    selected: _tab == 1,
-                    onTap: () => setState(() => _tab = 1),
-                  ),
-                  const Gap(8),
-                  _TabChip(
-                    label: 'Trainee logs',
-                    selected: _tab == 2,
-                    onTap: () => setState(() => _tab = 2),
-                  ),
-                ],
-              ),
-              const Gap(14),
-              Expanded(
-                child: _tab == 0
-                    ? _OverviewTab(
-                        history: history,
-                        logCount: traineeLogs.length,
-                        actors: actors.length - 1,
-                      )
-                    : _tab == 1
-                    ? _LiveSessionsTab(entries: history)
-                    : _TraineeLogsTab(
-                        logs: logs,
-                        actors: actors,
-                        actorFilter: _actorFilter,
-                        categoryFilter: _logFilter,
-                        onActor: (v) => setState(() => _actorFilter = v),
-                        onCategory: (v) => setState(() => _logFilter = v),
                       ),
+                      const Gap(4),
+                      Text(
+                        'Review practice sessions, live coaching rooms, and recent trainee activity.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const ScreenHelpButton(
+                  content: ScreenHelpCatalog.logMonitoring,
+                ),
+                const Gap(8),
+                CreateButton(text: 'Refresh', onTap: () => setState(() {})),
+              ],
+            ),
+            const Gap(16),
+          ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final maxW = constraints.maxWidth;
+              final gap = 12.0;
+              final cols = maxW >= 1100
+                  ? 5
+                  : maxW >= 800
+                  ? 4
+                  : maxW >= 560
+                  ? 3
+                  : 2;
+              final cardW = (maxW - gap * (cols - 1)) / cols;
+              final cards = [
+                _StatCard(
+                  label: 'Ended sessions',
+                  value: '$endedCount',
+                  tone: const Color(0xFF0D82FE),
+                ),
+                _StatCard(
+                  label: 'Follow-ups',
+                  value: '$followUps',
+                  tone: const Color(0xFFFFB74D),
+                ),
+                _StatCard(
+                  label: 'Avg rating',
+                  value: history.isEmpty ? '-' : avgRating.toStringAsFixed(1),
+                  tone: const Color(0xFF8AFB09),
+                ),
+                _StatCard(
+                  label: 'Activity today',
+                  value: '$traineeToday',
+                  tone: Colors.white70,
+                ),
+                _StatCard(
+                  label: widget.showAllRoles ? 'All logs' : 'Trainee logs',
+                  value: '${scoped.length}',
+                  tone: Colors.white54,
+                ),
+              ];
+              return Wrap(
+                spacing: gap,
+                runSpacing: gap,
+                children: cards
+                    .map(
+                      (c) => SizedBox(width: cardW.clamp(140, 280), child: c),
+                    )
+                    .toList(),
+              );
+            },
+          ),
+          const Gap(16),
+          Row(
+            children: [
+              _TabChip(
+                label: 'Overview',
+                selected: _tab == 0,
+                onTap: () => setState(() => _tab = 0),
               ),
-              const Gap(10),
-              TrainingBackButton(
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const HomeScreenTrainer(),
-                    ),
-                  );
-                },
+              const Gap(8),
+              _TabChip(
+                label: 'Live sessions',
+                selected: _tab == 1,
+                onTap: () => setState(() => _tab = 1),
+              ),
+              const Gap(8),
+              _TabChip(
+                label: widget.showAllRoles ? 'Activity logs' : 'Trainee logs',
+                selected: _tab == 2,
+                onTap: () => setState(() => _tab = 2),
               ),
             ],
           ),
-        ),
+          const Gap(14),
+          Expanded(
+            child: _tab == 0
+                ? _OverviewTab(
+                    history: history,
+                    logCount: scoped.length,
+                    actors: actors.length - 1,
+                  )
+                : _tab == 1
+                ? _LiveSessionsTab(entries: history)
+                : _TraineeLogsTab(
+                    logs: logs,
+                    actors: actors,
+                    actorFilter: _actorFilter,
+                    categoryFilter: _logFilter,
+                    roleFilter: widget.showAllRoles ? _roleFilter : null,
+                    onActor: (v) => setState(() => _actorFilter = v),
+                    onCategory: (v) => setState(() => _logFilter = v),
+                    onRole: widget.showAllRoles
+                        ? (v) => setState(() => _roleFilter = v)
+                        : null,
+                  ),
+          ),
+          if (!widget.embedded) ...[
+            const Gap(10),
+            TrainingBackButton(
+              expand: false,
+              onTap: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HomeScreenTrainer()),
+                );
+              },
+            ),
+          ],
+        ],
       ),
     );
+
+    if (widget.embedded) return body;
+    return Scaffold(body: SafeArea(child: body));
   }
 
   void _seedDemoLogs() {
@@ -260,32 +311,31 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(180, 21, 21, 21),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: tone,
-              ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(180, 21, 21, 21),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: tone,
             ),
-            const Gap(4),
-            Text(
-              label,
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-          ],
-        ),
+          ),
+          const Gap(4),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          ),
+        ],
       ),
     );
   }
@@ -363,18 +413,18 @@ class _OverviewTab extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'What this area is for',
+                  'How to use this screen',
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 Gap(8),
                 Text(
-                  'Review ended live coaching sessions, checklist completion, ratings, and takeaways. '
-                  'Use Trainee logs when you need a timeline of who signed in, joined rooms, finished simulations, or opened score reports. '
-                  'That supports proof of training, dispute review, and basic security monitoring.',
+                  'See finished live coaching sessions, ratings, and notes. '
+                  'Open Trainee logs to check who signed in, joined a room, or finished practice. '
+                  'Use this when you need proof of training or a quick activity timeline.',
                   style: TextStyle(
-                    color: Colors.white54,
-                    fontSize: 12,
-                    height: 1.4,
+                    color: Colors.white70,
+                    fontSize: 13,
+                    height: 1.45,
                   ),
                 ),
               ],
@@ -450,6 +500,8 @@ class _TraineeLogsTab extends StatelessWidget {
     required this.categoryFilter,
     required this.onActor,
     required this.onCategory,
+    this.roleFilter,
+    this.onRole,
   });
 
   final List<TraineeActivityLogEntry> logs;
@@ -458,16 +510,38 @@ class _TraineeLogsTab extends StatelessWidget {
   final String categoryFilter;
   final ValueChanged<String> onActor;
   final ValueChanged<String> onCategory;
+  final String? roleFilter;
+  final ValueChanged<String>? onRole;
 
   @override
   Widget build(BuildContext context) {
     final categories = ['All', ...TraineeLogCategory.values.map((c) => c.name)];
+    final roles = const ['All', 'trainee', 'trainer', 'admin'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
+            if (onRole != null && roleFilter != null) ...[
+              const Text(
+                'Role',
+                style: TextStyle(color: Colors.white54, fontSize: 12),
+              ),
+              const Gap(8),
+              DropdownButton<String>(
+                value: roles.contains(roleFilter) ? roleFilter : 'All',
+                dropdownColor: const Color(0xFF1A1A1A),
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                items: roles
+                    .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                    .toList(),
+                onChanged: (v) {
+                  if (v != null) onRole!(v);
+                },
+              ),
+              const Gap(16),
+            ],
             const Text(
               'Actor',
               style: TextStyle(color: Colors.white54, fontSize: 12),
@@ -510,7 +584,7 @@ class _TraineeLogsTab extends StatelessWidget {
           child: logs.isEmpty
               ? const Center(
                   child: Text(
-                    'No activity logs yet.\nUse Seed demo logs, or perform actions that write logs.',
+                    'No activity logs yet.\nTrainee logins and completed sessions will appear here.',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white38, fontSize: 13),
                   ),
@@ -957,17 +1031,36 @@ class _LogDetailDialog extends StatelessWidget {
         context,
         listen: false,
       );
+      // Match by sessionRef timestamp when possible, else by detail score + sector.
       if (entry.sessionRef != null && history.sessions.isNotEmpty) {
-        linkedSession = history.sessions.last;
-        if (linkedSession.evaluations.isNotEmpty) {
-          linkedEval = linkedSession.evaluations.first;
+        final refParts = entry.sessionRef!.split('_');
+        final ms = int.tryParse(refParts.isNotEmpty ? refParts.last : '');
+        if (ms != null) {
+          final target = DateTime.fromMillisecondsSinceEpoch(ms);
+          for (final s in history.sessions) {
+            final diff = s.completedAt.difference(target).inSeconds.abs();
+            if (diff <= 2) {
+              linkedSession = s;
+              break;
+            }
+          }
         }
-      } else if (entry.category == TraineeLogCategory.simulation &&
+      }
+      if (linkedSession == null &&
+          entry.category == TraineeLogCategory.simulation &&
           history.sessions.isNotEmpty) {
-        linkedSession = history.sessions.last;
-        if (linkedSession.evaluations.isNotEmpty) {
-          linkedEval = linkedSession.evaluations.first;
+        final detail = entry.detail.toLowerCase();
+        for (final s in history.sessions.reversed) {
+          final sector = s.sector.toLowerCase();
+          final score = s.overallScore.toStringAsFixed(1);
+          if (detail.contains(sector) && detail.contains(score)) {
+            linkedSession = s;
+            break;
+          }
         }
+      }
+      if (linkedSession != null && linkedSession.evaluations.isNotEmpty) {
+        linkedEval = linkedSession.evaluations.first;
       } else if (entry.category == TraineeLogCategory.scoring &&
           history.evaluations.isNotEmpty) {
         linkedEval = history.evaluations.last;
@@ -981,10 +1074,11 @@ class _LogDetailDialog extends StatelessWidget {
         side: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
+        constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Row(
@@ -1009,20 +1103,20 @@ class _LogDetailDialog extends StatelessWidget {
                 style: const TextStyle(color: Colors.white38, fontSize: 12),
               ),
               const Gap(14),
-              Expanded(
+              Flexible(
                 child: SingleChildScrollView(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _kv('Category', entry.category.name),
-                      _kv('Detail', entry.detail),
-                      if (entry.roomId != null) _kv('Room', entry.roomId!),
+                      _kv('Type', entry.category.name),
+                      _kv('What happened', entry.detail),
+                      if (entry.roomId != null) _kv('Room code', entry.roomId!),
                       if (entry.sessionRef != null)
-                        _kv('Session ref', entry.sessionRef!),
+                        _kv('Session', entry.sessionRef!),
                       if (linkedEval != null) ...[
                         const Gap(16),
                         const Text(
-                          'Linked simulation evidence',
+                          'Related practice score',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 13,

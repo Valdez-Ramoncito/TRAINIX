@@ -67,25 +67,42 @@ class ScenarioResultView extends StatelessWidget {
                     style: const TextStyle(fontSize: 14, color: Colors.white54),
                   ),
                 const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+                Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF16A34A),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: onContinue,
+                        child: Text(passed ? 'Continue' : 'Close'),
+                      ),
                     ),
-                    onPressed: onContinue,
-                    child: Text(passed ? 'Continue' : 'Close'),
                   ),
                 ),
                 const Gap(10),
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: onRetry,
-                    child: Text(passed ? 'Practice again' : 'Retry scenario'),
+                Align(
+                  alignment: Alignment.center,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 44,
+                      child: OutlinedButton(
+                        onPressed: onRetry,
+                        child: Text(
+                          passed ? 'Practice again' : 'Retry scenario',
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

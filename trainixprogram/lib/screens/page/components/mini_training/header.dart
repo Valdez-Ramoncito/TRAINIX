@@ -36,33 +36,49 @@ class Header extends StatelessWidget {
           children: [
             const ScreenHelpButton(content: ScreenHelpCatalog.miniTraining),
             const Gap(4),
-            Text(ProfileData.displayName),
-            Gap(10),
-            Stack(
-              children: [
-                CircleAvatar(
-                  backgroundImage: AssetImage(
-                    'assets/images/defaultProfile.png',
-                  ),
-                  radius: context.responsiveWidth(6),
-                ),
-                Positioned(
-                  right: 0,
-                  bottom: 0,
-                  child: Container(
-                    width: 14,
-                    height: 14,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: const Color.fromARGB(255, 138, 251, 9),
-                      border: Border.all(
-                        color: const Color.fromARGB(255, 23, 23, 23),
-                        width: 2,
-                      ),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(
+                    context,
+                  ).push(MaterialPageRoute(builder: (_) => const Profile()));
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(ProfileData.displayName),
+                    const Gap(10),
+                    Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: const Color(0xFF374151),
+                          backgroundImage: const AssetImage(
+                            'assets/images/defaultProfile.png',
+                          ),
+                          radius: 18,
+                        ),
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color.fromARGB(255, 138, 251, 9),
+                              border: Border.all(
+                                color: const Color.fromARGB(255, 23, 23, 23),
+                                width: 1.5,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ],
         ),

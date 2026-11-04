@@ -97,8 +97,8 @@ class SimMissionRunner {
   bool toolAreaVisited = false;
   bool sectorGuideVisited = false;
   bool sectorGuideIssueOpened = false;
+  String _speakConsumedTraineeText = '';
 
-  /// Queued customer lines for the UI to post (scripted).
   final List<String> pendingCustomerLines = [];
 
   void start(SimPack next) {
@@ -113,6 +113,7 @@ class SimMissionRunner {
     toolAreaVisited = false;
     sectorGuideVisited = false;
     sectorGuideIssueOpened = false;
+    _speakConsumedTraineeText = '';
     pendingCustomerLines
       ..clear()
       ..add(next.openingCustomerLine);
@@ -132,6 +133,7 @@ class SimMissionRunner {
     toolAreaVisited = false;
     sectorGuideVisited = false;
     sectorGuideIssueOpened = false;
+    _speakConsumedTraineeText = '';
     pendingCustomerLines.clear();
   }
 
@@ -346,17 +348,14 @@ class SimMissionRunner {
           .toList(),
     );
     final views = checklistViews();
-    final doneCount = state.done.length;
-    final total = pack?.steps.length ?? 0;
-    // Escalation only when the case is true escalate, the branch is escalate,
-    // or we are past first-line troubleshooting on a network/outage pack.
-    final lateNetwork =
-        family == ProblemFamily.networkConnectivity && doneCount >= 2;
+    // Escalation tab after a few agent turns, or on true handoff cases.
+    final traineeTurns = messages.where((m) => m.isTrainee).length;
     final showEscalate =
         evidence.branch == 'escalate' ||
+        evidence.escalationSubmitted ||
         family == ProblemFamily.trueEscalate ||
         (pack?.id == 'mission_escalate') ||
-        lateNetwork;
+        traineeTurns >= 3;
     String? amber;
     if (step != null) {
       if (step.kind == SimStepKind.tool &&
@@ -402,10 +401,9 @@ class SimMissionRunner {
       }
       if (_stepPassed(step)) {
         _completeStep(step);
-        // One speak step per trainee turn so a long message does not
-        // auto-clear later steps that share common words.
         if (step.kind == SimStepKind.speak ||
             step.kind == SimStepKind.optionalSpeak) {
+          _speakConsumedTraineeText = evidence.lastTraineeText.trim();
           return;
         }
         continue;
@@ -422,7 +420,9 @@ class SimMissionRunner {
     if (step.kind != SimStepKind.tool &&
         step.customerLineAfterPass != null &&
         step.customerLineAfterPass!.trim().isNotEmpty) {
-      pendingCustomerLines.add(step.customerLineAfterPass!.trim());
+      pendingCustomerLines.add(
+        ScriptPersonalization.resolve(step.customerLineAfterPass!.trim()),
+      );
     }
     final nextIndex = state.currentIndex + 1;
     if (nextIndex >= p.steps.length) {
@@ -467,7 +467,25 @@ class SimMissionRunner {
       case SimStepKind.tool:
         return _toolMet(step.toolEvent);
       case SimStepKind.speak:
+        final trainee = evidence.lastTraineeText.trim();
+        if (trainee.isEmpty) return false;
+        if (trainee == _speakConsumedTraineeText) return false;
         if (step.id == 'close') {
+          if (state.done.length < 2) return false;
+          final customerBefore = _customerSpokeJustBeforeLastTrainee();
+          final escalated =
+              evidence.escalationSubmitted || evidence.branch == 'escalate';
+          final customerDone = _anyPhrase(const [
+            'that is all',
+            'thats all',
+            'thank you',
+            'thanks',
+            'nothing else',
+            'no more',
+          ], evidence.customerCorpus);
+          if (!customerBefore && !escalated && !customerDone) {
+            return false;
+          }
           return _anyPhrase(const [
             'thank',
             'trainix',
@@ -475,10 +493,8 @@ class SimMissionRunner {
             'good day',
             'goodbye',
             'once again',
-          ], evidence.lastTraineeText);
+          ], trainee);
         }
-        // Opening spiel is lenient across channels. STT often hears
-        // "training" for "Trainix"; one clear greeting signal is enough.
         if (step.id == 'open') {
           return _anyPhrase(const [
             'trainix',
@@ -492,13 +508,29 @@ class SimMissionRunner {
             'good afternoon',
             'how can i',
             'how may i',
-          ], evidence.lastTraineeText);
+          ], trainee);
         }
-        return _phrasesHit(step.passPhrases, evidence.lastTraineeText);
+        return _phrasesHit(step.passPhrases, trainee);
       case SimStepKind.optionalSpeak:
-        return _phrasesHit(step.passPhrases, evidence.lastTraineeText) ||
+        final trainee = evidence.lastTraineeText.trim();
+        if (trainee.isEmpty) return false;
+        if (trainee == _speakConsumedTraineeText) return false;
+        return _phrasesHit(step.passPhrases, trainee) ||
             _anyPhrase(step.passPhrases, evidence.customerCorpus);
     }
+  }
+
+  bool _customerSpokeJustBeforeLastTrainee() {
+    if (messages.length < 2) return false;
+    var lastTraineeIdx = -1;
+    for (var i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].isTrainee) {
+        lastTraineeIdx = i;
+        break;
+      }
+    }
+    if (lastTraineeIdx <= 0) return false;
+    return !messages[lastTraineeIdx - 1].isTrainee;
   }
 
   bool _toolMet(String? toolEvent) {

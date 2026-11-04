@@ -49,6 +49,12 @@ class SessionEvaluation {
   final String problem;
   final List<Map<String, String>> conversation;
 
+  /// Customer CSAT stars 1-5, derived from soft skills + overall score.
+  final int? customerRating;
+
+  /// Short customer-perspective comment paired with [customerRating].
+  final String? customerComment;
+
   const SessionEvaluation({
     required this.sector,
     required this.openingSpielScore,
@@ -80,7 +86,81 @@ class SessionEvaluation {
     this.channel = 'chat',
     this.problem = '',
     this.conversation = const [],
+    this.customerRating,
+    this.customerComment,
   });
+
+  static int deriveCustomerRating({
+    required double overallScore,
+    required double empathyScore,
+    required double toneScore,
+    bool ahtOverLimit = false,
+  }) {
+    final soft = (empathyScore + toneScore) / 2.0;
+    final blend = overallScore * 0.55 + soft * 0.45;
+    var stars = ((blend / 10.0) * 5.0).round().clamp(1, 5);
+    if (ahtOverLimit && stars > 1) stars -= 1;
+    return stars;
+  }
+
+  static String deriveCustomerComment(int rating) {
+    switch (rating) {
+      case 5:
+        return 'Very satisfied. The agent resolved my concern clearly and professionally.';
+      case 4:
+        return 'Good support overall. A few moments could have been smoother.';
+      case 3:
+        return 'Okay experience. Some parts felt rushed or incomplete.';
+      case 2:
+        return 'Not fully resolved. Needed more care and clearer next steps.';
+      default:
+        return 'Poor experience. The issue still feels unclear or unresolved.';
+    }
+  }
+
+  SessionEvaluation withDerivedCustomerRating() {
+    if (customerRating != null) return this;
+    final rating = deriveCustomerRating(
+      overallScore: overallScore,
+      empathyScore: empathyScore,
+      toneScore: toneScore,
+      ahtOverLimit: ahtOverLimit,
+    );
+    return SessionEvaluation(
+      sector: sector,
+      openingSpielScore: openingSpielScore,
+      positiveScriptingScore: positiveScriptingScore,
+      empathyScore: empathyScore,
+      activeListeningScore: activeListeningScore,
+      problemIdentificationScore: problemIdentificationScore,
+      solutionDeliveryScore: solutionDeliveryScore,
+      communicationClarityScore: communicationClarityScore,
+      toneScore: toneScore,
+      sectorKnowledgeScore: sectorKnowledgeScore,
+      closingSpielScore: closingSpielScore,
+      overallScore: overallScore,
+      typingSpeedScore: typingSpeedScore,
+      errorRateAccuracyScore: errorRateAccuracyScore,
+      responseConsistencyScore: responseConsistencyScore,
+      paceAndSpeedScore: paceAndSpeedScore,
+      pronunciationClarityScore: pronunciationClarityScore,
+      fillerWordUsageScore: fillerWordUsageScore,
+      categoryNotes: categoryNotes,
+      categoryQuotes: categoryQuotes,
+      strengths: strengths,
+      areasForImprovement: areasForImprovement,
+      feedback: feedback,
+      evaluatedAt: evaluatedAt,
+      ahtHandleSeconds: ahtHandleSeconds,
+      ahtOverLimit: ahtOverLimit,
+      customerName: customerName,
+      channel: channel,
+      problem: problem,
+      conversation: conversation,
+      customerRating: rating,
+      customerComment: deriveCustomerComment(rating),
+    );
+  }
 
   //from a parsed json, make it into a session evaluation object
   factory SessionEvaluation.fromParsed({
@@ -181,6 +261,8 @@ class SessionEvaluation {
       channel: channel ?? this.channel,
       problem: problem ?? this.problem,
       conversation: conversation ?? this.conversation,
+      customerRating: customerRating,
+      customerComment: customerComment,
     );
   }
 
@@ -227,6 +309,8 @@ class SessionEvaluation {
       channel: channel,
       problem: problem,
       conversation: conversation,
+      customerRating: customerRating,
+      customerComment: customerComment,
     );
   }
 

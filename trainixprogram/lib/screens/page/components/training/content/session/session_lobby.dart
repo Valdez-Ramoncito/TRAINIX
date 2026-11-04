@@ -192,7 +192,11 @@ class _SessionLobbyState extends State<SessionLobby> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
-            decoration: boxDecoration(false, unlocked),
+            decoration: boxDecoration(
+              false,
+              unlocked,
+              isDark: Theme.of(context).brightness == Brightness.dark,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

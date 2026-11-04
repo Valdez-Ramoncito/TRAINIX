@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/screens/page/trainer_session.dart';
+import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/simulation_hub_screen.dart';
+import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
+import 'package:trainixprogram/services/supabase_service.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
-class AppNavigator {
-  static final GlobalKey<NavigatorState> key = GlobalKey<NavigatorState>();
-
-  static BuildContext? get context => key.currentContext;
-}
+export 'package:trainixprogram/services/app_navigator.dart' show AppNavigator;
 
 class NotificationBellAnchor extends StatelessWidget {
   const NotificationBellAnchor({super.key});
@@ -20,6 +20,12 @@ class NotificationBellAnchor extends StatelessWidget {
     return ListenableBuilder(
       listenable: NotificationInboxService.instance,
       builder: (context, _) {
+        final signedIn =
+            SupabaseService.isReady &&
+            SupabaseService.client.auth.currentUser != null;
+        if (!signedIn) {
+          return const SizedBox.shrink();
+        }
         final unread = NotificationInboxService.instance.unreadCount;
         return Material(
           color: const Color(0xFF1A1A1A),
@@ -220,31 +226,40 @@ class NotificationBellAnchor extends StatelessWidget {
 
   void _handleOpen(BuildContext dialogCtx, InboxNotification n) {
     NotificationInboxService.instance.markRead(n.id);
-    final action = n.actionType;
+    final action = n.actionType?.trim();
     final payload = n.actionPayload?.trim() ?? '';
+    final hint = (n.locationHint ?? '').toLowerCase();
 
-    if (action == 'join_room' || action == 'open_trainer_session') {
+    void go(Widget page) {
       Navigator.pop(dialogCtx);
       final nav = AppNavigator.context;
       if (nav == null) return;
-      Navigator.of(nav).push(
-        MaterialPageRoute(
-          builder: (_) => TrainerSession(
-            initialRoomCode: action == 'join_room' ? payload : null,
-          ),
-        ),
-      );
-      return;
+      Navigator.of(nav).push(MaterialPageRoute(builder: (_) => page));
     }
 
-    if (n.locationHint != null &&
-        n.locationHint!.toLowerCase().contains('trainer session')) {
-      Navigator.pop(dialogCtx);
-      final nav = AppNavigator.context;
-      if (nav == null) return;
-      Navigator.of(
-        nav,
-      ).push(MaterialPageRoute(builder: (_) => const TrainerSession()));
+    if (action == 'join_room') {
+      go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      return;
+    }
+    if (action == 'open_trainer_session') {
+      go(const TrainerSession());
+      return;
+    }
+    if (action == 'open_mini_training' ||
+        hint.contains('mini training') ||
+        hint.contains('scenario practice') ||
+        hint.contains('categories')) {
+      go(const MiniTraining());
+      return;
+    }
+    if (action == 'open_simulation' ||
+        hint.contains('training simulation') ||
+        hint.contains('simulation')) {
+      go(const SimulationHubScreen());
+      return;
+    }
+    if (hint.contains('trainer session') || hint.contains('create room')) {
+      go(const TrainerSession());
     }
   }
 }
@@ -355,9 +370,19 @@ class _NotificationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hint = (note.locationHint ?? '').toLowerCase();
+    final action = note.actionType?.trim();
     final clickable =
-        note.actionType != null ||
-        (note.locationHint?.toLowerCase().contains('trainer session') ?? false);
+        action != null && action.isNotEmpty ||
+        hint.contains('trainer session') ||
+        hint.contains('mini training') ||
+        hint.contains('scenario practice') ||
+        hint.contains('categories') ||
+        hint.contains('simulation') ||
+        hint.contains('create room');
+    final openLabel = action == 'join_room'
+        ? 'Click to open the room'
+        : 'Click to open';
 
     return Material(
       color: note.isRead
@@ -366,8 +391,10 @@ class _NotificationTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        mouseCursor: SystemMouseCursors.click,
-        onTap: onOpen,
+        mouseCursor: clickable
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
+        onTap: clickable ? onOpen : null,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
           child: Row(
@@ -401,9 +428,7 @@ class _NotificationTile extends StatelessWidget {
                     if (clickable) ...[
                       const Gap(6),
                       Text(
-                        note.actionType == 'join_room'
-                            ? 'Tap to open room code screen'
-                            : 'Tap to open',
+                        openLabel,
                         style: const TextStyle(
                           color: Color(0xFF70BD8A),
                           fontSize: 11,

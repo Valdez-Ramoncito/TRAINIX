@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:provider/provider.dart';
 import 'package:trainixprogram/components/animation_effect/hover_button.dart';
-import 'package:trainixprogram/components/size.dart';
-import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
-import 'package:trainixprogram/screens/mock_call_screen.dart';
 import 'package:trainixprogram/screens/profile_account.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
+import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/page/training.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -48,10 +46,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       body: Row(
         children: [
           SizedBox(
-            width: 150,
+            width: 180,
             height: double.infinity,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -59,10 +57,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     children: [
                       Text(
                         'TRAINIX',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontSize: context.responsiveFont(5)),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.copyWith(fontSize: 18),
                       ),
-                      const Gap(40),
+                      const Gap(32),
                       MenuButton(
                         icon: Icons.person_outline_rounded,
                         label: 'Account',
@@ -74,17 +73,25 @@ class _ProfileScreenState extends State<ProfileScreen>
                         },
                       ),
                       MenuButton(
-                        icon: Icons.computer_rounded,
-                        label: 'Training',
+                        icon: Icons.school_outlined,
+                        label: 'Mini Training',
                         onTap: () {
-                          final sector = Provider.of<SimulationProvider>(
-                            context,
-                            listen: false,
-                          ).pickNextSector();
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => MockCallScreen(sector: sector),
+                              builder: (_) => const MiniTraining(),
+                            ),
+                          );
+                        },
+                      ),
+                      MenuButton(
+                        icon: Icons.computer_rounded,
+                        label: 'Simulation',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const TrainingSession(),
                             ),
                           );
                         },

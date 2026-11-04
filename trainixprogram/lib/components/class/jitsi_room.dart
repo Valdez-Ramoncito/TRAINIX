@@ -78,11 +78,11 @@ class JitsiConfig {
 
   static String statusHint({required bool hasJwt}) {
     if (jaasConfigured && hasJwt) {
-      return 'JaaS meeting with signed token.';
+      return 'Video call is ready.';
     }
     if (jaasConfigured && !hasJwt) {
-      return 'JaaS is set up, but no JWT yet. Using public meet.jit.si until the token service responds. Deploy the jaas-token Edge Function.';
+      return 'Connecting to the video room. If this takes long, use Open in browser.';
     }
-    return 'Public meet.jit.si. Host controls need JaaS + JWT.';
+    return 'Video call is ready. Share the room code if your trainee needs it.';
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/trainee_next_step.dart';
+import 'package:trainixprogram/screens/page/profile.dart';
 
 class ScreenHelpContent {
   final String title;
@@ -92,6 +93,37 @@ class ScreenHelpCatalog {
     ],
   );
 
+  static const trainerHome = ScreenHelpContent(
+    title: 'Trainer home',
+    bullets: [
+      'Open Trainee Session to create or manage live coaching rooms.',
+      'Open Log Monitoring to review trainee activity and ended sessions.',
+      'Share the room code with trainees if they cannot find the invite.',
+    ],
+    footer:
+        'Live rooms use video for coaching. Session tools hold notes and checklists.',
+  );
+
+  static const logMonitoring = ScreenHelpContent(
+    title: 'Log Monitoring',
+    bullets: [
+      'Overview shows recent ended live sessions and activity counts.',
+      'Live sessions lists rooms that are still open.',
+      'Trainee logs is a timeline of sign-in, room join, and practice events.',
+      'Tap a log row for more detail.',
+    ],
+  );
+
+  static const trainerSession = ScreenHelpContent(
+    title: 'Trainee Session',
+    bullets: [
+      'Create a room to coach a trainee live.',
+      'Room codes are generated for you. Share the code if needed.',
+      'Public rooms appear in the trainee list. Private rooms need the code.',
+      'Use Session tools inside the room for notes and checklists.',
+    ],
+  );
+
   static const allScreens = [
     ScreenHelpContent(
       title: 'Home',
@@ -119,6 +151,37 @@ class ScreenHelpCatalog {
     ScreenHelpContent(
       title: 'Trainer Session',
       bullets: ['Join live rooms with a human trainer when scheduled.'],
+    ),
+  ];
+
+  static const trainerAllScreens = [
+    ScreenHelpContent(
+      title: 'Trainer Home',
+      bullets: [
+        'Hub for coaching tools.',
+        'Open Trainee Session or Log Monitoring from the cards.',
+      ],
+    ),
+    ScreenHelpContent(
+      title: 'Account Profile',
+      bullets: ['Update your display name and preferences used across tools.'],
+    ),
+    ScreenHelpContent(
+      title: 'Trainee Session',
+      bullets: [
+        'Create or manage live coaching rooms.',
+        'Share room codes when trainees cannot find the invite.',
+      ],
+    ),
+    ScreenHelpContent(
+      title: 'Log Monitoring',
+      bullets: [
+        'Review trainee activity, open rooms, and ended coaching sessions.',
+      ],
+    ),
+    ScreenHelpContent(
+      title: 'Live room tools',
+      bullets: ['Notes and checklists stay with the session while coaching.'],
     ),
   ];
 }
@@ -218,8 +281,10 @@ class _HelpPanelState extends State<_HelpPanel> {
                   _tabChip(0, 'This screen'),
                   const Gap(8),
                   _tabChip(1, 'All screens'),
-                  const Gap(8),
-                  _tabChip(2, 'Guide settings'),
+                  if (ProfileData.role != AppRole.trainer) ...[
+                    const Gap(8),
+                    _tabChip(2, 'Guide settings'),
+                  ],
                 ],
               ),
             ),
@@ -231,6 +296,8 @@ class _HelpPanelState extends State<_HelpPanel> {
                 child: _tab == 0
                     ? _thisScreen(next, guided)
                     : _tab == 1
+                    ? _allScreens()
+                    : ProfileData.role == AppRole.trainer
                     ? _allScreens()
                     : _settings(context, guided),
               ),
@@ -261,6 +328,7 @@ class _HelpPanelState extends State<_HelpPanel> {
   }
 
   Widget _thisScreen(TraineeNextStep next, bool guided) {
+    final isTrainer = ProfileData.role == AppRole.trainer;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -284,43 +352,48 @@ class _HelpPanelState extends State<_HelpPanel> {
             style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
           ),
         ],
-        const Gap(16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1F26),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF2A3441)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                guided ? 'Current guide step' : 'Suggested next step',
-                style: const TextStyle(
-                  color: Color(0xFF70BD8A),
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
+        if (!isTrainer) ...[
+          const Gap(16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1F26),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF2A3441)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  guided ? 'Current guide step' : 'Suggested next step',
+                  style: const TextStyle(
+                    color: Color(0xFF70BD8A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
                 ),
-              ),
-              const Gap(6),
-              Text(
-                next.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+                const Gap(6),
+                Text(
+                  next.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-              const Gap(4),
-              Text(
-                next.reason,
-                style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-              ),
-            ],
+                const Gap(4),
+                Text(
+                  next.reason,
+                  style: const TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        if (widget.showPathOverview) ...[
+        ],
+        if (widget.showPathOverview && !isTrainer) ...[
           const Gap(16),
           const Text(
             'Training path',
@@ -337,11 +410,32 @@ class _HelpPanelState extends State<_HelpPanel> {
           _bullet('4. Simulation Training for fuller practice'),
           _bullet('5. Progress Dashboard for scores and history'),
         ],
+        if (isTrainer) ...[
+          const Gap(16),
+          const Text(
+            'Trainer workflow',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 14,
+            ),
+          ),
+          const Gap(8),
+          _bullet('1. Complete your profile'),
+          _bullet('2. Open Trainee Session to create a live room'),
+          _bullet('3. Share the room code with the trainee'),
+          _bullet('4. Use session tools for notes while coaching'),
+          _bullet('5. Review activity in Log Monitoring after the session'),
+        ],
       ],
     );
   }
 
   Widget _allScreens() {
+    final isTrainer = ProfileData.role == AppRole.trainer;
+    final items = isTrainer
+        ? ScreenHelpCatalog.trainerAllScreens
+        : ScreenHelpCatalog.allScreens;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -354,7 +448,7 @@ class _HelpPanelState extends State<_HelpPanel> {
           ),
         ),
         const Gap(12),
-        for (final item in ScreenHelpCatalog.allScreens) ...[
+        for (final item in items) ...[
           Text(
             item.title,
             style: const TextStyle(
@@ -372,6 +466,30 @@ class _HelpPanelState extends State<_HelpPanel> {
   }
 
   Widget _settings(BuildContext context, bool guided) {
+    if (ProfileData.role == AppRole.trainer) {
+      return const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Guide settings',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Gap(8),
+          Text(
+            'The step-by-step training guide and intro tips apply to trainee accounts only. Trainer tools stay open without guide locks.',
+            style: TextStyle(
+              color: Color(0xFF9CA3AF),
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

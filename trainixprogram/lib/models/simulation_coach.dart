@@ -447,9 +447,12 @@ class SimulationCoach {
         t.contains("i'll escalate") ||
         t.contains('escalating this now') ||
         t.contains('escalating your case') ||
+        t.contains('escalating your case to') ||
+        t.contains('i am escalating your case') ||
         t.contains('transferring you to') ||
         t.contains('transfer you to') ||
         t.contains('transfer this to') ||
+        t.contains('specialist can continue') ||
         t.contains('raise a ticket') ||
         t.contains('open a ticket') ||
         t.contains('creating a ticket') ||
@@ -827,17 +830,26 @@ class SimulationCoach {
 
   static bool looksLikeClosing(String text) {
     final t = text.toLowerCase();
-    return t.contains('thank you for calling') ||
-        t.contains('thanks for calling') ||
+    if (t.contains('how may i help') ||
+        t.contains('how can i help') ||
+        t.contains('i will help you with') ||
+        (t.contains('i understand') && !t.contains('great day'))) {
+      return false;
+    }
+    final hasDayClose =
         t.contains('have a great day') ||
         t.contains('have a good day') ||
-        t.contains('is there anything else') ||
+        t.contains('goodbye');
+    final hasOnceAgain =
+        t.contains('once again this is') || t.contains('once again, this is');
+    final hasClosingThank =
+        t.contains('thank you for contacting trainix') && hasDayClose;
+    return hasDayClose ||
+        hasOnceAgain ||
+        hasClosingThank ||
         t.contains('glad i could help') ||
         t.contains('has been escalated') ||
-        t.contains('reference for follow-up') ||
-        t.contains('glad we could') ||
-        t.contains('take care') ||
-        (t.contains('thank') && t.contains('help'));
+        t.contains('take care');
   }
 
   static bool isOverAht(double handleSeconds) {

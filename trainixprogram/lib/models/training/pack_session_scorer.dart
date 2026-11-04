@@ -108,7 +108,7 @@ class PackSessionScorer {
       strengths: strengths,
       areasForImprovement: improvements,
       feedback:
-          'Practice score from case-pack session rules (local). Pass bar is about 7.0 overall.',
+          'Practice score from case-pack session rules. Pass bar is about 7.0 overall.',
       evaluatedAt: DateTime.now(),
       ahtHandleSeconds: handleSeconds,
       ahtOverLimit: handleSeconds != null && handleSeconds > 600,

@@ -427,13 +427,25 @@ class _ChatPanelState extends State<ChatPanel> {
 
   String _targetAccountIdForPack(SimPack pack) {
     final d = pack.accountDetails;
-    final member = d['Member ID'];
-    if (member != null && member.trim().isNotEmpty) return member.trim();
     final card = d['Card Ending'];
-    if (card != null && card.trim().isNotEmpty) return 'ACC-$card';
+    if (card != null && card.trim().isNotEmpty) {
+      final digits = card.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) return 'ACC-$digits';
+    }
     final mobile = d['Mobile Ending'];
-    if (mobile != null && mobile.trim().isNotEmpty) return 'ACC-$mobile';
-    return 'ACC-${pack.customerName.hashCode.abs() % 90000 + 10000}';
+    if (mobile != null && mobile.trim().isNotEmpty) {
+      final digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) return 'ACC-$digits';
+    }
+    final member = d['Member ID'];
+    if (member != null && member.trim().isNotEmpty) {
+      final digits = member.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) {
+        final n = int.tryParse(digits) ?? pack.customerName.hashCode.abs();
+        return 'ACC-${(n % 9000) + 1000}';
+      }
+    }
+    return 'ACC-${pack.customerName.hashCode.abs() % 9000 + 1000}';
   }
 
   ProblemFamily _scriptedFamilyForSector(String sector) {
@@ -851,6 +863,15 @@ class _ChatPanelState extends State<ChatPanel> {
       lastTraineeMessage: lastTraineeText,
       onEscalationSubmit: (msg) {
         _sessionEscalated = true;
+        final accountProvider = Provider.of<AccountProvider>(
+          context,
+          listen: false,
+        );
+        accountProvider.markToolWorkDone(
+          action: 'Escalate to specialist',
+          note: 'Escalation handoff submitted from Escalation tab.',
+        );
+        _syncMissionMessages();
         _inputController.text = msg;
         sendChatmessage();
       },
@@ -916,7 +937,11 @@ class _ChatPanelState extends State<ChatPanel> {
     if (done.contains('guide') || done.contains('confirm')) {
       parts.add('Guidance given and customer response noted.');
     }
-    if (branch == 'escalate' || done.contains('escalate')) {
+    if (branch == 'escalate' ||
+        done.contains('escalate') ||
+        done.contains('handoff') ||
+        _sessionEscalated ||
+        _sessionController.mission.evidence.escalationSubmitted) {
       parts.add('Escalated to specialist path.');
     }
     if (done.contains('close')) {
@@ -931,7 +956,10 @@ class _ChatPanelState extends State<ChatPanel> {
   String _acwSuggestedDisposition() {
     final branch = _sessionController.mission.evidence.branch;
     if (branch == 'escalate' ||
-        _sessionController.mission.state.done.contains('escalate')) {
+        _sessionController.mission.state.done.contains('escalate') ||
+        _sessionController.mission.state.done.contains('handoff') ||
+        _sessionEscalated ||
+        _sessionController.mission.evidence.escalationSubmitted) {
       return 'Escalated';
     }
     if (_sessionController.isMissionComplete ||
@@ -957,134 +985,146 @@ class _ChatPanelState extends State<ChatPanel> {
   Widget _buildAfterCallWork() {
     final textTheme = Theme.of(context).textTheme;
     final suggested = _acwSuggestedNote();
-    return Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: const Color(0xFF191919),
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF303030)),
-            ),
-            child: const Icon(Icons.edit_note, size: 32, color: Colors.white),
-          ),
-          const Gap(20),
-          const Text(
-            'After Chat Work',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Use the suggested disposition and note from this case. Edit if needed, then submit.',
-            style: textTheme.bodySmall?.copyWith(
-              color: const Color(0xFFF4F3F3),
-              fontSize: 12,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const Gap(12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF15201A),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2E4A38)),
-            ),
-            child: Text(
-              'Suggested from this case: ${_acwSuggestedDisposition()}. $suggested',
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: Color(0xFFD7E8DB),
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF191919),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF303030)),
+                ),
+                child: const Icon(
+                  Icons.edit_note,
+                  size: 32,
+                  color: Colors.white,
+                ),
               ),
-            ),
-          ),
-          const Gap(24),
-          const Text(
-            'Disposition',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-          ),
-          const Gap(8),
-          DropdownButtonFormField<String>(
-            value: _acwDisposition,
-            dropdownColor: const Color(0xFF1A1F26),
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: const Color(0xFF1A1A1A),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
+              const Gap(20),
+              const Text(
+                'After Chat Work',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
               ),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
-              DropdownMenuItem(value: 'Escalated', child: Text('Escalated')),
-              DropdownMenuItem(
-                value: 'Pending customer',
-                child: Text('Pending customer'),
+              const SizedBox(height: 8),
+              Text(
+                'Use the suggested disposition and note from this case. Edit if needed, then submit.',
+                style: textTheme.bodySmall?.copyWith(
+                  color: const Color(0xFFF4F3F3),
+                  fontSize: 12,
+                ),
+                textAlign: TextAlign.center,
               ),
-              DropdownMenuItem(
-                value: 'Information only',
-                child: Text('Information only'),
+              const Gap(12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF15201A),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF2E4A38)),
+                ),
+                child: Text(
+                  'Suggested from this case: ${_acwSuggestedDisposition()}. $suggested',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: Color(0xFFD7E8DB),
+                  ),
+                ),
+              ),
+              const Gap(24),
+              const Text(
+                'Disposition',
+                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              ),
+              const Gap(8),
+              DropdownButtonFormField<String>(
+                value: _acwDisposition,
+                dropdownColor: const Color(0xFF1A1F26),
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFF1A1A1A),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
+                  DropdownMenuItem(
+                    value: 'Escalated',
+                    child: Text('Escalated'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Pending customer',
+                    child: Text('Pending customer'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Information only',
+                    child: Text('Information only'),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _acwDisposition = v);
+                },
+              ),
+              const Gap(16),
+              TextField(
+                controller: _reportController,
+                maxLines: 4,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'Summary, next action, account notes...',
+                  hintStyle: textTheme.bodyMedium?.copyWith(
+                    fontSize: 12,
+                    color: const Color(0xFFBBBBBB),
+                  ),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                  ),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                    borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                    borderSide: BorderSide(color: Colors.white, width: 1),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() => _acwSubmitted = true);
+                  _reportController.clear();
+                  _startGracePeriod();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Submit Report'),
               ),
             ],
-            onChanged: (v) {
-              if (v != null) setState(() => _acwDisposition = v);
-            },
           ),
-          const Gap(16),
-          TextField(
-            controller: _reportController,
-            maxLines: 4,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'Summary, next action, account notes...',
-              hintStyle: textTheme.bodyMedium?.copyWith(
-                fontSize: 12,
-                color: const Color(0xFFBBBBBB),
-              ),
-              border: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-              ),
-              enabledBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-                borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
-              ),
-              focusedBorder: const OutlineInputBorder(
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-                borderSide: BorderSide(color: Colors.white, width: 1),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () {
-              setState(() => _acwSubmitted = true);
-              _reportController.clear();
-              _startGracePeriod();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2563EB),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 0,
-            ),
-            child: const Text('Submit Report'),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1094,7 +1134,12 @@ class _ChatPanelState extends State<ChatPanel> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Lottie.asset('assets/animations/break_loading.json', width: 80),
+        RepaintBoundary(
+          child: Lottie.asset(
+            'assets/animations/break_loading.json',
+            width: 80,
+          ),
+        ),
         const Text('On Break', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         Text('Next chat in $_remainingSeconds seconds...'),
@@ -1215,7 +1260,11 @@ class _ChatPanelState extends State<ChatPanel> {
     final canStart = widget.canStartNewCustomer?.call() ?? true;
     if (!canStart) {
       setState(() => _chatPhase = _ChatPhase.waitingToEnd);
-      widget.onBusyChanged?.call(false);
+      // Keep parent busy briefly so wrapping-up can show before session report.
+      Future.delayed(const Duration(seconds: 4), () {
+        if (!mounted) return;
+        widget.onBusyChanged?.call(false);
+      });
       return;
     }
 
@@ -1337,8 +1386,23 @@ class _ChatPanelState extends State<ChatPanel> {
   Future<void> _exchangeWhileClosing(String text) async {
     setState(() => _isSending = true);
     _traineeHasSpoken = true;
-    if (SimulationCoach.looksLikeEscalation(text)) {
-      _sessionEscalated = true;
+    final wantsEscalation = SimulationCoach.looksLikeEscalation(text);
+    if (wantsEscalation && !_sessionEscalated) {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+          _selectedTab = 0;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Open the Escalation tab and submit the handoff before closing.',
+            ),
+          ),
+        );
+      }
+      _inputController.text = text;
+      return;
     }
     try {
       final response = await openRouterAPI.getResponseWithoutTypeCast(
@@ -1351,11 +1415,23 @@ class _ChatPanelState extends State<ChatPanel> {
         setState(() => _isSending = false);
         return;
       }
-      if (response.problemStatus == 'escalating') {
-        _sessionEscalated = true;
-      }
     } catch (_) {
       if (mounted) setState(() => _isSending = false);
+      return;
+    }
+
+    if (_coachRequiresEscalation() && !_sessionEscalated) {
+      if (mounted) {
+        setState(() => _isSending = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'This case needs a specialist handoff. Open Escalation in Script Guide, submit the form, then close.',
+            ),
+          ),
+        );
+      }
+      _inputController.text = text;
       return;
     }
 
@@ -1374,6 +1450,17 @@ class _ChatPanelState extends State<ChatPanel> {
       _isSending = false;
       _chatPhase = _ChatPhase.afterCallWork;
     });
+  }
+
+  bool _coachRequiresEscalation() {
+    if (_sessionEscalated) return false;
+    if (_problemFamily == ProblemFamily.trueEscalate) return true;
+    try {
+      final mission = _sessionController.mission;
+      if (mission.evidence.branch == 'escalate') return true;
+      if (mission.pack?.id == 'mission_escalate') return true;
+    } catch (_) {}
+    return false;
   }
 
   void _scheduleIdleNudge() {
@@ -1506,11 +1593,30 @@ class _ChatPanelState extends State<ChatPanel> {
   }
 
   Future<void> _sendUserMessage(String text) async {
-    setState(() => _isSending = true);
-    _traineeHasSpoken = true;
-    if (SimulationCoach.looksLikeEscalation(text)) {
-      _sessionEscalated = true;
+    final wantsEscalation = SimulationCoach.looksLikeEscalation(text);
+    if (wantsEscalation && !_sessionEscalated) {
+      if (mounted) {
+        setState(() {
+          _selectedTab = 0;
+          _isSending = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Use the Escalation tab in Script Guide and submit the handoff. Typing the closing line alone is not enough.',
+            ),
+          ),
+        );
+      }
+      _inputController.text = text;
+      return;
     }
+    setState(() {
+      _isSending = true;
+      // Stay on chat so the customer reply is visible.
+      _selectedTab = 0;
+    });
+    _traineeHasSpoken = true;
     final accountProvider = Provider.of<AccountProvider>(
       context,
       listen: false,
@@ -1583,14 +1689,19 @@ class _ChatPanelState extends State<ChatPanel> {
           }
           accountProvider.confirmCustomerResolved();
           widget.onBusyChanged?.call(true);
-          await _evaluateResolution();
+          if (mounted) {
+            setState(() => _isSending = false);
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 1400));
           if (!mounted) return;
           _prepareAcwForm();
-          setState(() {
-            _customerConfirmed = true;
-            _chatPhase = _ChatPhase.afterCallWork;
-            _isSending = false;
-          });
+          if (mounted) {
+            setState(() {
+              _customerConfirmed = true;
+              _chatPhase = _ChatPhase.afterCallWork;
+            });
+          }
+          await _evaluateResolution();
           return;
         }
         setState(() => _isSending = false);
@@ -1608,10 +1719,10 @@ class _ChatPanelState extends State<ChatPanel> {
       if (!mounted) return;
 
       if (response.isError) {
+        if (mounted) setState(() => _isSending = false);
         return;
       }
 
-      //if the account was provided as well as the id, do this
       if (response.accountProvided && response.accountId != null) {
         if (accountProvider.accounts.isEmpty) {
           accountProvider.generateAccounts(
@@ -1630,9 +1741,7 @@ class _ChatPanelState extends State<ChatPanel> {
             'Sorry, I am still waiting on this. Can you tell me the next step for my issue?';
       }
       _ensureAhtStarted();
-      if (response.problemStatus == 'escalating') {
-        _sessionEscalated = true;
-      }
+      // Escalation is only confirmed by the Escalation tab submit, not AI status.
       if (!_customerConfirmed &&
           SimulationCoach.customerIsChecking(cleanedReply)) {
         _startCustomerCheckWait();
@@ -1646,7 +1755,10 @@ class _ChatPanelState extends State<ChatPanel> {
                 .map((m) => m.message)
                 .join(' '),
           );
-      if ((response.callStatus == 'resolved' ||
+      final coachNeedsEscalate = _coachRequiresEscalation();
+      if (coachNeedsEscalate && !_sessionEscalated) {
+        // Keep the case open until the Escalation tab is submitted.
+      } else if ((response.callStatus == 'resolved' ||
               response.callStatus == 'ended' ||
               (satisfied && accountProvider.toolWorkDone)) &&
           _chatPhase == _ChatPhase.active) {

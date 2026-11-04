@@ -107,7 +107,7 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
     });
 
     if (JitsiConfig.jaasConfigured) {
-      setState(() => _statusMessage = 'Requesting meeting token...');
+      setState(() => _statusMessage = 'Starting video call...');
       _jwt = await JaasTokenService.instance.fetchToken(
         roomCode: _live.id,
         asModerator: widget.isTrainer,
@@ -365,12 +365,26 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                 ),
               ),
               const Gap(10),
-              Text(
-                '${JitsiConfig.statusHint(hasJwt: _jwt != null)} Code ${live.id}.',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 11,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${JitsiConfig.statusHint(hasJwt: _jwt != null)}',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.55),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  SelectableText(
+                    'Room code: ${live.id}',
+                    style: const TextStyle(
+                      color: Color(0xFF93C5FD),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
               const Gap(10),
               Row(

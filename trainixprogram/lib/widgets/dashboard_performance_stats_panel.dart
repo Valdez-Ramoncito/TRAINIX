@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 class PerformanceStatsPanel extends StatelessWidget {
   const PerformanceStatsPanel({super.key});
@@ -73,16 +74,22 @@ class PerformanceStatsPanel extends StatelessWidget {
     return Consumer<SimulationHistoryProvider>(
       builder: (context, history, _) {
         if (history.evaluations.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No activity yet.\nFinish a simulation or use DEBUG: Seed to preview this dashboard.',
+              'No activity yet.\nFinish a simulation session to see scores and trends here.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54, height: 1.4),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.55),
+                height: 1.4,
+              ),
             ),
           );
         }
 
         final avg = history.averageOverallScore;
+        final csat = history.averageCustomerRating;
         final color = stageColor(avg);
         final cats = <(String, double Function(SessionEvaluation))>[
           ('Opening Spiel', (e) => e.openingSpielScore),
@@ -111,10 +118,14 @@ class PerformanceStatsPanel extends StatelessWidget {
         final strengths = <String>{};
         final improvements = <String>{};
         for (final e in history.evaluations) {
-          strengths.addAll(e.strengths.where((s) => s.trim().isNotEmpty));
-          improvements.addAll(
-            e.areasForImprovement.where((s) => s.trim().isNotEmpty),
-          );
+          for (final s in e.strengths) {
+            final cleaned = friendlyEvalText(s);
+            if (cleaned.isNotEmpty) strengths.add(cleaned);
+          }
+          for (final s in e.areasForImprovement) {
+            final cleaned = friendlyEvalText(s);
+            if (cleaned.isNotEmpty) improvements.add(cleaned);
+          }
         }
 
         SessionEvaluation? bestCustomer;
@@ -179,14 +190,16 @@ class PerformanceStatsPanel extends StatelessWidget {
                         const Gap(4),
                         Text(
                           avg >= strongBar
-                              ? 'Strong training profile against TESDA NC II-style contact center competencies. You can start preparing applications while polishing weaker skills.'
+                              ? 'Strong practice results. Keep polishing weaker skills, then you can treat this as hiring-ready practice.'
                               : avg >= passBar
-                              ? 'You clear the training pass bar (7.0 average across scored customers). Build consistency before treating this as hiring-ready.'
+                              ? 'You are at or above the practice pass mark (7.0 average). Build consistency with more full sessions.'
                               : avg >= 5
-                              ? 'Past pure beginner, but results are mixed versus contact-center competency expectations. Keep guided practice as default.'
-                              : 'Newbie range on the training rubric. Prioritize Mini Training and Script Guide on every simulation.',
-                          style: const TextStyle(
-                            color: Colors.white70,
+                              ? 'Results are mixed. Stay with guided practice and focus on the lowest skill scores below.'
+                              : 'Early stage. Use Mini Training and the Script Guide on every simulation before free practice.',
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: 12,
                             height: 1.35,
                           ),
@@ -202,6 +215,7 @@ class PerformanceStatsPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: _kpi(
+                    context,
                     'Sessions',
                     '${history.sessions.length}',
                     'Completed simulation runs',
@@ -210,6 +224,7 @@ class PerformanceStatsPanel extends StatelessWidget {
                 const Gap(10),
                 Expanded(
                   child: _kpi(
+                    context,
                     'Customers',
                     '${history.evaluations.length}',
                     'Scored customer interactions',
@@ -218,6 +233,16 @@ class PerformanceStatsPanel extends StatelessWidget {
                 const Gap(10),
                 Expanded(
                   child: _kpi(
+                    context,
+                    'Avg CSAT',
+                    csat == null ? '—' : '${csat.toStringAsFixed(1)}/5',
+                    'Customer satisfaction from finished conversations',
+                  ),
+                ),
+                const Gap(10),
+                Expanded(
+                  child: _kpi(
+                    context,
                     'Pass rate',
                     '${(passRate * 100).toStringAsFixed(0)}%',
                     '$passCount of ${history.evaluations.length} customers scored ≥ $passBar',
@@ -226,6 +251,7 @@ class PerformanceStatsPanel extends StatelessWidget {
                 const Gap(10),
                 Expanded(
                   child: _kpi(
+                    context,
                     'Best',
                     history.bestOverallScore.toStringAsFixed(1),
                     'Highest single-customer score',
@@ -235,7 +261,7 @@ class PerformanceStatsPanel extends StatelessWidget {
             ),
             const Gap(10),
             Text(
-              'Pass rate uses each customer evaluation overall score. A customer counts as pass when overall is at least $passBar / 10, aligned to the training pass bar used across chat and voice TESDA-style rubrics.',
+              'Pass rate counts each customer score. A customer counts as pass when the overall is at least $passBar out of 10.',
               style: const TextStyle(
                 color: Colors.white38,
                 fontSize: 11,
@@ -252,18 +278,20 @@ class PerformanceStatsPanel extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Coaching focus',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const Gap(8),
                   Text(
                     'Strongest Mini Training category: ${strongest.key} (${strongest.value.toStringAsFixed(1)}).',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -271,8 +299,10 @@ class PerformanceStatsPanel extends StatelessWidget {
                   const Gap(6),
                   Text(
                     'Weakest Mini Training category: ${weakest.key} (${weakest.value.toStringAsFixed(1)}). Open Mini Training → ${weakest.key} next, then retest in Simulation Training.',
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.7),
                       fontSize: 13,
                       height: 1.4,
                     ),
@@ -301,19 +331,21 @@ class PerformanceStatsPanel extends StatelessWidget {
                 children: [
                   Expanded(
                     child: _chipColumn(
+                      context,
                       'Recurring strengths',
                       strengths.take(5).toList(),
                       const Color(0xFF34D399),
-                      'From evaluator notes mapped to contact-center strengths (communication, empathy, resolution).',
+                      'From practice feedback on communication, empathy, and resolution.',
                     ),
                   ),
                   const Gap(10),
                   Expanded(
                     child: _chipColumn(
+                      context,
                       'Recurring focus areas',
                       improvements.take(5).toList(),
                       const Color(0xFFFBBF24),
-                      'From evaluator improvement tags aligned to TESDA-style gaps (closing, sector knowledge, scripting).',
+                      'From practice feedback about closing, product knowledge, and clear scripts.',
                     ),
                   ),
                 ],
@@ -321,10 +353,10 @@ class PerformanceStatsPanel extends StatelessWidget {
             ],
             if (bestSession != null || bestCustomer != null) ...[
               const Gap(14),
-              const Text(
+              Text(
                 'Highlights',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                   fontSize: 15,
                 ),
@@ -332,6 +364,7 @@ class PerformanceStatsPanel extends StatelessWidget {
               const Gap(10),
               if (bestSession != null)
                 _linkCard(
+                  context,
                   title:
                       'Best session · ${bestSession.sector.isEmpty ? "Session" : bestSession.sector}',
                   subtitle:
@@ -352,6 +385,7 @@ class PerformanceStatsPanel extends StatelessWidget {
               if (bestCustomer != null) ...[
                 const Gap(8),
                 _linkCard(
+                  context,
                   title:
                       'Best customer · ${bestCustomer.customerName.isEmpty ? "Customer" : bestCustomer.customerName}',
                   subtitle:
@@ -370,17 +404,17 @@ class PerformanceStatsPanel extends StatelessWidget {
               ],
             ],
             const Gap(14),
-            const Text(
+            Text(
               'Skill pulse',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
             ),
             const Gap(6),
             const Text(
-              'Hover a skill for a short definition and example. Scores average every scored customer on that competency.',
+              'Hover a skill for a short definition and example. Each score is the average across your scored customers.',
               style: TextStyle(color: Colors.white38, fontSize: 11),
             ),
             const Gap(10),
@@ -439,8 +473,10 @@ class PerformanceStatsPanel extends StatelessWidget {
                       children: [
                         Text(
                           e.key,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
                             fontSize: 11,
                           ),
                         ),
@@ -470,10 +506,10 @@ class PerformanceStatsPanel extends StatelessWidget {
               }).toList(),
             ),
             const Gap(16),
-            const Text(
+            Text(
               'Recent sessions',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -560,10 +596,10 @@ class PerformanceStatsPanel extends StatelessWidget {
               ),
             ),
             const Gap(16),
-            const Text(
+            Text(
               'Recent customers',
               style: TextStyle(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSurface,
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
               ),
@@ -574,6 +610,7 @@ class PerformanceStatsPanel extends StatelessWidget {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _linkCard(
+                  context,
                   title: e.customerName.isEmpty ? 'Customer' : e.customerName,
                   subtitle:
                       '${e.channel.toUpperCase()} · ${e.sector} · ${e.overallScore.toStringAsFixed(1)}'
@@ -596,7 +633,7 @@ class PerformanceStatsPanel extends StatelessWidget {
     );
   }
 
-  Widget _kpi(String title, String value, String hint) {
+  Widget _kpi(BuildContext context, String title, String value, String hint) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -608,13 +645,18 @@ class PerformanceStatsPanel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.55),
+              fontSize: 11,
+            ),
           ),
           const Gap(6),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w800,
               fontSize: 18,
             ),
@@ -630,6 +672,7 @@ class PerformanceStatsPanel extends StatelessWidget {
   }
 
   Widget _chipColumn(
+    BuildContext context,
     String title,
     List<String> items,
     Color color,
@@ -646,8 +689,8 @@ class PerformanceStatsPanel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface,
               fontWeight: FontWeight.w700,
               fontSize: 13,
             ),
@@ -682,7 +725,8 @@ class PerformanceStatsPanel extends StatelessWidget {
     );
   }
 
-  Widget _linkCard({
+  Widget _linkCard(
+    BuildContext context, {
     required String title,
     required String subtitle,
     required Color color,
@@ -707,8 +751,8 @@ class PerformanceStatsPanel extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -718,7 +762,12 @@ class PerformanceStatsPanel extends StatelessWidget {
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),

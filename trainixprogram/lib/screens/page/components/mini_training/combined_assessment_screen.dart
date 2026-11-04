@@ -453,34 +453,47 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
                 if (!_lockedIn &&
                     item.type == AssessmentType.quiz &&
                     _selectedOption != null)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
+                  Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _lockInQuiz,
+                          child: const Text("Confirm Answer"),
+                        ),
                       ),
-                      onPressed: _lockInQuiz,
-                      child: const Text("Confirm Answer"),
                     ),
                   ),
                 if (_lockedIn)
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: _next,
-                      child: Text(
-                        _itemIndex == _items.length - 1 &&
-                                (item.type != AssessmentType.quiz ||
-                                    _questionIndex == quizQuestions.length - 1)
-                            ? "See Results"
-                            : "Next",
+                  Align(
+                    alignment: Alignment.center,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 420),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _next,
+                          child: Text(
+                            _itemIndex == _items.length - 1 &&
+                                    (item.type != AssessmentType.quiz ||
+                                        _questionIndex ==
+                                            quizQuestions.length - 1)
+                                ? "See Results"
+                                : "Next",
+                          ),
+                        ),
                       ),
                     ),
                   ),

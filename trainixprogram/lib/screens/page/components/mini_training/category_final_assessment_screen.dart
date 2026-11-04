@@ -124,32 +124,53 @@ class _CategoryFinalAssessmentScreenState
               ),
             ),
             const Gap(40),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: alreadyPassed ? Colors.grey : Colors.green,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: alreadyPassed || !hasFinal ? null : _startFinal,
-                child: Text(
-                  alreadyPassed
-                      ? "Assessment Already Passed"
-                      : hasFinal
-                      ? "Start Final Assessment"
-                      : "Final Assessment Not Ready",
+            Align(
+              alignment: Alignment.center,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: alreadyPassed
+                          ? const Color(0xFF374151)
+                          : const Color(0xFF16A34A),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: alreadyPassed || !hasFinal ? null : _startFinal,
+                    child: Text(
+                      alreadyPassed
+                          ? "Assessment Already Passed"
+                          : hasFinal
+                          ? "Start Final Assessment"
+                          : "Final Assessment Not Ready",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
             if (TrainixDebug.unlocked) ...[
               const Gap(12),
-              SizedBox(
-                width: double.infinity,
-                height: 40,
-                child: OutlinedButton(
-                  onPressed: alreadyPassed ? null : _debugSkipFinal,
-                  child: const Text("DEBUG: Skip Final Assessment"),
+              Align(
+                alignment: Alignment.center,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 40,
+                    child: OutlinedButton(
+                      onPressed: alreadyPassed ? null : _debugSkipFinal,
+                      child: const Text("DEBUG: Skip Final Assessment"),
+                    ),
+                  ),
                 ),
               ),
             ],

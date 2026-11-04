@@ -42,7 +42,7 @@ class ScriptPersonalization {
     t = t.replaceAll('[Name]', agentFirstName);
     t = t.replaceAll('[Company]', companyName);
     t = t.replaceAll('Alex Rivera', agentFullName);
-    t = t.replaceAll('Alex', agentFirstName);
+    t = t.replaceAllMapped(RegExp(r'\bAlex\b'), (_) => agentFirstName);
     t = t.replaceAll('Horizon Telco Support', companyName);
     t = t.replaceAll('Horizon Health Support', companyName);
     t = t.replaceAll('Horizon Finance Support', companyName);

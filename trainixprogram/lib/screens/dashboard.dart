@@ -270,10 +270,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: const Color(0xFF0F1419),
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
-          backgroundColor: const Color(0xFF0F1419),
-          foregroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
@@ -292,18 +290,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             style: TextStyle(fontWeight: FontWeight.w700),
           ),
           centerTitle: true,
-          actions: [
-            const ScreenHelpButton(
-              content: ScreenHelpCatalog.progressDashboard,
-            ),
-            if (TrainixDebug.unlocked)
-              TextButton(
-                onPressed: () => _showDebugMenu(context),
-                child: const Text(
-                  'DEBUG: Seed',
-                  style: TextStyle(color: Color(0xFF70BD8A), fontSize: 12),
-                ),
-              ),
+          actions: const [
+            ScreenHelpButton(content: ScreenHelpCatalog.progressDashboard),
           ],
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(52),
@@ -359,7 +347,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   border: Border.all(color: const Color(0xFF2E4A38)),
                 ),
                 child: const Text(
-                  'Scores here are a 0-10 practice tool for training. TESDA panel criteria stay a separate competency checklist.',
+                  'Scores here are a 0-10 practice tool for training. Use them to spot strengths and what to practice next.',
                   style: TextStyle(
                     color: Color(0xFFD7E8DB),
                     fontSize: 12,

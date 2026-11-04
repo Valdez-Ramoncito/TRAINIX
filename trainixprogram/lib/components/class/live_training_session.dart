@@ -404,8 +404,12 @@ class LiveSessionStore {
     final list = _sessions.where((s) {
       if (s.closed) return false;
       final st = computeRoomStatus(s).status;
-      return st != RoomDisplayStatus.completed &&
-          st != RoomDisplayStatus.cancelled;
+      if (st == RoomDisplayStatus.completed ||
+          st == RoomDisplayStatus.cancelled) {
+        return false;
+      }
+      if (s.isPublic) return true;
+      return s.isDesignatedFor(traineeName);
     }).toList();
 
     list.sort((a, b) {
