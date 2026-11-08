@@ -41,6 +41,11 @@ class TrainingNotificationCenter {
 
   static void attachOverlay(OverlayState overlay) {
     _overlay = overlay;
+    _pump();
+  }
+
+  static OverlayState? _resolveOverlay() {
+    return _overlay ?? AppNavigator.key.currentState?.overlay;
   }
 
   static void push({
@@ -50,13 +55,15 @@ class TrainingNotificationCenter {
     TrainingNotificationType type = TrainingNotificationType.info,
     String? actionType,
     String? actionPayload,
+    bool addToInbox = true,
+    String? id,
   }) {
     final signedIn =
         SupabaseService.isReady &&
         SupabaseService.client.auth.currentUser != null;
     if (!signedIn) return;
     final note = TrainingNotification(
-      id: 'n_${DateTime.now().microsecondsSinceEpoch}',
+      id: id ?? 'n_${DateTime.now().microsecondsSinceEpoch}',
       title: title,
       body: body,
       locationHint: locationHint,
@@ -65,7 +72,9 @@ class TrainingNotificationCenter {
       actionPayload: actionPayload,
     );
     _queue.add(note);
-    NotificationInboxService.instance.addFromToast(note);
+    if (addToInbox) {
+      NotificationInboxService.instance.addFromToast(note);
+    }
     _pump();
   }
 
@@ -91,8 +100,16 @@ class TrainingNotificationCenter {
   }
 
   static void _showOverlay(TrainingNotification note) {
-    final overlay = _overlay;
-    if (overlay == null) return;
+    final overlay = _resolveOverlay();
+    if (overlay == null) {
+      _showing = false;
+      _queue.insert(0, note);
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (!_showing) _pump();
+      });
+      return;
+    }
+    _overlay = overlay;
 
     _entry?.remove();
     _entry = OverlayEntry(
@@ -241,58 +258,63 @@ class TrainingNotificationCenter {
     // Hybrid mode retired. No-op for older call sites.
   }
 
-  static void notifyLiveRoomInvite({
+  static Future<bool> notifyLiveRoomInvite({
     required String trainerName,
     required String roomName,
     required bool isPrivate,
     String? designatedTraineeName,
     String? designatedTraineeUserId,
     String? roomCode,
-  }) {
+  }) async {
     final code = roomCode?.trim() ?? '';
     final title = isPrivate
         ? 'Private training invite'
         : 'Training room available';
+    final codeLine = code.isEmpty ? '' : ' Room code: $code.';
     final body = isPrivate
-        ? '$trainerName invited you to "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Open Trainer Session to join.'
-        : '$trainerName opened "$roomName".${code.isEmpty ? '' : ' Room code: $code'} Open Trainer Session to join.';
+        ? '$trainerName invited you to "$roomName".$codeLine Open Trainer Session to join.'
+        : '$trainerName opened "$roomName".$codeLine Open Trainer Session to join.';
     final noteId = 'n_${DateTime.now().microsecondsSinceEpoch}';
+    final actionType = code.isEmpty ? 'open_trainer_session' : 'join_room';
+    final actionPayload = code.isEmpty ? null : code;
 
     if (isPrivate) {
       final targetId = designatedTraineeUserId?.trim() ?? '';
-      if (targetId.isNotEmpty) {
-        NotificationInboxService.instance.insertForUser(
-          userId: targetId,
-          id: noteId,
-          title: title,
-          body: body,
-          locationHint: 'Home > Trainer Session',
-          type: TrainingNotificationType.info,
-          actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
-          actionPayload: code.isEmpty ? null : code,
-        );
+      if (targetId.isEmpty) {
+        debugPrint('private invite skipped: no designated trainee user id');
+        return false;
+      }
+      final ok = await NotificationInboxService.instance.insertForUser(
+        userId: targetId,
+        id: noteId,
+        title: title,
+        body: body,
+        locationHint: 'Home > Trainer Session',
+        type: TrainingNotificationType.info,
+        actionType: actionType,
+        actionPayload: actionPayload,
+      );
+      if (!ok) {
+        debugPrint('private invite insert failed for $targetId');
       }
       if (ProfileData.role == AppRole.trainee) {
-        final target = designatedTraineeName?.trim().toLowerCase() ?? '';
-        final me = ProfileData.displayName.trim().toLowerCase();
-        var match = target.isNotEmpty && me.isNotEmpty && target == me;
-        if (!match && target.isNotEmpty && me.isNotEmpty) {
-          final t0 = target.split(RegExp(r'\s+')).first;
-          final m0 = me.split(RegExp(r'\s+')).first;
-          match = t0.isNotEmpty && m0.isNotEmpty && t0 == m0;
-        }
-        if (match) {
+        final meId = SupabaseService.isReady
+            ? SupabaseService.client.auth.currentUser?.id
+            : null;
+        if (meId != null && meId == targetId) {
           push(
+            id: noteId,
             title: title,
             body: body,
             locationHint: 'Home > Trainer Session',
             type: TrainingNotificationType.info,
-            actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
-            actionPayload: code.isEmpty ? null : code,
+            actionType: actionType,
+            actionPayload: actionPayload,
+            addToInbox: false,
           );
         }
       }
-      return;
+      return ok;
     }
 
     if (ProfileData.role == AppRole.trainee) {
@@ -301,10 +323,11 @@ class TrainingNotificationCenter {
         body: body,
         locationHint: 'Home > Trainer Session',
         type: TrainingNotificationType.info,
-        actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
-        actionPayload: code.isEmpty ? null : code,
+        actionType: actionType,
+        actionPayload: actionPayload,
       );
     }
+    return true;
   }
 
   static void notifyLiveRoomStarted({
@@ -349,57 +372,65 @@ class TrainingNotificationCenter {
   static void notifyLiveRoomReminder({
     required String roomName,
     required String whenLabel,
+    String? roomCode,
   }) {
+    final code = roomCode?.trim() ?? '';
+    final codeLine = code.isEmpty ? '' : ' Room code: $code.';
     push(
       title: 'Session starting soon',
-      body: '"$roomName" starts at $whenLabel. You can join now.',
-      locationHint: 'Trainer Session or Create Room',
+      body: '"$roomName" starts at $whenLabel.$codeLine You can join now.',
+      locationHint: 'Home > Trainer Session',
       type: TrainingNotificationType.progress,
+      actionType: code.isEmpty ? 'open_trainer_session' : 'join_room',
+      actionPayload: code.isEmpty ? null : code,
     );
   }
 
-  static void notifyLiveRoomCancelled({
+  static Future<bool> notifyLiveRoomCancelled({
     required String roomName,
     String? designatedTraineeName,
     String? designatedTraineeUserId,
     bool isPrivate = false,
-  }) {
-    final title = 'Training room closed';
-    final body = '"$roomName" was removed by the trainer.';
+    String? roomCode,
+  }) async {
+    final code = roomCode?.trim() ?? '';
+    final title = 'Training room deleted';
+    final body = code.isEmpty
+        ? '"$roomName" was deleted by the trainer and is no longer available.'
+        : '"$roomName" ($code) was deleted by the trainer and is no longer available.';
     final noteId = 'n_${DateTime.now().microsecondsSinceEpoch}';
 
     if (isPrivate) {
       final targetId = designatedTraineeUserId?.trim() ?? '';
-      if (targetId.isNotEmpty) {
-        NotificationInboxService.instance.insertForUser(
-          userId: targetId,
-          id: noteId,
-          title: title,
-          body: body,
-          locationHint: 'Home > Trainer Session',
-          type: TrainingNotificationType.info,
-        );
-      }
+      if (targetId.isEmpty) return false;
+      final ok = await NotificationInboxService.instance.insertForUser(
+        userId: targetId,
+        id: noteId,
+        title: title,
+        body: body,
+        locationHint: 'Home > Trainer Session',
+        type: TrainingNotificationType.info,
+        actionType: 'open_trainer_session',
+      );
       if (ProfileData.role == AppRole.trainee) {
-        final target = designatedTraineeName?.trim().toLowerCase() ?? '';
-        final me = ProfileData.displayName.trim().toLowerCase();
-        var match = target.isNotEmpty && me.isNotEmpty && target == me;
-        if (!match && target.isNotEmpty && me.isNotEmpty) {
-          final t0 = target.split(RegExp(r'\s+')).first;
-          final m0 = me.split(RegExp(r'\s+')).first;
-          match = t0.isNotEmpty && m0.isNotEmpty && t0 == m0;
-        }
-        if (match) {
+        final meId = SupabaseService.isReady
+            ? SupabaseService.client.auth.currentUser?.id
+            : null;
+        if (meId != null && meId == targetId) {
           push(
+            id: noteId,
             title: title,
             body: body,
             locationHint: 'Home > Trainer Session',
             type: TrainingNotificationType.info,
+            actionType: 'open_trainer_session',
+            addToInbox: false,
           );
         }
       }
-      return;
+      return ok;
     }
+    return false;
   }
 }
 
@@ -454,6 +485,8 @@ class _NotificationCard extends StatelessWidget {
     final hint = (note.locationHint ?? '').toLowerCase();
     final nav = AppNavigator.context;
     if (nav == null) return;
+    final isTrainee = ProfileData.role == AppRole.trainee;
+    final isTrainer = ProfileData.role == AppRole.trainer;
 
     void go(Widget page) {
       onClose();
@@ -461,28 +494,33 @@ class _NotificationCard extends StatelessWidget {
     }
 
     if (action == 'join_room') {
-      go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      if (isTrainee) {
+        go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      }
       return;
     }
     if (action == 'open_trainer_session') {
-      go(const TrainerSession());
+      if (isTrainee) go(const TrainerSession());
       return;
     }
     if (action == 'open_mini_training' ||
         hint.contains('mini training') ||
         hint.contains('scenario practice') ||
         hint.contains('categories')) {
-      go(const MiniTraining());
+      if (isTrainee) go(const MiniTraining());
       return;
     }
     if (action == 'open_simulation' ||
         hint.contains('training simulation') ||
         hint.contains('simulation')) {
-      go(const SimulationHubScreen());
+      if (isTrainee) go(const SimulationHubScreen());
       return;
     }
-    if (hint.contains('trainer session') || hint.contains('create room')) {
-      go(const TrainerSession());
+    if (hint.contains('create room')) {
+      return;
+    }
+    if (hint.contains('trainer session')) {
+      if (isTrainee) go(const TrainerSession());
     }
   }
 

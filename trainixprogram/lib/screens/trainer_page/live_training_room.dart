@@ -70,21 +70,29 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
     _rating = bench.rating ?? 5;
     _needsFollowUp = bench.needsFollowUp;
     LiveSessionStore.instance.addListener(_onStoreChanged);
+    LiveSessionStore.instance.startRealtime();
     _initWebView();
   }
 
   void _onStoreChanged() {
     if (!mounted || _kicked) return;
     final live = LiveSessionStore.instance.findByCode(widget.session.id);
-    if (live != null && live.closed) {
+    final ended = live == null || live.closed;
+    if (ended) {
       _kicked = true;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Session ended. You have left the room.')),
+        SnackBar(
+          content: Text(
+            live == null
+                ? 'Session ended. Results were saved to your dashboard.'
+                : 'Session ended. You have left the room.',
+          ),
+        ),
       );
       Navigator.of(context).pop();
-    } else if (mounted) {
-      setState(() {});
+      return;
     }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -411,13 +419,15 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                       }),
                     ),
                   ),
-                  const Gap(8),
-                  Expanded(
-                    child: CreateButton(
-                      text: 'Session tools',
-                      onTap: () => _openSessionTools(),
+                  if (widget.isTrainer) ...[
+                    const Gap(8),
+                    Expanded(
+                      child: CreateButton(
+                        text: 'Session tools',
+                        onTap: () => _openSessionTools(),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
               if (_showDetails) ...[
@@ -1099,6 +1109,8 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
               'Session ended${bench.endedAt != null ? " · ${formatCreatedAt(bench.endedAt!)}" : ""}',
               style: const TextStyle(color: Color(0xFF8AFB09), fontSize: 13),
             )
+          else if (!widget.isTrainer)
+            CreateButton(text: 'Close', onTap: widget.onClose)
           else
             Row(
               children: [
@@ -1130,7 +1142,7 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                       LiveSessionStore.instance.endSession(widget.roomId);
                       TraineeActivityLogStore.instance.log(
                         actorName: ProfileData.displayName,
-                        actorRole: widget.isTrainer ? 'trainer' : 'trainee',
+                        actorRole: 'trainer',
                         category: TraineeLogCategory.liveTraining,
                         action: 'Ended session',
                         detail: 'Marked live session as ended',

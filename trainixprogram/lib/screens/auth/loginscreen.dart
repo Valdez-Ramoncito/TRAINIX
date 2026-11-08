@@ -60,7 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _afterAuthNavigate() async {
     await TrainingProgressRepository.instance.load();
     await NotificationInboxService.instance.loadFromRemote();
+    NotificationInboxService.instance.startRealtime();
     await LiveSessionStore.instance.loadFromRemote();
+    LiveSessionStore.instance.startRealtime();
     await TraineeActivityLogStore.instance.loadFromRemote();
     if (mounted) {
       await Provider.of<SimulationHistoryProvider>(

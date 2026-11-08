@@ -52,7 +52,14 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
 
+flutter_launcher_icons:
+  image_path: "assets/icons/app_icon.png"
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    icon_size: 256
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 # The following section is specific to Flutter packages.
@@ -67,6 +74,7 @@ flutter:
     - assets/images/
     - assets/animations/
     - assets/animations/background/
+    - assets/icons/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
   # For details regarding adding assets from package dependencies, see

@@ -25,10 +25,15 @@ class LiveRoomRepository {
       'focus_area': s.focusArea,
       'scheduled_at': s.scheduledAt?.toUtc().toIso8601String(),
       'closed': s.closed,
+      'trainer_inside': s.presence.trainerInside,
+      'trainee_inside': s.presence.traineeInside,
+      'trainee_display_name': s.presence.traineeDisplayName,
       'created_at': s.createdAt.toUtc().toIso8601String(),
       'updated_at': (s.updatedAt ?? DateTime.now()).toUtc().toIso8601String(),
     };
   }
+
+  LiveTrainingSession fromRowPublic(Map<String, dynamic> row) => _fromRow(row);
 
   LiveTrainingSession _fromRow(Map<String, dynamic> row) {
     LiveSessionMode mode = LiveSessionMode.coaching;
@@ -45,6 +50,11 @@ class LiveRoomRepository {
         break;
       }
     }
+    final presence = RoomPresence(
+      trainerInside: row['trainer_inside'] as bool? ?? false,
+      traineeInside: row['trainee_inside'] as bool? ?? false,
+      traineeDisplayName: row['trainee_display_name'] as String?,
+    );
     return LiveTrainingSession(
       id: row['id'] as String,
       name: row['name'] as String? ?? 'Training room',
@@ -65,7 +75,28 @@ class LiveRoomRepository {
           ? DateTime.tryParse(row['updated_at'] as String)?.toLocal()
           : null,
       closed: row['closed'] as bool? ?? false,
+      presence: presence,
     );
+  }
+
+  Map<String, dynamic> _toRowLite(LiveTrainingSession s) {
+    final uid = SupabaseService.isReady
+        ? SupabaseService.client.auth.currentUser?.id
+        : null;
+    return {
+      'id': s.id,
+      'name': s.name,
+      if (uid != null) 'trainer_id': uid,
+      'trainer_name': s.trainerName,
+      'mode': s.mode.name,
+      'visibility': s.visibility.name,
+      'designated_trainee_name': s.designatedTraineeName,
+      'description': s.description,
+      'focus_area': s.focusArea,
+      'scheduled_at': s.scheduledAt?.toUtc().toIso8601String(),
+      'closed': s.closed,
+      'created_at': s.createdAt.toUtc().toIso8601String(),
+    };
   }
 
   Future<bool> upsert(LiveTrainingSession session) async {
@@ -82,9 +113,72 @@ class LiveRoomRepository {
       debugPrint('live_rooms upsert ok: ${session.id}');
       return true;
     } catch (e) {
-      lastError = e.toString();
-      debugPrint('live_rooms upsert failed: $lastError');
-      return false;
+      debugPrint('live_rooms upsert full failed: $e');
+      try {
+        await SupabaseService.client
+            .from(_table)
+            .upsert(_toRowLite(session), onConflict: 'id');
+        debugPrint('live_rooms upsert lite ok: ${session.id}');
+        await updatePresence(session);
+        return true;
+      } catch (e2) {
+        lastError = e2.toString();
+        debugPrint('live_rooms upsert failed: $lastError');
+        return false;
+      }
+    }
+  }
+
+  Future<bool> updatePresence(LiveTrainingSession session) async {
+    return patchPresence(
+      roomId: session.id,
+      trainerInside: session.presence.trainerInside,
+      traineeInside: session.presence.traineeInside,
+      traineeDisplayName: session.presence.traineeDisplayName,
+    );
+  }
+
+  Future<bool> patchPresence({
+    required String roomId,
+    bool? trainerInside,
+    bool? traineeInside,
+    String? traineeDisplayName,
+    bool clearTraineeName = false,
+  }) async {
+    lastError = null;
+    if (!SupabaseService.isReady) return false;
+    final patch = <String, dynamic>{};
+    if (trainerInside != null) patch['trainer_inside'] = trainerInside;
+    if (traineeInside != null) patch['trainee_inside'] = traineeInside;
+    if (clearTraineeName) {
+      patch['trainee_display_name'] = null;
+    } else if (traineeDisplayName != null) {
+      patch['trainee_display_name'] = traineeDisplayName;
+    }
+    if (patch.isEmpty) return true;
+    try {
+      await SupabaseService.client
+          .from(_table)
+          .update({
+            ...patch,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', roomId);
+      debugPrint('live_rooms presence patch ok: $roomId $patch');
+      return true;
+    } catch (e) {
+      try {
+        await SupabaseService.client
+            .from(_table)
+            .update(patch)
+            .eq('id', roomId);
+        debugPrint('live_rooms presence patch lite ok: $roomId $patch');
+        return true;
+      } catch (e2) {
+        lastError = e2.toString();
+        debugPrint('live_rooms presence patch failed: $lastError');
+        return false;
+      }
     }
   }
 
@@ -99,15 +193,40 @@ class LiveRoomRepository {
       debugPrint('live_rooms delete ok: $roomId');
       return true;
     } catch (e) {
-      lastError = e.toString();
-      debugPrint('live_rooms delete failed: $lastError');
-      return false;
+      debugPrint('live_rooms hard delete failed: $e');
+      try {
+        await SupabaseService.client
+            .from(_table)
+            .update({
+              'closed': true,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', roomId);
+        debugPrint('live_rooms soft-close ok: $roomId');
+        return true;
+      } catch (e2) {
+        try {
+          await SupabaseService.client
+              .from(_table)
+              .update({'closed': true})
+              .eq('id', roomId);
+          debugPrint('live_rooms soft-close lite ok: $roomId');
+          return true;
+        } catch (e3) {
+          lastError = e3.toString();
+          debugPrint('live_rooms delete failed: $lastError');
+          return false;
+        }
+      }
     }
   }
 
-  Future<List<LiveTrainingSession>> fetchAll() async {
+  Future<List<LiveTrainingSession>?> fetchAll() async {
     lastError = null;
-    if (!SupabaseService.isReady) return [];
+    if (!SupabaseService.isReady) {
+      lastError = 'Supabase is not ready';
+      return null;
+    }
     try {
       final rows = await SupabaseService.client
           .from(_table)
@@ -122,7 +241,7 @@ class LiveRoomRepository {
     } catch (e) {
       lastError = e.toString();
       debugPrint('live_rooms fetch failed: $lastError');
-      return [];
+      return null;
     }
   }
 }

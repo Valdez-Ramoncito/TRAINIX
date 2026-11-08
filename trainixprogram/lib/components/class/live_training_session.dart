@@ -1,5 +1,11 @@
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 import 'package:trainixprogram/services/live_room_repository.dart';
 import 'package:trainixprogram/services/live_session_run_repository.dart';
+import 'package:trainixprogram/services/notification_inbox_service.dart';
+import 'package:trainixprogram/services/profile_directory_service.dart';
+import 'package:trainixprogram/services/supabase_service.dart';
 
 enum LiveSessionVisibility { public, private }
 
@@ -185,11 +191,13 @@ RoomStatusInfo computeRoomStatus(LiveTrainingSession s) {
 
   if (s.scheduledAt != null && !p.trainerInside && !p.traineeInside) {
     final open = canJoinBySchedule(s);
-    final line = scheduleLabel(s);
+    final when = formatCreatedAt(s.scheduledAt!);
     return RoomStatusInfo(
       status: RoomDisplayStatus.scheduled,
       label: open ? 'Ready' : 'Scheduled',
-      detail: '$line  ·  $occupants / 2',
+      detail: open
+          ? 'Starts $when · $occupants / 2'
+          : 'Starts $when · $occupants / 2',
       tone: ColorTone.blue,
     );
   }
@@ -271,9 +279,17 @@ String scheduleLabel(LiveTrainingSession s) {
   if (at == null) return '';
   final openFrom = joinOpensAt(s)!;
   if (canJoinBySchedule(s)) {
-    return 'Starts ${formatCreatedAt(at)}  ·  Join is open';
+    return 'Starts ${formatCreatedAt(at)}';
   }
-  return 'Starts ${formatCreatedAt(at)}  ·  Opens ${relativeUntil(openFrom)}';
+  return 'Starts ${formatCreatedAt(at)} · Opens ${relativeUntil(openFrom)}';
+}
+
+String compactScheduleTime(DateTime dt) {
+  final local = dt.toLocal();
+  final hour24 = local.hour;
+  final hour12 = hour24 % 12 == 0 ? 12 : hour24 % 12;
+  final ampm = hour24 >= 12 ? 'PM' : 'AM';
+  return '$hour12:${_pad2(local.minute)} $ampm';
 }
 
 class LiveSessionStore {
@@ -285,34 +301,126 @@ class LiveSessionStore {
   final Map<String, SessionWorkbench> _workbenches = {};
   final List<LiveTrainingHistoryEntry> _historyArchive = [];
   final List<void Function()> _listeners = [];
+  RealtimeChannel? _roomsChannel;
+  bool _loadingRemote = false;
 
   List<LiveTrainingSession> get sessions => List.unmodifiable(_sessions);
 
-  Future<void> loadFromRemote() async {
-    final remote = await LiveRoomRepository.instance.fetchAll();
-    if (remote.isNotEmpty) {
-      final byId = {for (final s in _sessions) s.id: s};
-      for (final r in remote) {
-        final local = byId[r.id];
-        if (local == null) {
-          _sessions.add(r);
-        } else {
-          final i = _sessions.indexWhere((s) => s.id == r.id);
-          if (i != -1) {
-            _sessions[i] = r.copyWith(presence: local.presence);
-          }
-        }
-      }
-      _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  RoomPresence _mergePresence(
+    RoomPresence remote,
+    RoomPresence? local,
+    DateTime? localUpdatedAt,
+  ) {
+    if (local == null) return remote;
+    if (local.occupantCount > remote.occupantCount) {
+      return RoomPresence(
+        trainerInside: remote.trainerInside || local.trainerInside,
+        traineeInside: remote.traineeInside || local.traineeInside,
+        traineeDisplayName:
+            remote.traineeDisplayName ?? local.traineeDisplayName,
+        trainerEntryNotified:
+            remote.trainerEntryNotified || local.trainerEntryNotified,
+        traineeEntryNotified:
+            remote.traineeEntryNotified || local.traineeEntryNotified,
+      );
     }
+    return remote;
+  }
 
-    final runs = await LiveSessionRunRepository.instance.fetchAll();
-    if (runs.isNotEmpty) {
-      _historyArchive
-        ..clear()
-        ..addAll(runs);
+  Future<void> loadFromRemote() async {
+    if (_loadingRemote) return;
+    _loadingRemote = true;
+    try {
+      final remote = await LiveRoomRepository.instance.fetchAll();
+      if (remote != null) {
+        final localById = {for (final s in _sessions) s.id: s};
+        final merged = <LiveTrainingSession>[];
+        for (final r in remote) {
+          if (r.closed) continue;
+          final local = localById[r.id];
+          final presence = _mergePresence(
+            r.presence,
+            local?.presence,
+            local?.updatedAt,
+          );
+          merged.add(r.copyWith(presence: presence));
+        }
+        _sessions
+          ..clear()
+          ..addAll(merged);
+        _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
+
+      final runs = await LiveSessionRunRepository.instance.fetchAll();
+      if (runs.isNotEmpty) {
+        _historyArchive
+          ..clear()
+          ..addAll(runs);
+      }
+      _notify();
+    } finally {
+      _loadingRemote = false;
     }
+  }
+
+  void _applyRemoteRow(Map<String, dynamic> row) {
+    final id = '${row['id'] ?? ''}';
+    if (id.isEmpty) return;
+    final closed = row['closed'] as bool? ?? false;
+    if (closed) {
+      _sessions.removeWhere((s) => s.id == id);
+      _notify();
+      return;
+    }
+    final remote = LiveRoomRepository.instance.fromRowPublic(row);
+    final i = _sessions.indexWhere((s) => s.id == id);
+    if (i == -1) {
+      _sessions.insert(0, remote);
+    } else {
+      final local = _sessions[i];
+      final presence = _mergePresence(
+        remote.presence,
+        local.presence,
+        local.updatedAt,
+      );
+      _sessions[i] = remote.copyWith(presence: presence);
+    }
+    _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     _notify();
+  }
+
+  void startRealtime() {
+    if (!SupabaseService.isReady) return;
+    stopRealtime();
+    _roomsChannel = SupabaseService.client
+        .channel('live_rooms_all')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'live_rooms',
+          callback: (payload) {
+            final rec = payload.newRecord;
+            if (rec.isNotEmpty) {
+              _applyRemoteRow(Map<String, dynamic>.from(rec));
+            } else if (payload.oldRecord.isNotEmpty) {
+              final id = '${payload.oldRecord['id'] ?? ''}';
+              if (id.isNotEmpty) {
+                _sessions.removeWhere((s) => s.id == id);
+                _notify();
+              }
+            }
+            loadFromRemote();
+          },
+        )
+        .subscribe();
+  }
+
+  void stopRealtime() {
+    final ch = _roomsChannel;
+    _roomsChannel = null;
+    if (ch != null) {
+      SupabaseService.client.removeChannel(ch);
+    }
   }
 
   void addListener(void Function() listener) {
@@ -422,14 +530,14 @@ class LiveSessionStore {
     return list;
   }
 
-  void add(LiveTrainingSession session) {
+  Future<bool> add(LiveTrainingSession session) async {
     _sessions.removeWhere((s) => s.id == session.id);
     _sessions.insert(0, session);
     _notify();
-    LiveRoomRepository.instance.upsert(session);
+    return LiveRoomRepository.instance.upsert(session);
   }
 
-  void update(LiveTrainingSession session) {
+  Future<bool> update(LiveTrainingSession session) async {
     final i = _sessions.indexWhere((s) => s.id == session.id);
     if (i == -1) {
       _sessions.insert(0, session);
@@ -437,13 +545,27 @@ class LiveSessionStore {
       _sessions[i] = session;
     }
     _notify();
-    LiveRoomRepository.instance.upsert(session);
+    return LiveRoomRepository.instance.upsert(session);
   }
 
-  void remove(String id) {
+  Future<bool> remove(String id) async {
+    final existing = findByCode(id);
     _sessions.removeWhere((s) => s.id == id);
     _notify();
-    LiveRoomRepository.instance.delete(id);
+    final ok = await LiveRoomRepository.instance.delete(id);
+    if (!ok && existing != null) {
+      final closed = existing.copyWith(closed: true, updatedAt: DateTime.now());
+      final closedOk = await LiveRoomRepository.instance.upsert(closed);
+      if (closedOk) {
+        _sessions.removeWhere((s) => s.id == id);
+        _notify();
+        return true;
+      }
+      _sessions.insert(0, existing);
+      _notify();
+      return false;
+    }
+    return ok;
   }
 
   LiveTrainingSession? findByCode(String code) {
@@ -477,19 +599,24 @@ class LiveSessionStore {
       if (p.trainerInside) return 'You are already in this room';
       if (p.isFull) return 'Room is full (1 trainer + 1 trainee only)';
       final first = !p.trainerEntryNotified;
-      _sessions[i] = s.copyWith(
+      final updated = s.copyWith(
         presence: p.copyWith(trainerInside: true, trainerEntryNotified: true),
         updatedAt: DateTime.now(),
       );
+      _sessions[i] = updated;
       onJoined?.call(first);
       _notify();
+      LiveRoomRepository.instance.patchPresence(
+        roomId: roomId,
+        trainerInside: true,
+      );
       return null;
     }
 
     if (p.traineeInside) return 'A trainee is already in this room';
     if (p.isFull) return 'Room is full (1 trainer + 1 trainee only)';
     final first = !p.traineeEntryNotified;
-    _sessions[i] = s.copyWith(
+    final updated = s.copyWith(
       presence: p.copyWith(
         traineeInside: true,
         traineeDisplayName: traineeDisplayName,
@@ -497,8 +624,14 @@ class LiveSessionStore {
       ),
       updatedAt: DateTime.now(),
     );
+    _sessions[i] = updated;
     onJoined?.call(first);
     _notify();
+    LiveRoomRepository.instance.patchPresence(
+      roomId: roomId,
+      traineeInside: true,
+      traineeDisplayName: traineeDisplayName,
+    );
     return null;
   }
 
@@ -692,22 +825,68 @@ class LiveSessionStore {
       final snap = _snapshotHistory(s, next);
       _historyArchive.add(snap);
       LiveSessionRunRepository.instance.insert(snap);
-      _sessions[i] = s.copyWith(
+      final closed = s.copyWith(
         closed: true,
-        presence: s.presence.copyWith(
-          trainerInside: false,
-          traineeInside: false,
-          traineeDisplayName: null,
-        ),
+        presence: const RoomPresence(),
         updatedAt: endedAt,
       );
+      _sessions[i] = closed;
+      LiveRoomRepository.instance.upsert(closed);
+      LiveRoomRepository.instance.patchPresence(
+        roomId: roomId,
+        trainerInside: false,
+        traineeInside: false,
+        clearTraineeName: true,
+      );
+      _notifySessionRecorded(snap, s);
     }
     _notify();
-    final closedRoom = findByCode(roomId);
-    if (closedRoom != null) {
-      LiveRoomRepository.instance.upsert(closedRoom);
-    }
     return next;
+  }
+
+  void _notifySessionRecorded(
+    LiveTrainingHistoryEntry snap,
+    LiveTrainingSession room,
+  ) {
+    final ratingLabel = snap.rating != null ? '${snap.rating}/5' : 'n/a';
+    TrainingNotificationCenter.push(
+      title: 'Live session recorded',
+      body:
+          '"${snap.roomName}" ended. Rating $ratingLabel. Open Log monitoring > Live sessions.',
+      locationHint: 'Create Room > Log monitoring',
+      type: TrainingNotificationType.success,
+      actionType: 'open_live_history',
+    );
+
+    final traineeName = snap.traineeName ?? room.designatedTraineeName;
+    if (traineeName == null || traineeName.trim().isEmpty) return;
+
+    Future(() async {
+      String? userId;
+      try {
+        final match = await ProfileDirectoryService.instance.resolveTrainee(
+          traineeName,
+        );
+        userId = match?.id;
+      } catch (_) {}
+      final body =
+          'Your live session "${snap.roomName}" with ${snap.trainerName} was saved. Rating $ratingLabel. Open Dashboard to review notes and feedback.';
+      if (userId != null && userId.isNotEmpty) {
+        await NotificationInboxService.instance.insertForUser(
+          userId: userId,
+          id: 'n_${DateTime.now().microsecondsSinceEpoch}',
+          title: 'Session saved to your dashboard',
+          body: body,
+          locationHint: 'Home > Dashboard',
+          type: TrainingNotificationType.success,
+          actionType: 'open_dashboard',
+        );
+      } else {
+        debugPrint(
+          'endSession notify skipped: no user id for trainee "$traineeName"',
+        );
+      }
+    });
   }
 
   LiveTrainingSession? reopenRoom(String roomId, {String? byTrainerName}) {
@@ -742,18 +921,48 @@ class LiveSessionStore {
     if (i == -1) return;
     final s = _sessions[i];
     final p = s.presence;
+    final LiveTrainingSession updated;
     if (asTrainer) {
-      _sessions[i] = s.copyWith(
+      updated = s.copyWith(
         presence: p.copyWith(trainerInside: false),
         updatedAt: DateTime.now(),
       );
+      LiveRoomRepository.instance.patchPresence(
+        roomId: roomId,
+        trainerInside: false,
+      );
     } else {
-      _sessions[i] = s.copyWith(
-        presence: p.copyWith(traineeInside: false, traineeDisplayName: null),
+      updated = s.copyWith(
+        presence: RoomPresence(
+          trainerInside: p.trainerInside,
+          traineeInside: false,
+          traineeDisplayName: null,
+          trainerEntryNotified: p.trainerEntryNotified,
+          traineeEntryNotified: p.traineeEntryNotified,
+        ),
         updatedAt: DateTime.now(),
       );
+      LiveRoomRepository.instance.patchPresence(
+        roomId: roomId,
+        traineeInside: false,
+        clearTraineeName: true,
+      );
     }
+    _sessions[i] = updated;
     _notify();
+  }
+
+  List<LiveTrainingHistoryEntry> historyForTrainee(String traineeName) {
+    final key = traineeName.trim().toLowerCase();
+    final out = historyEntries().where((e) {
+      final n = e.traineeName?.trim().toLowerCase() ?? '';
+      if (n.isEmpty || key.isEmpty) return false;
+      if (n == key) return true;
+      final n0 = n.split(RegExp(r'\s+')).first;
+      final k0 = key.split(RegExp(r'\s+')).first;
+      return n0.isNotEmpty && k0.isNotEmpty && n0 == k0;
+    }).toList();
+    return out;
   }
 }
 

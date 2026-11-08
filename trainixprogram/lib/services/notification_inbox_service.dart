@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
@@ -32,10 +33,95 @@ class NotificationInboxService extends ChangeNotifier {
   static final NotificationInboxService instance = NotificationInboxService._();
 
   final List<InboxNotification> _items = [];
+  RealtimeChannel? _channel;
 
   List<InboxNotification> get items => List.unmodifiable(_items);
 
   int get unreadCount => _items.where((e) => !e.isRead).length;
+
+  void startRealtime() {
+    if (!SupabaseService.isReady) return;
+    final user = SupabaseService.client.auth.currentUser;
+    if (user == null) return;
+    stopRealtime();
+    _channel = SupabaseService.client
+        .channel('app_notifications_${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'app_notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            final m = payload.newRecord;
+            if (m.isEmpty) return;
+            final map = Map<String, dynamic>.from(m);
+            _upsertFromRow(map);
+            final title = '${map['title'] ?? ''}';
+            final body = '${map['body'] ?? ''}';
+            if (title.isNotEmpty) {
+              TrainingNotificationCenter.push(
+                id: map['id'] as String?,
+                title: title,
+                body: body,
+                locationHint: map['location_hint'] as String?,
+                type: _parseType('${map['type'] ?? ''}'),
+                actionType: map['action_type'] as String?,
+                actionPayload: map['action_payload'] as String?,
+                addToInbox: false,
+              );
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  void stopRealtime() {
+    final ch = _channel;
+    _channel = null;
+    if (ch != null) {
+      SupabaseService.client.removeChannel(ch);
+    }
+  }
+
+  TrainingNotificationType _parseType(String name) {
+    for (final t in TrainingNotificationType.values) {
+      if (t.name == name) return t;
+    }
+    return TrainingNotificationType.info;
+  }
+
+  void _upsertFromRow(Map<String, dynamic> m) {
+    final id = m['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    final note = InboxNotification(
+      id: id,
+      title: m['title'] as String? ?? '',
+      body: m['body'] as String? ?? '',
+      locationHint: m['location_hint'] as String?,
+      type: _parseType('${m['type'] ?? ''}'),
+      createdAt: m['created_at'] != null
+          ? DateTime.tryParse(m['created_at'] as String)?.toLocal() ??
+                DateTime.now()
+          : DateTime.now(),
+      isRead: m['is_read'] as bool? ?? false,
+      actionType: m['action_type'] as String?,
+      actionPayload: m['action_payload'] as String?,
+    );
+    final i = _items.indexWhere((e) => e.id == id);
+    if (i >= 0) {
+      _items[i] = note;
+    } else {
+      _items.insert(0, note);
+    }
+    if (_items.length > 100) {
+      _items.removeRange(100, _items.length);
+    }
+    notifyListeners();
+  }
 
   void addFromToast(TrainingNotification note) {
     if (_items.any((e) => e.id == note.id)) return;
@@ -90,6 +176,7 @@ class NotificationInboxService extends ChangeNotifier {
   }
 
   void clearLocalOnly() {
+    stopRealtime();
     _items.clear();
     notifyListeners();
   }
@@ -171,6 +258,8 @@ class NotificationInboxService extends ChangeNotifier {
     if (!SupabaseService.isReady) return false;
     if (userId.trim().isEmpty) return false;
     final at = createdAt ?? DateTime.now();
+    final me = SupabaseService.client.auth.currentUser?.id;
+    final isSelf = me != null && me == userId;
     final row = <String, dynamic>{
       'id': id,
       'user_id': userId,
@@ -185,17 +274,34 @@ class NotificationInboxService extends ChangeNotifier {
       if (actionPayload != null && actionPayload.trim().isNotEmpty)
         'action_payload': actionPayload.trim(),
     };
+
     var ok = false;
-    try {
-      await SupabaseService.client.from('app_notifications').upsert(row);
-      ok = true;
-    } catch (e) {
-      debugPrint('notifications direct insert failed: $e');
+    if (isSelf) {
+      try {
+        await SupabaseService.client.from('app_notifications').upsert(row);
+        ok = true;
+      } catch (e) {
+        debugPrint('notifications self insert failed: $e');
+        ok = await _insertViaEdgeFunction(row);
+      }
+    } else {
       ok = await _insertViaEdgeFunction(row);
+      if (!ok) {
+        ok = await _insertViaRpc(row);
+      }
+      if (!ok) {
+        try {
+          await SupabaseService.client.from('app_notifications').upsert(row);
+          ok = true;
+        } catch (e) {
+          debugPrint('notifications cross-user insert failed: $e');
+          ok = false;
+        }
+      }
     }
+
     if (!ok) return false;
-    final me = SupabaseService.client.auth.currentUser?.id;
-    if (me != null && me == userId) {
+    if (isSelf) {
       if (_items.any((e) => e.id == id)) return true;
       _items.insert(
         0,
@@ -233,6 +339,30 @@ class NotificationInboxService extends ChangeNotifier {
       return false;
     } catch (e) {
       debugPrint('notify-user edge failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> _insertViaRpc(Map<String, dynamic> row) async {
+    try {
+      await SupabaseService.client.rpc(
+        'insert_app_notification',
+        params: {
+          'p_id': row['id'],
+          'p_user_id': row['user_id'],
+          'p_title': row['title'],
+          'p_body': row['body'],
+          'p_location_hint': row['location_hint'],
+          'p_type': row['type'],
+          'p_is_read': row['is_read'] ?? false,
+          'p_created_at': row['created_at'],
+          'p_action_type': row['action_type'],
+          'p_action_payload': row['action_payload'],
+        },
+      );
+      return true;
+    } catch (e) {
+      debugPrint('insert_app_notification rpc failed: $e');
       return false;
     }
   }

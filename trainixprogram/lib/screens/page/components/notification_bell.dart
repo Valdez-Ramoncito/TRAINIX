@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/page/trainer_session.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/simulation_hub_screen.dart';
+import 'package:trainixprogram/screens/trainer_page/log_monitoring_screen.dart';
+import 'package:trainixprogram/screens/trainer_page/trainee_session.dart';
 import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
@@ -237,29 +241,56 @@ class NotificationBellAnchor extends StatelessWidget {
       Navigator.of(nav).push(MaterialPageRoute(builder: (_) => page));
     }
 
+    final isTrainee = ProfileData.role == AppRole.trainee;
+    final isTrainer = ProfileData.role == AppRole.trainer;
+
     if (action == 'join_room') {
-      go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      if (isTrainee) {
+        go(TrainerSession(initialRoomCode: payload.isEmpty ? null : payload));
+      } else if (isTrainer) {
+        go(const TraineeSession());
+      }
       return;
     }
     if (action == 'open_trainer_session') {
-      go(const TrainerSession());
+      if (isTrainee) {
+        go(const TrainerSession());
+      } else if (isTrainer) {
+        go(const TraineeSession());
+      }
       return;
     }
     if (action == 'open_mini_training' ||
         hint.contains('mini training') ||
         hint.contains('scenario practice') ||
         hint.contains('categories')) {
-      go(const MiniTraining());
+      if (isTrainee) go(const MiniTraining());
       return;
     }
     if (action == 'open_simulation' ||
         hint.contains('training simulation') ||
         hint.contains('simulation')) {
-      go(const SimulationHubScreen());
+      if (isTrainee) go(const SimulationHubScreen());
       return;
     }
-    if (hint.contains('trainer session') || hint.contains('create room')) {
-      go(const TrainerSession());
+    if (action == 'open_dashboard' || hint.contains('dashboard')) {
+      if (isTrainee) go(const DashboardScreen());
+      return;
+    }
+    if (action == 'open_live_history' || hint.contains('log monitoring')) {
+      if (isTrainer) go(const LogMonitoringScreen());
+      return;
+    }
+    if (hint.contains('create room')) {
+      if (isTrainer) go(const TraineeSession());
+      return;
+    }
+    if (hint.contains('trainer session')) {
+      if (isTrainee) {
+        go(const TrainerSession());
+      } else if (isTrainer) {
+        go(const TraineeSession());
+      }
     }
   }
 }

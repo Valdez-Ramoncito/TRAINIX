@@ -29,6 +29,7 @@ class _TrainerSessionState extends State<TrainerSession> {
   final TextEditingController _codeCtrl = TextEditingController();
   String? _joinError;
   bool _loadingRooms = false;
+  bool _autoJoinConsumed = false;
 
   @override
   void initState() {
@@ -38,6 +39,8 @@ class _TrainerSessionState extends State<TrainerSession> {
       _codeCtrl.text = code;
     }
     LiveSessionStore.instance.addListener(_onStoreChanged);
+    LiveSessionStore.instance.startRealtime();
+    NotificationInboxService.instance.startRealtime();
     _reloadRooms();
   }
 
@@ -55,6 +58,7 @@ class _TrainerSessionState extends State<TrainerSession> {
   }
 
   void _tryAutoJoinFromInvite() {
+    if (_autoJoinConsumed) return;
     final code = widget.initialRoomCode?.trim() ?? '';
     if (code.isEmpty) return;
     final session = LiveSessionStore.instance.findByCode(code);
@@ -68,6 +72,7 @@ class _TrainerSessionState extends State<TrainerSession> {
         st == RoomDisplayStatus.cancelled) {
       return;
     }
+    _autoJoinConsumed = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _tryEnter(session);
@@ -260,6 +265,7 @@ class _TrainerSessionState extends State<TrainerSession> {
         builder: (_) => LiveTrainingRoom(session: updated, isTrainer: false),
       ),
     ).then((_) {
+      _autoJoinConsumed = true;
       LiveSessionStore.instance.leave(roomId: session.id, asTrainer: false);
       TraineeActivityLogStore.instance.log(
         actorName: ProfileData.displayName,
@@ -269,7 +275,7 @@ class _TrainerSessionState extends State<TrainerSession> {
         detail: 'Trainee left "${session.name}"',
         roomId: session.id,
       );
-      _refresh();
+      if (mounted) setState(() {});
     });
   }
 
@@ -419,7 +425,7 @@ class _TrainerSessionState extends State<TrainerSession> {
                       ),
                       const Gap(10),
                       SizedBox(
-                        height: 88,
+                        height: 96,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _upcoming.length,
@@ -427,6 +433,9 @@ class _TrainerSessionState extends State<TrainerSession> {
                           itemBuilder: (_, i) {
                             final s = _upcoming[i];
                             final open = canJoinBySchedule(s);
+                            final when = s.scheduledAt != null
+                                ? formatCreatedAt(s.scheduledAt!)
+                                : '';
                             return GestureDetector(
                               onTap: () => _onRoomTap(s),
                               child: Container(
@@ -453,9 +462,13 @@ class _TrainerSessionState extends State<TrainerSession> {
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                    const Gap(6),
+                                    const Gap(4),
                                     Text(
-                                      scheduleLabel(s),
+                                      when.isEmpty
+                                          ? 'Scheduled'
+                                          : 'Starts $when',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         color: Colors.white54,
                                         fontSize: 11,
@@ -464,11 +477,14 @@ class _TrainerSessionState extends State<TrainerSession> {
                                     const Gap(4),
                                     Text(
                                       open ? 'Join open' : 'Not open yet',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: open
                                             ? const Color(0xFF8AFB09)
                                             : Colors.white38,
                                         fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],

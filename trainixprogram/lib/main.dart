@@ -12,6 +12,7 @@ import 'package:trainixprogram/services/supabase_service.dart';
 import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/screens/page/components/notification_bell.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
+import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,6 +51,12 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             navigatorKey: AppNavigator.key,
             builder: (context, child) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final overlay = AppNavigator.key.currentState?.overlay;
+                if (overlay != null) {
+                  TrainingNotificationCenter.attachOverlay(overlay);
+                }
+              });
               return Stack(
                 children: [
                   child ?? const SizedBox.shrink(),

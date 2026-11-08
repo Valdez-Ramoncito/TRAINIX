@@ -16,6 +16,7 @@ import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/components/class/trainee_activity_log.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
 import 'package:trainixprogram/screens/trainer_page/components/header.dart';
 import 'package:trainixprogram/screens/trainer_page/live_training_room.dart';
@@ -37,7 +38,11 @@ class _TraineeSessionState extends State<TraineeSession> {
   List<LiveTrainingSession> get _upcoming => LiveSessionStore.instance
       .upcomingSessions(trainerName: ProfileData.displayName);
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    if (mounted) setState(() {});
+  }
+
+  void _onStoreChanged() => _refresh();
 
   void _checkReminders() {
     for (final s in LiveSessionStore.instance.roomsNeedingReminder()) {
@@ -47,6 +52,23 @@ class _TraineeSessionState extends State<TraineeSession> {
         whenLabel: formatCreatedAt(s.scheduledAt!),
       );
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    LiveSessionStore.instance.addListener(_onStoreChanged);
+    LiveSessionStore.instance.startRealtime();
+    NotificationInboxService.instance.startRealtime();
+    LiveSessionStore.instance.loadFromRemote().then((_) {
+      if (mounted) _refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    LiveSessionStore.instance.removeListener(_onStoreChanged);
+    super.dispose();
   }
 
   @override
@@ -203,8 +225,11 @@ class _TraineeSessionState extends State<TraineeSession> {
                                 _enterAsTrainer(s);
                               },
                               child: Container(
-                                width: 220,
-                                padding: const EdgeInsets.all(12),
+                                width: 200,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color.fromARGB(180, 21, 21, 21),
                                   borderRadius: BorderRadius.circular(12),
@@ -228,7 +253,11 @@ class _TraineeSessionState extends State<TraineeSession> {
                                     ),
                                     const Gap(6),
                                     Text(
-                                      scheduleLabel(s),
+                                      s.scheduledAt == null
+                                          ? 'Scheduled'
+                                          : 'Starts ${compactScheduleTime(s.scheduledAt!)}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         color: Colors.white54,
                                         fontSize: 11,
@@ -237,11 +266,14 @@ class _TraineeSessionState extends State<TraineeSession> {
                                     const Gap(4),
                                     Text(
                                       open ? 'Join open' : 'Not open yet',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: open
                                             ? const Color(0xFF8AFB09)
                                             : Colors.white38,
                                         fontSize: 11,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],

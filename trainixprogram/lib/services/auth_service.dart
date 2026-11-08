@@ -6,6 +6,7 @@ import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/components/class/live_training_session.dart';
 
 class AuthService {
   AuthService._();
@@ -189,6 +190,8 @@ class AuthService {
     MiniTrainingProgress.resetAll();
     TrainixDebug.resetForLogout();
     NotificationInboxService.instance.clearLocalOnly();
+    NotificationInboxService.instance.stopRealtime();
+    LiveSessionStore.instance.stopRealtime();
     TrainingNotificationCenter.clearToasts();
     if (!SupabaseService.isReady) return;
     try {

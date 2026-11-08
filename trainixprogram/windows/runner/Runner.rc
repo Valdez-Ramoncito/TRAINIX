@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "trainixprogram" "\0"
+            VALUE "FileDescription", "TRAINIX" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "trainixprogram" "\0"
+            VALUE "InternalName", "TRAINIX" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "trainixprogram.exe" "\0"
-            VALUE "ProductName", "trainixprogram" "\0"
+            VALUE "OriginalFilename", "TRAINIX.exe" "\0"
+            VALUE "ProductName", "TRAINIX" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
