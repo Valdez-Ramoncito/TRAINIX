@@ -147,7 +147,35 @@ class LiveRoomRepository {
   }) async {
     lastError = null;
     if (!SupabaseService.isReady) return false;
-    final patch = <String, dynamic>{};
+    if (trainerInside == null &&
+        traineeInside == null &&
+        traineeDisplayName == null &&
+        !clearTraineeName) {
+      return true;
+    }
+
+    // RPC bypasses owner-only RLS so trainees can set trainee_inside.
+    try {
+      final row = await SupabaseService.client.rpc(
+        'set_live_room_presence',
+        params: {
+          'p_room_id': roomId,
+          'p_trainer_inside': trainerInside,
+          'p_trainee_inside': traineeInside,
+          'p_trainee_display_name': traineeDisplayName,
+          'p_clear_trainee_name': clearTraineeName,
+        },
+      );
+      debugPrint('live_rooms presence rpc ok: $roomId row=$row');
+      return true;
+    } catch (e) {
+      debugPrint('live_rooms presence rpc failed: $e');
+    }
+
+    // Fallback: direct update (works for room owner / trainer only).
+    final patch = <String, dynamic>{
+      'updated_at': DateTime.now().toUtc().toIso8601String(),
+    };
     if (trainerInside != null) patch['trainer_inside'] = trainerInside;
     if (traineeInside != null) patch['trainee_inside'] = traineeInside;
     if (clearTraineeName) {
@@ -155,30 +183,24 @@ class LiveRoomRepository {
     } else if (traineeDisplayName != null) {
       patch['trainee_display_name'] = traineeDisplayName;
     }
-    if (patch.isEmpty) return true;
     try {
-      await SupabaseService.client
+      final rows = await SupabaseService.client
           .from(_table)
-          .update({
-            ...patch,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', roomId);
-      debugPrint('live_rooms presence patch ok: $roomId $patch');
-      return true;
-    } catch (e) {
-      try {
-        await SupabaseService.client
-            .from(_table)
-            .update(patch)
-            .eq('id', roomId);
-        debugPrint('live_rooms presence patch lite ok: $roomId $patch');
-        return true;
-      } catch (e2) {
-        lastError = e2.toString();
-        debugPrint('live_rooms presence patch failed: $lastError');
+          .update(patch)
+          .eq('id', roomId)
+          .select('id, trainer_inside, trainee_inside');
+      final list = rows as List? ?? const [];
+      if (list.isEmpty) {
+        lastError = 'presence update matched 0 rows (RLS or missing room)';
+        debugPrint('live_rooms presence patch empty: $roomId');
         return false;
       }
+      debugPrint('live_rooms presence patch ok: $roomId ${list.first}');
+      return true;
+    } catch (e2) {
+      lastError = e2.toString();
+      debugPrint('live_rooms presence patch failed: $lastError');
+      return false;
     }
   }
 

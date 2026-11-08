@@ -303,61 +303,95 @@ class LiveSessionStore {
   final List<void Function()> _listeners = [];
   RealtimeChannel? _roomsChannel;
   bool _loadingRemote = false;
+  bool _pendingRemoteLoad = false;
 
   List<LiveTrainingSession> get sessions => List.unmodifiable(_sessions);
+
+  bool _mergeFlag({
+    required bool remoteVal,
+    required bool localVal,
+    DateTime? localUpdatedAt,
+    DateTime? remoteUpdatedAt,
+  }) {
+    if (!localVal &&
+        localUpdatedAt != null &&
+        DateTime.now().difference(localUpdatedAt).inSeconds < 6) {
+      return false;
+    }
+    if (!remoteVal &&
+        remoteUpdatedAt != null &&
+        (localUpdatedAt == null || !localUpdatedAt.isAfter(remoteUpdatedAt))) {
+      return false;
+    }
+    return remoteVal || localVal;
+  }
 
   RoomPresence _mergePresence(
     RoomPresence remote,
     RoomPresence? local,
     DateTime? localUpdatedAt,
+    DateTime? remoteUpdatedAt,
   ) {
     if (local == null) return remote;
-    if (local.occupantCount > remote.occupantCount) {
-      return RoomPresence(
-        trainerInside: remote.trainerInside || local.trainerInside,
-        traineeInside: remote.traineeInside || local.traineeInside,
-        traineeDisplayName:
-            remote.traineeDisplayName ?? local.traineeDisplayName,
-        trainerEntryNotified:
-            remote.trainerEntryNotified || local.trainerEntryNotified,
-        traineeEntryNotified:
-            remote.traineeEntryNotified || local.traineeEntryNotified,
-      );
-    }
-    return remote;
+    return RoomPresence(
+      trainerInside: _mergeFlag(
+        remoteVal: remote.trainerInside,
+        localVal: local.trainerInside,
+        localUpdatedAt: localUpdatedAt,
+        remoteUpdatedAt: remoteUpdatedAt,
+      ),
+      traineeInside: _mergeFlag(
+        remoteVal: remote.traineeInside,
+        localVal: local.traineeInside,
+        localUpdatedAt: localUpdatedAt,
+        remoteUpdatedAt: remoteUpdatedAt,
+      ),
+      traineeDisplayName: remote.traineeDisplayName ?? local.traineeDisplayName,
+      trainerEntryNotified:
+          remote.trainerEntryNotified || local.trainerEntryNotified,
+      traineeEntryNotified:
+          remote.traineeEntryNotified || local.traineeEntryNotified,
+    );
   }
 
   Future<void> loadFromRemote() async {
-    if (_loadingRemote) return;
+    if (_loadingRemote) {
+      _pendingRemoteLoad = true;
+      return;
+    }
     _loadingRemote = true;
     try {
-      final remote = await LiveRoomRepository.instance.fetchAll();
-      if (remote != null) {
-        final localById = {for (final s in _sessions) s.id: s};
-        final merged = <LiveTrainingSession>[];
-        for (final r in remote) {
-          if (r.closed) continue;
-          final local = localById[r.id];
-          final presence = _mergePresence(
-            r.presence,
-            local?.presence,
-            local?.updatedAt,
-          );
-          merged.add(r.copyWith(presence: presence));
+      do {
+        _pendingRemoteLoad = false;
+        final remote = await LiveRoomRepository.instance.fetchAll();
+        if (remote != null) {
+          final localById = {for (final s in _sessions) s.id: s};
+          final merged = <LiveTrainingSession>[];
+          for (final r in remote) {
+            if (r.closed) continue;
+            final local = localById[r.id];
+            final presence = _mergePresence(
+              r.presence,
+              local?.presence,
+              local?.updatedAt,
+              r.updatedAt,
+            );
+            merged.add(r.copyWith(presence: presence));
+          }
+          _sessions
+            ..clear()
+            ..addAll(merged);
+          _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         }
-        _sessions
-          ..clear()
-          ..addAll(merged);
-        _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      }
 
-      final runs = await LiveSessionRunRepository.instance.fetchAll();
-      if (runs.isNotEmpty) {
-        _historyArchive
-          ..clear()
-          ..addAll(runs);
-      }
-      _notify();
+        final runs = await LiveSessionRunRepository.instance.fetchAll();
+        if (runs.isNotEmpty) {
+          _historyArchive
+            ..clear()
+            ..addAll(runs);
+        }
+        _notify();
+      } while (_pendingRemoteLoad);
     } finally {
       _loadingRemote = false;
     }
@@ -382,6 +416,7 @@ class LiveSessionStore {
         remote.presence,
         local.presence,
         local.updatedAt,
+        remote.updatedAt,
       );
       _sessions[i] = remote.copyWith(presence: presence);
     }
@@ -606,10 +641,15 @@ class LiveSessionStore {
       _sessions[i] = updated;
       onJoined?.call(first);
       _notify();
-      LiveRoomRepository.instance.patchPresence(
-        roomId: roomId,
-        trainerInside: true,
-      );
+      Future(() async {
+        final ok = await LiveRoomRepository.instance.patchPresence(
+          roomId: roomId,
+          trainerInside: true,
+        );
+        debugPrint('tryJoin trainer presence write ok=$ok room=$roomId');
+        await Future.delayed(const Duration(milliseconds: 300));
+        await loadFromRemote();
+      });
       return null;
     }
 
@@ -627,11 +667,16 @@ class LiveSessionStore {
     _sessions[i] = updated;
     onJoined?.call(first);
     _notify();
-    LiveRoomRepository.instance.patchPresence(
-      roomId: roomId,
-      traineeInside: true,
-      traineeDisplayName: traineeDisplayName,
-    );
+    Future(() async {
+      final ok = await LiveRoomRepository.instance.patchPresence(
+        roomId: roomId,
+        traineeInside: true,
+        traineeDisplayName: traineeDisplayName,
+      );
+      debugPrint('tryJoin trainee presence write ok=$ok room=$roomId');
+      await Future.delayed(const Duration(milliseconds: 300));
+      await loadFromRemote();
+    });
     return null;
   }
 
@@ -927,10 +972,14 @@ class LiveSessionStore {
         presence: p.copyWith(trainerInside: false),
         updatedAt: DateTime.now(),
       );
-      LiveRoomRepository.instance.patchPresence(
-        roomId: roomId,
-        trainerInside: false,
-      );
+      Future(() async {
+        await LiveRoomRepository.instance.patchPresence(
+          roomId: roomId,
+          trainerInside: false,
+        );
+        await Future.delayed(const Duration(milliseconds: 250));
+        await loadFromRemote();
+      });
     } else {
       updated = s.copyWith(
         presence: RoomPresence(
@@ -942,11 +991,15 @@ class LiveSessionStore {
         ),
         updatedAt: DateTime.now(),
       );
-      LiveRoomRepository.instance.patchPresence(
-        roomId: roomId,
-        traineeInside: false,
-        clearTraineeName: true,
-      );
+      Future(() async {
+        await LiveRoomRepository.instance.patchPresence(
+          roomId: roomId,
+          traineeInside: false,
+          clearTraineeName: true,
+        );
+        await Future.delayed(const Duration(milliseconds: 250));
+        await loadFromRemote();
+      });
     }
     _sessions[i] = updated;
     _notify();
