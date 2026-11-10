@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 class LogMonitoringScreen extends StatefulWidget {
   const LogMonitoringScreen({
@@ -244,57 +245,6 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
 
     if (widget.embedded) return body;
     return Scaffold(body: SafeArea(child: body));
-  }
-
-  void _seedDemoLogs() {
-    final store = TraineeActivityLogStore.instance;
-    store.log(
-      actorName: 'Demo Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.auth,
-      action: 'Login',
-      detail: 'Trainee signed in',
-    );
-    store.log(
-      actorName: 'Demo Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.navigation,
-      action: 'Opened Trainer Session',
-      detail: 'Viewed available live rooms',
-    );
-    store.log(
-      actorName: 'Demo Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.liveTraining,
-      action: 'Joined room',
-      detail: 'Entered live room for coaching',
-      roomId: 'demo-room',
-    );
-    store.log(
-      actorName: 'Demo Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.simulation,
-      action: 'Completed simulation',
-      detail: 'Non-Voice simulation finished with overall score 7.8',
-      sessionRef: 'sim-demo-1',
-    );
-    store.log(
-      actorName: 'Sample Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.scoring,
-      action: 'Viewed session report',
-      detail: 'Opened score report after simulation',
-      sessionRef: 'sim-demo-2',
-    );
-    store.log(
-      actorName: 'Sample Trainee',
-      actorRole: 'trainee',
-      category: TraineeLogCategory.simulation,
-      action: 'Completed simulation',
-      detail: 'Voice simulation finished with overall score 6.4',
-      sessionRef: 'sim-demo-2',
-    );
-    setState(() {});
   }
 }
 
@@ -1130,10 +1080,18 @@ class _LogDetailDialog extends StatelessWidget {
                           linkedEval.overallScore.toStringAsFixed(1),
                         ),
                         if (linkedEval.customerName.isNotEmpty)
-                          _kv('Customer', linkedEval.customerName),
-                        if (linkedEval.problem.isNotEmpty)
-                          _kv('Problem', linkedEval.problem),
-                        if (linkedEval.strengths.isNotEmpty) ...[
+                          _kv(
+                            'Customer',
+                            friendlyCustomerName(linkedEval.customerName),
+                          ),
+                        if (friendlyProblemText(linkedEval.problem).isNotEmpty)
+                          _kv(
+                            'Problem',
+                            friendlyProblemText(linkedEval.problem),
+                          ),
+                        if (linkedEval.strengths
+                            .map(friendlyEvalText)
+                            .any((s) => s.isNotEmpty)) ...[
                           const Gap(8),
                           const Text(
                             'Strengths',
@@ -1143,17 +1101,21 @@ class _LogDetailDialog extends StatelessWidget {
                             ),
                           ),
                           const Gap(4),
-                          ...linkedEval.strengths.map(
-                            (s) => Text(
-                              '· $s',
+                          ...linkedEval.strengths.map((s) {
+                            final text = friendlyEvalText(s);
+                            if (text.isEmpty) return const SizedBox.shrink();
+                            return Text(
+                              '· $text',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
                               ),
-                            ),
-                          ),
+                            );
+                          }),
                         ],
-                        if (linkedEval.areasForImprovement.isNotEmpty) ...[
+                        if (linkedEval.areasForImprovement
+                            .map(friendlyEvalText)
+                            .any((s) => s.isNotEmpty)) ...[
                           const Gap(8),
                           const Text(
                             'Areas for improvement',
@@ -1163,17 +1125,21 @@ class _LogDetailDialog extends StatelessWidget {
                             ),
                           ),
                           const Gap(4),
-                          ...linkedEval.areasForImprovement.map(
-                            (s) => Text(
-                              '· $s',
+                          ...linkedEval.areasForImprovement.map((s) {
+                            final text = friendlyEvalText(s);
+                            if (text.isEmpty) return const SizedBox.shrink();
+                            return Text(
+                              '· $text',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
                               ),
-                            ),
-                          ),
+                            );
+                          }),
                         ],
-                        if (linkedEval.feedback.isNotEmpty) ...[
+                        if (friendlyEvalText(
+                          linkedEval.feedback,
+                        ).isNotEmpty) ...[
                           const Gap(8),
                           const Text(
                             'Feedback',
@@ -1184,7 +1150,7 @@ class _LogDetailDialog extends StatelessWidget {
                           ),
                           const Gap(4),
                           Text(
-                            linkedEval.feedback,
+                            friendlyEvalText(linkedEval.feedback),
                             style: const TextStyle(
                               color: Colors.white70,
                               fontSize: 12,

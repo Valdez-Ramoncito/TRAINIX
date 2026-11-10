@@ -6,6 +6,7 @@ import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 class SessionHistoryList extends StatelessWidget {
   final SimulationMode? modeFilter;
@@ -18,8 +19,6 @@ class SessionHistoryList extends StatelessWidget {
         return 'Non-Voice Session History';
       case SimulationMode.voice:
         return 'Voice Session History';
-      case SimulationMode.hybrid:
-        return 'Voice Session History';
       case null:
         return 'All Sessions';
     }
@@ -31,8 +30,6 @@ class SessionHistoryList extends StatelessWidget {
         return 'No non-voice sessions yet.\nStart one from Non-Voice under Sessions.';
       case SimulationMode.voice:
         return 'No voice sessions yet.\nStart one from Voice under Sessions.';
-      case SimulationMode.hybrid:
-        return 'No voice sessions yet.\nStart one from Voice under Sessions.';
       case null:
         return 'No sessions yet.\nStart a simulation from Non-Voice or Voice.';
     }
@@ -43,8 +40,6 @@ class SessionHistoryList extends StatelessWidget {
       case SimulationMode.chat:
         return 'Non-Voice';
       case SimulationMode.voice:
-        return 'Voice';
-      case SimulationMode.hybrid:
         return 'Voice';
     }
   }
@@ -75,9 +70,12 @@ class SessionHistoryList extends StatelessWidget {
           Expanded(
             child: Consumer<SimulationHistoryProvider>(
               builder: (context, history, _) {
-                final source = modeFilter == null
-                    ? history.sessions
-                    : history.sessionsForMode(modeFilter!);
+                final source =
+                    (modeFilter == null
+                            ? history.sessions
+                            : history.sessionsForMode(modeFilter!))
+                        .where((s) => !isDebugSession(s))
+                        .toList();
                 if (source.isEmpty) {
                   return Center(
                     child: Text(
@@ -98,8 +96,9 @@ class SessionHistoryList extends StatelessWidget {
                     final session = reversed[index];
                     final number = reversed.length - index;
                     final names = session.evaluations
-                        .map((e) => e.customerName)
+                        .map((e) => friendlyCustomerName(e.customerName))
                         .where((n) => n.isNotEmpty)
+                        .toSet()
                         .take(3)
                         .join(', ');
                     return InkWell(
@@ -121,12 +120,7 @@ class SessionHistoryList extends StatelessWidget {
                           horizontal: 18,
                           vertical: 14,
                         ),
-                        decoration: boxDecoration(
-                          false,
-                          true,
-                          isDark:
-                              Theme.of(context).brightness == Brightness.dark,
-                        ),
+                        decoration: boxDecoration(false, true),
                         child: Row(
                           children: [
                             Text(
@@ -239,7 +233,9 @@ class MessagesArchiveList extends StatelessWidget {
             child: Consumer<SimulationHistoryProvider>(
               builder: (context, history, _) {
                 final items = history.evaluations
-                    .where((e) => e.conversation.isNotEmpty)
+                    .where(
+                      (e) => e.conversation.isNotEmpty && !isDebugEvaluation(e),
+                    )
                     .toList()
                     .reversed
                     .toList();
@@ -270,12 +266,7 @@ class MessagesArchiveList extends StatelessWidget {
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(14),
-                        decoration: boxDecoration(
-                          false,
-                          true,
-                          isDark:
-                              Theme.of(context).brightness == Brightness.dark,
-                        ),
+                        decoration: boxDecoration(false, true),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -285,7 +276,7 @@ class MessagesArchiveList extends StatelessWidget {
                                   child: Text(
                                     e.customerName.isEmpty
                                         ? 'Customer'
-                                        : e.customerName,
+                                        : friendlyCustomerName(e.customerName),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,

@@ -1,7 +1,6 @@
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
-import 'package:trainixprogram/models/training/simulation_case_packs.dart';
 
 class PackSessionScorer {
   static SessionEvaluation scoreChat({

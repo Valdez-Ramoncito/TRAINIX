@@ -186,25 +186,6 @@ class CaseChecklist {
         s.contains('the system shows');
   }
 
-  static bool traineeSaidRequest(String t) {
-    final s = t.toLowerCase();
-    return s.contains('file') ||
-        s.contains('request') ||
-        s.contains('ticket') ||
-        s.contains('review') ||
-        s.contains('callback') ||
-        s.contains('submit');
-  }
-
-  static bool traineeAcknowledged(String t) {
-    final s = t.toLowerCase();
-    return s.contains('sorry') ||
-        s.contains('understand') ||
-        s.contains('thank you for') ||
-        s.contains('i can help') ||
-        s.contains('i will help');
-  }
-
   /// Single next step for Script Guide. One tip, matched examples, one amber line.
   static CaseNextStep resolve({
     required ProblemFamily family,

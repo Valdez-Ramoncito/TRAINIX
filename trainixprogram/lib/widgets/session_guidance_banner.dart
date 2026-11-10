@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 
 class SessionGuidanceBanner extends StatefulWidget {
   final String objective;
@@ -92,10 +93,12 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
     if (next != _elapsedSeconds) {
       setState(() {
         _elapsedSeconds = next;
-        for (final m in _milestones) {
-          if (next >= m && !_firedMilestones.contains(m)) {
-            _firedMilestones.add(m);
-            _milestoneMessage = _milestoneText(m);
+        if (AppSettings.ahtAlertsEnabled) {
+          for (final m in _milestones) {
+            if (next >= m && !_firedMilestones.contains(m)) {
+              _firedMilestones.add(m);
+              _milestoneMessage = _milestoneText(m);
+            }
           }
         }
       });
@@ -126,6 +129,7 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
   }
 
   String? get _tip {
+    if (!AppSettings.coachTipsEnabled) return null;
     if (widget.tip != null && widget.tip!.isNotEmpty) return widget.tip;
     return SimulationCoach.tipForState(
       customerConfirmed: widget.customerConfirmed,

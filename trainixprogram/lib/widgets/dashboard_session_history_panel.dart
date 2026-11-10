@@ -5,6 +5,7 @@ import 'package:trainixprogram/components/class/live_training_session.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 Color _scoreColor(double score) {
   if (score >= 8.5) return const Color(0xFF34D399);
@@ -260,21 +261,9 @@ class SimulationHistoryPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SimulationHistoryProvider>(
       builder: (context, history, _) {
-        final items = history.sessions.where((s) {
-          final sector = s.sector.toLowerCase();
-          if (sector.contains('debug') || sector.contains('sample')) {
-            return false;
-          }
-          final names = s.evaluations.map((e) => e.customerName.toLowerCase());
-          if (names.isEmpty) return true;
-          final allDebug = names.every(
-            (n) =>
-                n.contains('debug') ||
-                n.startsWith('demo ') ||
-                n.contains('sample'),
-          );
-          return !allDebug;
-        }).toList();
+        final items = history.sessions
+            .where((s) => !isDebugSession(s))
+            .toList();
         final avg = items.isEmpty
             ? 0.0
             : items.map((s) => s.overallScore).reduce((a, b) => a + b) /
@@ -356,14 +345,9 @@ class SimulationHistoryPanel extends StatelessWidget {
               final score = session.overallScore;
               final color = _scoreColor(score);
               final names = session.evaluations
-                  .map((e) => e.customerName)
-                  .where((n) {
-                    if (n.isEmpty) return false;
-                    final lower = n.toLowerCase();
-                    return !lower.contains('debug') &&
-                        !lower.startsWith('demo ') &&
-                        !lower.contains('sample');
-                  })
+                  .map((e) => friendlyCustomerName(e.customerName))
+                  .where((n) => n.isNotEmpty)
+                  .toSet()
                   .toList();
               final channels = session.evaluations
                   .map((e) => e.channel)
@@ -497,10 +481,10 @@ class SimulationHistoryPanel extends StatelessWidget {
                           ),
                         ),
                       ],
-                      if (session.topStrength.isNotEmpty) ...[
+                      if (friendlyEvalText(session.topStrength).isNotEmpty) ...[
                         const Gap(6),
                         Text(
-                          'Logged strength: ${session.topStrength}',
+                          'Logged strength: ${friendlyEvalText(session.topStrength)}',
                           style: const TextStyle(
                             color: Color(0xFF34D399),
                             fontSize: 11,

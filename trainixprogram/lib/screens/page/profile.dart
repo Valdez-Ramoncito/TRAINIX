@@ -201,10 +201,6 @@ class ProfileData {
   }
 }
 
-class DemoTraineeDirectory {
-  static List<String> get names => const [];
-}
-
 class Profile extends StatefulWidget {
   final bool requireCompletion;
 
@@ -229,9 +225,6 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   bool _editing = ProfileData.role == AppRole.trainee
       ? !MiniTrainingProgress.isProfileComplete
       : false;
-  bool _savedOnce =
-      MiniTrainingProgress.isProfileComplete ||
-      ProfileData.role != AppRole.trainee;
 
   static const _sectors = ['Tech Support', 'Healthcare', 'Finance', 'Telco'];
 
@@ -296,7 +289,6 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
     final wasComplete = MiniTrainingProgress.isProfileComplete;
     MiniTrainingProgress.completeProfile();
     setState(() {
-      _savedOnce = true;
       _editing = false;
     });
     await AuthService.saveProfileDetails();
@@ -647,25 +639,10 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                             ),
                                           ),
                                         ),
-                                        Positioned(
+                                        const Positioned(
                                           bottom: 8,
                                           right: 8,
-                                          child: ProfileCameraButton(
-                                            onTap: () {
-                                              setState(() {
-                                                ProfileData.photoSet = true;
-                                              });
-                                              ScaffoldMessenger.of(
-                                                context,
-                                              ).showSnackBar(
-                                                const SnackBar(
-                                                  content: Text(
-                                                    'Photo picker will connect to storage later. Placeholder marked as set.',
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ),
+                                          child: ProfileCameraButton(),
                                         ),
                                       ],
                                     ),

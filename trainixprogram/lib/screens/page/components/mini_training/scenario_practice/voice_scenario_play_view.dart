@@ -4,7 +4,6 @@ import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_account_lookup_panel.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_chat_bubble.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_feedback_banner.dart';
-import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_mission_panel.dart';
 
 class VoiceScenarioPlayView extends StatelessWidget {
   final ScenarioDefinition scenario;

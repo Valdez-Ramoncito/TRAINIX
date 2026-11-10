@@ -1,6 +1,5 @@
 import 'package:trainixprogram/models/training/script_personalization.dart';
 import 'package:trainixprogram/models/simulation_stage.dart';
-import 'package:trainixprogram/models/problem_family.dart';
 
 enum PracticeFocus { general, typing, pronunciation, irateHandling }
 
@@ -31,8 +30,6 @@ enum _CoachIssueKind {
 }
 
 class SimulationCoach {
-  /// Shared handling stage for chat, voice, and hybrid.
-  /// Guide tips, examples, and tool prompts all key off this.
   static String stageFor({
     required bool hasCustomerSpoken,
     required bool hasTraineeSpoken,
@@ -462,71 +459,6 @@ class SimulationCoach {
         t.contains('handing this to');
   }
 
-  static bool shouldShowEscalationTab({
-    required String problem,
-    required String sector,
-    required int elapsedSeconds,
-    required int traineeTurnCount,
-    required bool toolWorkDone,
-    required bool customerConfirmed,
-    bool hasTraineeSpoken = false,
-    bool isEscalating = false,
-    String lastCustomerMessage = '',
-    String lastTraineeMessage = '',
-    bool isChatChannel = true,
-  }) {
-    if (isEscalating) return true;
-    if (customerConfirmed) return false;
-    if (!hasTraineeSpoken) return false;
-    if (requiresEscalationFromStart(problem, sector: sector) &&
-        traineeTurnCount >= 2) {
-      return true;
-    }
-    if (elapsedSeconds >= 600 && traineeTurnCount >= 8) return true;
-    if (toolWorkDone && customerWantsMoreDetail(lastCustomerMessage))
-      return true;
-    return false;
-  }
-
-  static List<String> escalationChecklist({
-    required String customerName,
-    String? accountId,
-    required String problem,
-    String sector = '',
-  }) {
-    final p = problem.toLowerCase();
-    final items = <String>[
-      'Confirm full name (ask if unclear): ${customerName.isEmpty ? "ask the customer" : customerName}',
-      'Account or loan ID if they have one${(accountId == null || accountId.isEmpty) ? " (ask politely)" : ": $accountId"}',
-      'Short issue summary in their words: ${_shortIssue(problem)}',
-    ];
-    if (p.contains('loan') ||
-        p.contains('restructure') ||
-        p.contains('hardship') ||
-        p.contains('payment')) {
-      items.addAll([
-        'Ask how many payments are behind or what monthly amount they can manage',
-        'Ask whether this is temporary hardship or longer term',
-        'Ask preferred callback number and best time to reach them',
-      ]);
-    } else if (p.contains('file') ||
-        p.contains('missing') ||
-        p.contains('reset')) {
-      items.addAll([
-        'Ask device type and when the reset or loss happened',
-        'Ask whether any backup or cloud sync was enabled',
-        'Ask preferred callback if a specialist must continue recovery',
-      ]);
-    } else {
-      items.addAll([
-        'Ask what was already tried',
-        'Ask the main impact on them',
-        'Ask preferred callback number or contact method',
-      ]);
-    }
-    return items;
-  }
-
   static String? tipForState({
     required bool customerConfirmed,
     required bool awaitingClosing,
@@ -556,16 +488,6 @@ class SimulationCoach {
       return 'Open with your name and company, then invite them to share the issue.';
     }
 
-    final stage = stageFor(
-      hasCustomerSpoken: hasCustomerSpoken,
-      hasTraineeSpoken: hasTraineeSpoken,
-      customerConfirmed: customerConfirmed,
-      awaitingClosing: awaitingClosing,
-      isEscalating: isEscalating,
-      traineeTurnCount: traineeTurnCount,
-      toolWorkDone: toolWorkDone,
-      identityVerified: identityVerified,
-    );
     // Account vs non-account focus after opening
     final pLow = problem.toLowerCase();
     final likelyAccount =
@@ -852,10 +774,6 @@ class SimulationCoach {
         t.contains('take care');
   }
 
-  static bool isOverAht(double handleSeconds) {
-    return handleSeconds > ahtLimitSeconds;
-  }
-
   static bool looksLikeAgentSpeech(String text) {
     final t = text.toLowerCase();
     if (t.contains('thank you for contacting')) return true;
@@ -987,7 +905,6 @@ class SimulationCoach {
     bool hasCustomerSpoken = true,
     bool isEscalating = false,
   }) {
-    final e = emotion.isEmpty ? 'neutral' : emotion;
     final who = customerName.isEmpty ? 'the customer' : customerName;
     final issue = _shortIssue(problem);
     final accountBit = (accountId == null || accountId.isEmpty)
@@ -1841,7 +1758,6 @@ class SimulationCoach {
     String lastCustomerMessage = '',
     String lastTraineeMessage = '',
   }) {
-    final e = emotion.isEmpty ? 'concerned' : emotion;
     final who = customerName.isEmpty ? 'there' : customerName;
     final issue = _shortIssue(problem);
     final s = sector.toLowerCase();
@@ -2421,312 +2337,6 @@ class SimulationCoach {
 
   static String suggestionForOffTopic() {
     return 'Stay on the customer issue. Acknowledge their concern, ask a clarifying question, or take the next helpful step.';
-  }
-
-  static String tipForStageFamily({
-    required SimulationStage stage,
-    required ProblemFamily family,
-    required int traineeTurns,
-    required bool toolWorkDone,
-    required bool customerResolved,
-    required bool identityVerified,
-    String lastCustomerText = '',
-  }) {
-    switch (stage) {
-      case SimulationStage.waitCustomer:
-        return 'Wait for the customer to speak.';
-      case SimulationStage.opening:
-        return _openingTip(family);
-      case SimulationStage.exploring:
-        return _exploringTip(family, lastCustomerText, identityVerified);
-      case SimulationStage.acting:
-        if (customerResolved && traineeTurns < 3) {
-          return 'Customer sounds satisfied. Confirm the issue is truly handled before closing.';
-        }
-        if (toolWorkDone) {
-          return 'Confirm what was filed and set a clear expectation, then check that the customer is satisfied.';
-        }
-        return _actingTip(family);
-      case SimulationStage.escalating:
-        return 'Collect handoff details: what was tried, account detail if any, customer impact, and what you told them.';
-      case SimulationStage.closing:
-        return 'Close the interaction: short recap, ask if anything else is needed, then thank them.';
-      case SimulationStage.acw:
-        return 'Select disposition and write notes.';
-      case SimulationStage.next:
-        return '';
-    }
-  }
-
-  static String _openingTip(ProblemFamily family) {
-    switch (family) {
-      case ProblemFamily.planEligibility:
-        return 'Open with your name, acknowledge the denied plan upgrade, and do not treat this as a network outage.';
-      case ProblemFamily.loginAccess:
-        return 'Open with your name, acknowledge the sign-in or password issue, and avoid asking for their full password.';
-      case ProblemFamily.billingSurprise:
-        return 'Open with your name, acknowledge the unexpected bill or charge, and prepare to review line items.';
-      case ProblemFamily.claimStatus:
-        return 'Open with your name, acknowledge the claim status concern, and ask for a claim reference when ready.';
-      case ProblemFamily.prescriptionRefill:
-        return 'Open with your name, acknowledge the refill delay, and do not prescribe or change medication.';
-      case ProblemFamily.networkConnectivity:
-        return 'Open with your name, acknowledge the connectivity issue, and prepare to confirm symptoms.';
-      case ProblemFamily.fundTransfer:
-        return 'Open with your name, acknowledge the transfer concern, and plan to verify identity before status.';
-      case ProblemFamily.appointmentPrep:
-        return 'Open with your name, acknowledge the appointment question, and stay calm and precise.';
-      case ProblemFamily.trueEscalate:
-        return 'Open with your name, acknowledge the issue, and prepare to gather handoff details.';
-      case ProblemFamily.genericAccount:
-        return 'Open with your name, acknowledge the specific issue, and prepare to verify identity when needed.';
-      case ProblemFamily.genericNonAccount:
-        return 'Open with your name, acknowledge the specific issue, and prepare one clear next step.';
-    }
-  }
-
-  static String _exploringTip(
-    ProblemFamily family,
-    String lastCustomerText,
-    bool identityVerified,
-  ) {
-    final last = lastCustomerText.toLowerCase();
-    final tried =
-        last.contains('tried') ||
-        last.contains('already') ||
-        last.contains('three times') ||
-        last.contains('spam');
-    switch (family) {
-      case ProblemFamily.planEligibility:
-        return 'This is a plan upgrade or eligibility issue, not a network outage. Confirm the plan they wanted and when it was denied.';
-      case ProblemFamily.loginAccess:
-        if (tried) {
-          return 'Acknowledge what they already tried. Confirm the login email or username, then move to the official reset path. Do not ask what they tried again.';
-        }
-        return 'Confirm the exact username or email. Guide only the official reset path. Use Account Lookup if you need to verify the account.';
-      case ProblemFamily.billingSurprise:
-        return 'This is a billing review, not a network outage. Confirm the bill period and prepare to list unusual charges in plain words.';
-      case ProblemFamily.claimStatus:
-        return 'Ask for the claim number or date of service. Confirm identity before sharing protected claim details.';
-      case ProblemFamily.prescriptionRefill:
-        return 'Confirm the pharmacy and when the refill was requested. Explain the path without prescribing.';
-      case ProblemFamily.networkConnectivity:
-        return 'Confirm service type and symptoms first (calls, data, SMS, outage). Then guide checks one at a time.';
-      case ProblemFamily.fundTransfer:
-        return 'Confirm amount and send time. Verify identity before sharing transfer status.';
-      case ProblemFamily.appointmentPrep:
-        return 'Confirm the appointment details, then prepare clear prep steps.';
-      case ProblemFamily.trueEscalate:
-        return 'Gather the details a specialist will need. Do not invent a frontline fix for this case type.';
-      case ProblemFamily.genericAccount:
-        if (!identityVerified) {
-          return 'Acknowledge the issue, then verify identity before any account action. Use Account Lookup when ready.';
-        }
-        return 'Identity is confirmed. Clarify one more detail if needed, then explain findings.';
-      case ProblemFamily.genericNonAccount:
-        return 'Acknowledge what they need, clarify one detail if required, then give a clear next step.';
-    }
-  }
-
-  static String _actingTip(ProblemFamily family) {
-    switch (family) {
-      case ProblemFamily.planEligibility:
-        return 'Explain the eligibility block in plain words, then offer the review path or a service request. Do not claim a forced upgrade.';
-      case ProblemFamily.loginAccess:
-        return 'Guide the official reset or unlock steps. If still blocked, open a secure account review without asking for their password.';
-      case ProblemFamily.billingSurprise:
-        return 'Explain unusual charges simply, then file a billing review if a correction may be needed.';
-      case ProblemFamily.claimStatus:
-        return 'Explain claim status in plain words, list missing documents, and avoid promising payment outcomes.';
-      case ProblemFamily.prescriptionRefill:
-        return 'Explain the refill path and expected timing. File a follow-up if it stays delayed.';
-      case ProblemFamily.networkConnectivity:
-        return 'Guide one check at a time, confirm results, then file a network review if still unresolved.';
-      case ProblemFamily.fundTransfer:
-        return 'Explain what the record shows and normal timing. File a transfer review if past the promised window.';
-      case ProblemFamily.appointmentPrep:
-        return 'Share preparation steps and what to expect next. Do not invent clinical advice.';
-      case ProblemFamily.trueEscalate:
-        return 'Complete the handoff summary and set a clear expectation.';
-      case ProblemFamily.genericAccount:
-        return 'Explain findings in plain words, then file a service request, schedule a callback, or open a review ticket.';
-      case ProblemFamily.genericNonAccount:
-        return 'Give one clear guided step, then confirm the customer can continue.';
-    }
-  }
-
-  static List<ScriptLine> examplesForStageFamily({
-    required SimulationStage stage,
-    required ProblemFamily family,
-    required String sector,
-    required String problem,
-    required String emotion,
-    required bool hasTraineeMessage,
-    required bool hasCustomerMessage,
-    required bool toolWorkDone,
-    required bool customerResolved,
-    required int traineeTurns,
-    required bool identityVerified,
-    String lastCustomerText = '',
-  }) {
-    final bank = _familyStageBank(stage, family, toolWorkDone);
-    if (bank.isNotEmpty) return bank;
-    final stageKey = stage.key;
-    final legacy = scriptLines(
-      sector: sector,
-      problem: problem,
-      emotion: emotion.isEmpty ? 'concerned' : emotion,
-      customerName: '',
-      customerConfirmed: customerResolved,
-      awaitingClosing: stage == SimulationStage.closing,
-      hasTraineeSpoken: hasTraineeMessage,
-      hasCustomerSpoken: hasCustomerMessage,
-      toolWorkDone: toolWorkDone,
-      isEscalating: stage == SimulationStage.escalating,
-      coachTip: tipForStageFamily(
-        stage: stage,
-        family: family,
-        traineeTurns: traineeTurns,
-        toolWorkDone: toolWorkDone,
-        customerResolved: customerResolved,
-        identityVerified: identityVerified,
-        lastCustomerText: lastCustomerText,
-      ),
-    );
-    return filterExamplesForStage(
-      lines: legacy,
-      stage: stageKey,
-      toolWorkDone: toolWorkDone,
-    );
-  }
-
-  static List<ScriptLine> _familyStageBank(
-    SimulationStage stage,
-    ProblemFamily family,
-    bool toolWorkDone,
-  ) {
-    if (stage == SimulationStage.opening) {
-      return [
-        const ScriptLine(
-          category: 'opening',
-          choiceNumber: 1,
-          title: 'Opening + empathy',
-          text:
-              'Thank you for contacting Trainix Support. I understand the issue you described, and I am here to help.',
-        ),
-      ];
-    }
-    if (stage == SimulationStage.exploring) {
-      switch (family) {
-        case ProblemFamily.planEligibility:
-          return [
-            const ScriptLine(
-              category: 'clarify',
-              choiceNumber: 1,
-              title: 'Confirm plan',
-              text:
-                  'Just to confirm, which plan did you try to move to, and when did the app deny the change?',
-            ),
-            const ScriptLine(
-              category: 'guide',
-              choiceNumber: 1,
-              title: 'Next check',
-              text:
-                  'I will check what blocked the upgrade and explain the reason in plain words.',
-            ),
-          ];
-        case ProblemFamily.loginAccess:
-          return [
-            const ScriptLine(
-              category: 'clarify',
-              choiceNumber: 1,
-              title: 'Confirm login id',
-              text:
-                  'Please confirm the exact email or username on the account so we reset the right login.',
-            ),
-            const ScriptLine(
-              category: 'guide',
-              choiceNumber: 1,
-              title: 'Reset path',
-              text:
-                  'I will guide the official reset path only. You will not need to share your password here.',
-            ),
-          ];
-        case ProblemFamily.billingSurprise:
-          return [
-            const ScriptLine(
-              category: 'clarify',
-              choiceNumber: 1,
-              title: 'Bill period',
-              text: 'Which billing period looks higher than you expected?',
-            ),
-          ];
-        default:
-          return [
-            const ScriptLine(
-              category: 'clarify',
-              choiceNumber: 1,
-              title: 'Clarify',
-              text:
-                  'Could you tell me a little more about what happened so I can help with the next step?',
-            ),
-          ];
-      }
-    }
-    if (stage == SimulationStage.acting && !toolWorkDone) {
-      switch (family) {
-        case ProblemFamily.planEligibility:
-          return [
-            const ScriptLine(
-              category: 'explain',
-              choiceNumber: 1,
-              title: 'Explain options',
-              text:
-                  'Here is what blocked the change in plain words, and the options we can take next, including a review request.',
-            ),
-            const ScriptLine(
-              category: 'guide',
-              choiceNumber: 1,
-              title: 'Offer request',
-              text:
-                  'I can file an upgrade review for you. Would you like me to submit that request?',
-            ),
-          ];
-        default:
-          return [
-            const ScriptLine(
-              category: 'guide',
-              choiceNumber: 1,
-              title: 'Next step',
-              text:
-                  'Here is what I can do next. I will explain it in plain words and confirm it works for you.',
-            ),
-          ];
-      }
-    }
-    if (stage == SimulationStage.closing) {
-      return [
-        const ScriptLine(
-          category: 'closing',
-          choiceNumber: 1,
-          title: 'Closing',
-          text:
-              'Is there anything else I can help you with today? Thank you for contacting Trainix Support.',
-        ),
-      ];
-    }
-    if (stage == SimulationStage.escalating) {
-      return [
-        const ScriptLine(
-          category: 'escalate',
-          choiceNumber: 1,
-          title: 'Handoff',
-          text:
-              'I am preparing a full summary for the specialist team, including what we tried and your account details.',
-        ),
-      ];
-    }
-    return const [];
   }
 
   static List<ScriptLine> guardExamples(

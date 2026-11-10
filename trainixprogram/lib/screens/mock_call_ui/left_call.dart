@@ -48,9 +48,6 @@ class _LeftCallState extends State<LeftCall>
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Determine title text based on current phase
     String titleText;
     IconData centerIcon;
     Color iconColor;
@@ -103,9 +100,7 @@ class _LeftCallState extends State<LeftCall>
     }
 
     return Container(
-      color: isDark
-          ? Theme.of(context).colorScheme.surface
-          : const Color(0xFF0B0F17),
+      color: Theme.of(context).colorScheme.surface,
       width: double.infinity,
       height: double.infinity,
       child: Column(

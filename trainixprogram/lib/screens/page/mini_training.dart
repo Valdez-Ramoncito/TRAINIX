@@ -13,7 +13,6 @@ import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/widgets/onboarding_intro_banner.dart';
 import 'package:trainixprogram/widgets/next_step_banner.dart';
-import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/trainee_next_step.dart';
 
 class MiniTraining extends StatefulWidget {

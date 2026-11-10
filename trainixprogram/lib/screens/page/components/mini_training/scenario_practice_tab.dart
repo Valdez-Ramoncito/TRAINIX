@@ -3,7 +3,6 @@ import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/components/decoration/check.dart';
 import 'package:trainixprogram/models/training/scenarios/chat_scenarios.dart';
-import 'package:trainixprogram/models/training/scenarios/hybrid_scenarios.dart';
 import 'package:trainixprogram/models/training/scenarios/voice_scenarios.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';

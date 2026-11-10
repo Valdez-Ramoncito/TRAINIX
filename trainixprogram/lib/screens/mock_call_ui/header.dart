@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:trainixprogram/components/animation_effect/hover_button.dart';
+import 'package:trainixprogram/components/button/toolbar_button.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
-import 'package:trainixprogram/providers/theme_controller.dart';
 
 class Header extends StatelessWidget {
   final String sector;
@@ -12,17 +11,15 @@ class Header extends StatelessWidget {
   final int completedInteractions;
   final int requiredInteractions;
   final VoidCallback? onDebugFinish;
-  final VoidCallback? onToggleTheme;
   final VoidCallback? onOpenSettings;
 
   const Header({
     super.key,
     required this.sector,
-    this.mode = SimulationMode.hybrid,
+    this.mode = SimulationMode.chat,
     required this.completedInteractions,
     required this.requiredInteractions,
     this.onDebugFinish,
-    this.onToggleTheme,
     this.onOpenSettings,
   });
 
@@ -31,8 +28,6 @@ class Header extends StatelessWidget {
       case SimulationMode.chat:
         return 'Non-Voice Session';
       case SimulationMode.voice:
-        return 'Voice Session';
-      case SimulationMode.hybrid:
         return 'Voice Session';
     }
   }
@@ -44,14 +39,11 @@ class Header extends StatelessWidget {
       requiredInteractions > 0 ? requiredInteractions : 1,
     );
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: isDark
-                ? const Color.fromARGB(255, 105, 106, 106)
-                : const Color(0xFFD1D5DB),
+            color: Color.fromARGB(255, 105, 106, 106),
             width: 0.3,
           ),
         ),
@@ -153,22 +145,6 @@ class Header extends StatelessWidget {
                 ),
                 const Gap(4),
               ],
-              ListenableBuilder(
-                listenable: ThemeController.instance,
-                builder: (context, _) {
-                  final dark = ThemeController.instance.isDark;
-                  return ToolbarIcon(
-                    icon: dark
-                        ? Icons.wb_sunny_outlined
-                        : Icons.dark_mode_outlined,
-                    tooltip: dark
-                        ? 'Switch to light mode'
-                        : 'Switch to dark mode',
-                    onTap: onToggleTheme,
-                  );
-                },
-              ),
-              const Gap(4),
               ToolbarIcon(
                 icon: Icons.settings_outlined,
                 tooltip: 'Settings',

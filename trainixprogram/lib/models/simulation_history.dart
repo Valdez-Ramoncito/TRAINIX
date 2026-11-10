@@ -18,7 +18,7 @@ class PlayedSession {
     required this.evaluations,
     required this.multitaskingScore,
     required this.completedAt,
-    this.mode = SimulationMode.hybrid,
+    this.mode = SimulationMode.chat,
   });
 
   //every evaluation in a session shares the same sector
@@ -230,7 +230,7 @@ class SimulationHistoryProvider with ChangeNotifier {
   void saveSession({
     required List<SessionEvaluation> evaluations,
     double? multitaskingScore,
-    SimulationMode mode = SimulationMode.hybrid,
+    SimulationMode mode = SimulationMode.chat,
     bool countForGuide = true,
   }) {
     if (evaluations.isEmpty) return;

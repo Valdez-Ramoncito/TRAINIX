@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/page/trainer_session.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 import 'package:trainixprogram/screens/simulation_hub_screen.dart';
 import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
@@ -62,6 +63,7 @@ class TrainingNotificationCenter {
         SupabaseService.isReady &&
         SupabaseService.client.auth.currentUser != null;
     if (!signedIn) return;
+    if (!AppSettings.notificationsEnabled) return;
     final note = TrainingNotification(
       id: id ?? 'n_${DateTime.now().microsecondsSinceEpoch}',
       title: title,
@@ -203,10 +205,6 @@ class TrainingNotificationCenter {
     );
   }
 
-  static void notifyHybridScenariosUnlocked() {
-    // Hybrid mode retired.
-  }
-
   static void notifyScenarioCompleted(String scenarioTitle) {
     push(
       title: 'Scenario completed',
@@ -252,10 +250,6 @@ class TrainingNotificationCenter {
       locationHint: 'Training Simulation > New Session > Voice Session',
       type: TrainingNotificationType.unlock,
     );
-  }
-
-  static void notifyHybridSessionUnlocked() {
-    // Hybrid mode retired. No-op for older call sites.
   }
 
   static Future<bool> notifyLiveRoomInvite({
@@ -328,18 +322,6 @@ class TrainingNotificationCenter {
       );
     }
     return true;
-  }
-
-  static void notifyLiveRoomStarted({
-    required String trainerName,
-    required String roomName,
-  }) {
-    push(
-      title: 'Training session started',
-      body: '$trainerName started "$roomName". Join now from Trainer Session.',
-      locationHint: 'Home > Trainer Session',
-      type: TrainingNotificationType.progress,
-    );
   }
 
   static void notifyPrivateRoomTrainerEntered({
@@ -486,7 +468,6 @@ class _NotificationCard extends StatelessWidget {
     final nav = AppNavigator.context;
     if (nav == null) return;
     final isTrainee = ProfileData.role == AppRole.trainee;
-    final isTrainer = ProfileData.role == AppRole.trainer;
 
     void go(Widget page) {
       onClose();

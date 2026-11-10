@@ -3,8 +3,6 @@ import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trainixprogram/providers/theme_controller.dart';
-import 'package:trainixprogram/screens/home/homeScreen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
@@ -149,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _switchTile(
               icon: Icons.volume_up_outlined,
               title: 'Sound effects',
-              subtitle: 'UI sounds for session events (visual toggle for now).',
+              subtitle: 'Prefers UI sounds for session events when available.',
               value: AppSettings.soundEffectsEnabled,
               onChanged: (v) => setState(() {
                 AppSettings.soundEffectsEnabled = v;
@@ -160,24 +158,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Gap(18),
           _sectionTitle('Display'),
           _card([
-            ListenableBuilder(
-              listenable: ThemeController.instance,
-              builder: (context, _) {
-                final themeCtrl = ThemeController.instance;
-                return _switchTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Dark mode',
-                  subtitle: themeCtrl.isDark
-                      ? 'Dark theme is on (default).'
-                      : 'Light theme is on.',
-                  value: themeCtrl.isDark,
-                  onChanged: (v) async {
-                    await themeCtrl.setDark(v);
-                    _toast(v ? 'Dark mode enabled' : 'Light mode enabled');
-                  },
-                );
-              },
-            ),
             _switchTile(
               icon: Icons.animation_outlined,
               title: 'Reduce motion',
@@ -413,17 +393,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _card(List<Widget> children) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     return Material(
-      color: isDark ? const Color(0xFF161616) : Colors.white,
+      color: const Color(0xFF161616),
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E7EB),
-          ),
+          border: Border.all(color: const Color(0xFF2A2A2A)),
         ),
         child: Column(children: children),
       ),

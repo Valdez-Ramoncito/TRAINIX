@@ -10,4 +10,4 @@ enum SimulationPhase {
   wrappingUp,
 }
 
-enum SimulationMode { chat, voice, hybrid }
+enum SimulationMode { chat, voice }

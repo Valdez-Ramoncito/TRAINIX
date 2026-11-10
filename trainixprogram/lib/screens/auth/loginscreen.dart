@@ -15,12 +15,12 @@ import 'package:trainixprogram/services/auth_service.dart';
 import 'package:trainixprogram/services/training_progress_repository.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/components/class/live_training_session.dart';
-import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
-//the login screen - no authentication yet
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  static bool isActive = false;
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -29,7 +29,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String _dbStatus = 'Checking database...';
   bool _isSignUp = false;
   bool _busy = false;
   AppRole _signUpRole = AppRole.trainee;
@@ -38,19 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
+    LoginScreen.isActive = true;
     NotificationInboxService.instance.clearLocalOnly();
     TrainingNotificationCenter.clearToasts();
     _checkDatabase();
   }
 
   Future<void> _checkDatabase() async {
-    final result = await SupabaseService.smokeTest();
-    if (!mounted) return;
-    setState(() => _dbStatus = result);
+    await SupabaseService.smokeTest();
   }
 
   @override
   void dispose() {
+    LoginScreen.isActive = false;
+    NotificationInboxService.instance.refreshUi();
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
@@ -58,9 +58,11 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _afterAuthNavigate() async {
+    LoginScreen.isActive = false;
     await TrainingProgressRepository.instance.load();
     await NotificationInboxService.instance.loadFromRemote();
     NotificationInboxService.instance.startRealtime();
+    NotificationInboxService.instance.refreshUi();
     await LiveSessionStore.instance.loadFromRemote();
     LiveSessionStore.instance.startRealtime();
     await TraineeActivityLogStore.instance.loadFromRemote();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/background.dart';
-import 'package:trainixprogram/components/button/logout_button.dart';
+import 'package:trainixprogram/components/animation_effect/hover_button.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/models/training/trainee_next_step.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -9,7 +9,6 @@ import 'package:trainixprogram/screens/home/carousel.dart';
 import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:trainixprogram/services/auth_service.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
-import 'package:trainixprogram/screens/dev_test_screen.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
 import 'package:trainixprogram/widgets/next_step_banner.dart';
 

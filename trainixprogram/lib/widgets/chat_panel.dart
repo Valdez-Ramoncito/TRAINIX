@@ -16,10 +16,6 @@ import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/models/case_checklist.dart';
 import 'package:trainixprogram/models/simulation_session_controller.dart';
 import 'package:trainixprogram/models/sim_mission_catalog.dart';
-import 'package:trainixprogram/models/coach_view_model.dart';
-import 'package:trainixprogram/models/problem_family.dart';
-import 'package:trainixprogram/models/case_blueprint.dart';
-import 'package:trainixprogram/models/simulation_stage.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/training/pack_session_scorer.dart';
 import 'package:trainixprogram/services/gemini_evaluation_api_service.dart';
@@ -27,6 +23,7 @@ import 'package:trainixprogram/services/open_router_api_service.dart';
 import 'package:trainixprogram/screens/mock_call_ui/right_message.dart';
 import 'package:trainixprogram/widgets/agent_notepad.dart';
 import 'package:trainixprogram/widgets/session_guidance_banner.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 
 //enumeration for the phases of the chat conversation
 enum _ChatPhase {
@@ -154,11 +151,9 @@ class _ChatPanelState extends State<ChatPanel> {
   bool? _lastSyncedIdentity;
   bool? _lastSyncedToolWork;
   String _lastSyncedToolAction = '';
-  bool _toolSyncScheduled = false;
   bool _missionStartedForCustomer = false;
   final SimulationSessionController _sessionController =
       SimulationSessionController();
-  String? _sessionBlueprintKey;
   double? _handleSeconds;
   bool _traineeHasSpoken = false;
   bool _sessionEscalated = false;
@@ -367,7 +362,6 @@ class _ChatPanelState extends State<ChatPanel> {
       };
       openRouterAPI.hasStarted = true;
 
-      _sessionBlueprintKey = null;
       _problemFamily = pack.family;
       _familyCustomerKey = '${pack.sector}|${pack.problemSummary}';
       _stageTracker.reset();
@@ -487,7 +481,7 @@ class _ChatPanelState extends State<ChatPanel> {
     );
     final coachMessages = <CoachMessage>[
       for (final m in messageProvider.messages)
-        CoachMessage(isTrainee: m.role == 'user', text: m.message as String),
+        CoachMessage(isTrainee: m.role == 'user', text: m.message),
     ];
     _sessionController.replaceMessages(coachMessages, notify: false);
     if (!mounted) return;
@@ -580,7 +574,7 @@ class _ChatPanelState extends State<ChatPanel> {
         String lastCust = '';
         for (var i = messages.length - 1; i >= 0; i--) {
           if (messages[i].role == 'assistant') {
-            lastCust = messages[i].message as String;
+            lastCust = messages[i].message;
             break;
           }
         }
@@ -601,7 +595,7 @@ class _ChatPanelState extends State<ChatPanel> {
     }
     final coachMessages = <CoachMessage>[
       for (final m in messages)
-        CoachMessage(isTrainee: m.role == 'user', text: m.message as String),
+        CoachMessage(isTrainee: m.role == 'user', text: m.message),
     ];
     final needsAccount =
         ProblemFamilyClassifier.defaultNeedsAccount(_problemFamily!) ||
@@ -679,50 +673,6 @@ class _ChatPanelState extends State<ChatPanel> {
       tracker: _stageTracker,
       family: _problemFamily!,
     );
-  }
-
-  void _syncSessionController({
-    required CoachSessionState state,
-    required ProblemFamily family,
-    required AccountProvider accountProvider,
-    required List<CoachMessage> messages,
-  }) {
-    // Read-only during build. No startCase, no reset, no notifyListeners.
-    if (SimulationSessionController.useMissionGuide) {
-      if (_sessionController.mission.pack == null) return;
-      _sessionController.replaceMessages(messages, notify: false);
-      _sessionController.syncFromAccount(
-        identityVerified: accountProvider.identityVerified,
-        toolWorkDone: accountProvider.toolWorkDone,
-        lastToolAction: accountProvider.lastToolAction,
-        notify: false,
-      );
-      _sessionController.onTick(state.elapsed);
-      return;
-    }
-    final key =
-        '${state.sector}|${state.problemText}|${family.name}|${state.escalateFromStart}';
-    if (_sessionBlueprintKey != key) {
-      _sessionBlueprintKey = key;
-      // Legacy non-mission path may start once, but never from a second build
-      // with notify. Prefer silent.
-      _sessionController.startCase(
-        sector: state.sector,
-        problem: state.problemText,
-        family: family,
-        needsAccount: state.needsAccount,
-        escalateFromStart: state.escalateFromStart,
-        casePackId: openRouterAPI.chosenSimulation['casePackId']?.toString(),
-      );
-    }
-    _sessionController.replaceMessages(messages, notify: false);
-    _sessionController.syncFromAccount(
-      identityVerified: accountProvider.identityVerified,
-      toolWorkDone: accountProvider.toolWorkDone,
-      lastToolAction: accountProvider.lastToolAction,
-      notify: false,
-    );
-    _sessionController.onTick(state.elapsed);
   }
 
   @override
@@ -848,7 +798,7 @@ class _ChatPanelState extends State<ChatPanel> {
           ? openRouterAPI.chosenSimulation['name']
           : null,
       accountId: openRouterAPI.chosenSimulation['accountId'],
-      coachTip: coachVm.tip,
+      coachTip: AppSettings.coachTipsEnabled ? coachVm.tip : null,
       customerConfirmed: _customerConfirmed,
       awaitingClosing: awaitingClosing,
       hasTraineeSpoken: _traineeHasSpoken,

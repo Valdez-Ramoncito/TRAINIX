@@ -114,10 +114,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : const Color(0xFF0B0F17);
+    final Color bgColor = Theme.of(context).colorScheme.surface;
 
     return Consumer<AccountProvider>(
       builder: (context, accountProvider, child) {

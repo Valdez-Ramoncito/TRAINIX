@@ -14,7 +14,6 @@ import 'package:trainixprogram/widgets/chat_panel.dart';
 import 'package:trainixprogram/widgets/voice_panel.dart';
 import 'package:trainixprogram/widgets/agent_notepad.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
-import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
 
 //simulates a call-center workstation with two simultaneous channels
@@ -28,7 +27,7 @@ class MockCallScreen extends StatefulWidget {
   const MockCallScreen({
     super.key,
     required this.sector,
-    this.mode = SimulationMode.hybrid,
+    this.mode = SimulationMode.chat,
     this.customerQuota,
   });
 
@@ -73,8 +72,6 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //how long did it take for each customer in each channel got
   //their problems resolved
-  final List<double> _voiceResolutionSeconds = [];
-  final List<double> _chatResolutionSeconds = [];
 
   //check if the session ended
   bool _sessionEnding = false;
@@ -113,13 +110,11 @@ class _MockCallScreenState extends State<MockCallScreen> {
       (n) => n.body.trim().isNotEmpty,
     );
 
-    if (widget.mode == SimulationMode.chat ||
-        widget.mode == SimulationMode.hybrid) {
+    if (widget.mode == SimulationMode.chat) {
       add(chatId, 1.5);
       add(chatTool, 2);
     }
-    if (widget.mode == SimulationMode.voice ||
-        widget.mode == SimulationMode.hybrid) {
+    if (widget.mode == SimulationMode.voice) {
       add(voiceId, 1.5);
       add(voiceTool, 2);
     }
@@ -242,15 +237,6 @@ class _MockCallScreenState extends State<MockCallScreen> {
   //tells the parent chat has started serving a customer
   void _handleChatCustomerStarted() {
     setState(() => _chatHasActiveCustomer = true);
-  }
-
-  //handle the resolution seconds
-  void _handleResolutionSeconds(String channel, double seconds) {
-    if (channel == 'voice') {
-      _voiceResolutionSeconds.add(seconds);
-    } else {
-      _chatResolutionSeconds.add(seconds);
-    }
   }
 
   //called whenever chat enters or leaves its own after-work-report or
@@ -400,15 +386,15 @@ class _MockCallScreenState extends State<MockCallScreen> {
           'Conversation history retained for review without re-transcription.',
         ],
         areasForImprovement: [
-          'Debug scores are illustrative only. Run a live session for real coaching feedback.',
-          'Practice sector-specific verification and closing confirmation on live customers.',
+          'Run a live session for grounded coaching feedback.',
+          'Practice sector-specific verification and closing confirmation.',
         ],
         feedback:
-            'Debug report: scores are randomized for UI testing. Coaching notes cover greeting, listening, problem-solving, and closing. Not a live evaluation.',
+            'Practice report for layout checks. Scores are sample values only and are not used for hiring decisions.',
         evaluatedAt: DateTime.now(),
         customerName: name,
         channel: channel,
-        problem: 'Debug sample problem',
+        problem: 'Sample practice problem',
         conversation: [
           {'role': 'customer', 'text': 'Hi, I need help with a sample issue.'},
           {
@@ -420,24 +406,11 @@ class _MockCallScreenState extends State<MockCallScreen> {
       );
     }
 
-    final fakeEvaluations =
-        (widget.mode == SimulationMode.hybrid
-                ? [
-                    buildRandomEval('chat', 'Debug Chat Customer'),
-                    buildRandomEval('voice', 'Debug Voice Customer'),
-                  ]
-                : [
-                    buildRandomEval(
-                      widget.mode == SimulationMode.voice ? 'voice' : 'chat',
-                      'Debug Customer A',
-                    ),
-                    buildRandomEval(
-                      widget.mode == SimulationMode.voice ? 'voice' : 'chat',
-                      'Debug Customer B',
-                    ),
-                  ])
-            .map((e) => e.withDerivedCustomerRating())
-            .toList();
+    final channel = widget.mode == SimulationMode.voice ? 'voice' : 'chat';
+    final fakeEvaluations = [
+      buildRandomEval(channel, 'Practice Customer A'),
+      buildRandomEval(channel, 'Practice Customer B'),
+    ].map((e) => e.withDerivedCustomerRating()).toList();
     final fakeMultitasking = 40.0 + random.nextDouble() * 60.0;
     final fakeAvgWpm = 100.0 + random.nextDouble() * 60.0;
     final fakeFillerWords = random.nextInt(10);
@@ -614,7 +587,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
         sector: widget.sector,
         remainingBreakSeconds: _remainingPostCallSeconds,
         showScriptGuide: true,
-        scriptGuideExpanded: widget.mode != SimulationMode.hybrid,
+        scriptGuideExpanded: AppSettings.autoScriptGuideExpanded,
         onAccept: () {
           _startCallTimer();
           setState(() {
@@ -627,7 +600,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
           _voiceWpmSamples.add(wpm);
           _voiceFillerCount += fillerCount;
         },
-        onResolutionSeconds: (s) => _handleResolutionSeconds('voice', s),
+        onResolutionSeconds: null,
         onSendReport: _onSendReport,
       ),
     );
@@ -642,10 +615,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
       child: ChatPanel(
         key: const ValueKey('sim-chat-panel'),
         sector: widget.sector,
-        scriptGuideExpanded: widget.mode != SimulationMode.hybrid,
+        scriptGuideExpanded: AppSettings.autoScriptGuideExpanded,
         onEvaluation: (e) => _handleEvaluation('chat', e),
         onChatTurn: (wpm) => _chatWpmSamples.add(wpm),
-        onResolutionSeconds: (s) => _handleResolutionSeconds('chat', s),
+        onResolutionSeconds: null,
         canStartNewCustomer: () => _tryStartNewInteraction('chat'),
         onBusyChanged: _handleChatBusyChanged,
         onCustomerStarted: _handleChatCustomerStarted,
@@ -697,10 +670,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
     final bool isOnHold = _phase == SimulationPhase.onHold;
     final bool callInProgress = isActive || isOnHold;
     final mode = widget.mode;
-    final showVoice =
-        mode == SimulationMode.voice || mode == SimulationMode.hybrid;
-    final showChat =
-        mode == SimulationMode.chat || mode == SimulationMode.hybrid;
+    final showVoice = mode == SimulationMode.voice;
+    final showChat = mode == SimulationMode.chat;
 
     return Scaffold(
       body: _constrainWide(
@@ -712,9 +683,6 @@ class _MockCallScreenState extends State<MockCallScreen> {
               completedInteractions: _completedInteractions,
               requiredInteractions: _requiredInteractions,
               onDebugFinish: _debugFinishSimulation,
-              onToggleTheme: () {
-                ThemeController.instance.toggle();
-              },
               onOpenSettings: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const SettingsScreen()),

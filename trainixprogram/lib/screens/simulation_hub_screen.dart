@@ -16,6 +16,7 @@ import 'package:trainixprogram/screens/page/mini_training.dart';
 import 'package:trainixprogram/widgets/onboarding_intro_banner.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
+import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
 class SimulationHubScreen extends StatefulWidget {
   const SimulationHubScreen({super.key});
@@ -538,7 +539,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           flagKey: 'simulation_intro',
           title: 'About Simulation Training',
           body:
-              'New Session starts practice in chat, voice, or hybrid. Modes unlock after you clear the matching Scenario Practice stage in Mini Training.',
+              'New Session starts practice in chat or voice. Modes unlock after you clear the matching Scenario Practice stage in Mini Training.',
         ),
         if (!unlocked)
           LockedPathBanner(
@@ -554,7 +555,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         _hubCard(
           title: 'New Session',
           subtitle: unlocked
-              ? 'Choose Chat, Voice, or Hybrid and start practicing.'
+              ? 'Choose Chat or Voice and start practicing.'
               : 'Locked until Chat Scenario Practice is cleared',
           icon: Icons.play_circle_outline_rounded,
           enabled: unlocked,
@@ -641,7 +642,10 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                 Expanded(
                   child: Consumer<SimulationHistoryProvider>(
                     builder: (context, history, _) {
-                      if (history.sessions.isEmpty) {
+                      final visible = history.sessions
+                          .where((s) => !isDebugSession(s))
+                          .toList();
+                      if (visible.isEmpty) {
                         return const Center(
                           child: Text(
                             'No sessions yet.\nComplete a simulation to see your history.',
@@ -654,13 +658,19 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                         );
                       }
 
-                      final reversed = history.sessions.reversed.toList();
+                      final reversed = visible.reversed.toList();
                       return ListView.builder(
                         itemCount: reversed.length,
                         itemBuilder: (_, index) {
                           final session = reversed[index];
                           final number = reversed.length - index;
                           final modeLabel = session.mode.name;
+                          final customerLabel = session.evaluations
+                              .map((e) => friendlyCustomerName(e.customerName))
+                              .where((n) => n.isNotEmpty)
+                              .toSet()
+                              .take(3)
+                              .join(', ');
                           return InkWell(
                             onTap: () {
                               Navigator.push(
@@ -714,14 +724,10 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                             color: Colors.white54,
                                           ),
                                         ),
-                                        if (session.evaluations.isNotEmpty) ...[
+                                        if (customerLabel.isNotEmpty) ...[
                                           const Gap(4),
                                           Text(
-                                            session.evaluations
-                                                .map((e) => e.customerName)
-                                                .where((n) => n.isNotEmpty)
-                                                .take(3)
-                                                .join(', '),
+                                            customerLabel,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: const TextStyle(
@@ -757,148 +763,6 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                     Icons.chevron_right,
                                     color: Color(0xFF9CA3AF),
                                     size: 18,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class SimulationMessagesArchiveScreen extends StatelessWidget {
-  const SimulationMessagesArchiveScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: AppBackground(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                      ),
-                    ),
-                    Text(
-                      'Messages Archive',
-                      style: TextStyle(
-                        fontSize: context.responsiveFont(5.5),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-                const Gap(8),
-                const Text(
-                  'Conversation stacks saved from completed customers. Chat and voice are labeled by channel.',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
-                ),
-                const Gap(12),
-                Expanded(
-                  child: Consumer<SimulationHistoryProvider>(
-                    builder: (context, history, _) {
-                      final withConv = history.evaluations
-                          .where((e) => e.conversation.isNotEmpty)
-                          .toList()
-                          .reversed
-                          .toList();
-                      if (withConv.isEmpty) {
-                        return const Center(
-                          child: Text(
-                            'No saved conversations yet.\nFinish a simulation so message stacks can appear here.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              height: 1.4,
-                            ),
-                          ),
-                        );
-                      }
-                      return ListView.builder(
-                        itemCount: withConv.length,
-                        itemBuilder: (_, i) {
-                          final e = withConv[i];
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: boxDecoration(false, true),
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        SessionReportScreen(evaluations: [e]),
-                                  ),
-                                );
-                              },
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          e.customerName.isEmpty
-                                              ? 'Customer'
-                                              : e.customerName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                      Text(
-                                        e.channel.toUpperCase(),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w600,
-                                          color: e.channel == 'voice'
-                                              ? const Color(0xFF70BD8A)
-                                              : const Color(0xFF3B82F6),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const Gap(4),
-                                  Text(
-                                    [
-                                      if (e.sector.isNotEmpty) e.sector,
-                                      if (e.problem.isNotEmpty) e.problem,
-                                    ].join(' · '),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.white54,
-                                    ),
-                                  ),
-                                  const Gap(8),
-                                  Text(
-                                    '${e.conversation.length} turns · score ${e.overallScore.toStringAsFixed(1)}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF9CA3AF),
-                                    ),
                                   ),
                                 ],
                               ),

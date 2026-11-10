@@ -307,7 +307,7 @@ class TrainingCategoryData {
   bool get hasFinalAssessment => finalAssessments.isNotEmpty;
 }
 
-enum ScenarioStage { locked, chat, voice, hybrid, completed }
+enum ScenarioStage { locked, chat, voice, completed }
 
 class MiniTrainingProgress {
   static bool isProfileComplete = false;
@@ -408,7 +408,6 @@ class MiniTrainingProgress {
     scenarioStage = ScenarioStage.locked;
     completedChatScenarios.clear();
     completedVoiceScenarios.clear();
-    completedHybridScenarios.clear();
     preferMinimalGuidance = false;
     seenHomePath = false;
     seenMiniIntro = false;
@@ -570,8 +569,7 @@ class MiniTrainingProgress {
   }
 
   static void markVoiceScenariosCleared() {
-    if (scenarioStage == ScenarioStage.voice ||
-        scenarioStage == ScenarioStage.hybrid) {
+    if (scenarioStage == ScenarioStage.voice) {
       scenarioStage = ScenarioStage.completed;
       TrainingNotificationCenter.notifyVoiceSessionUnlocked();
       TrainingNotificationCenter.push(
@@ -586,50 +584,13 @@ class MiniTrainingProgress {
     _bumpGuidance();
   }
 
-  static final Set<String> completedHybridScenarios = {};
-
-  static void markHybridScenarioCompleted(String scenarioId) {
-    completedHybridScenarios.add(scenarioId);
-    TrainingProgressRepository.instance.save();
-    TrainingNotificationCenter.notifyScenarioCompleted(scenarioId);
-    const requiredIds = ['hybrid_1', 'hybrid_2', 'hybrid_3', 'hybrid_4'];
-    final allDone = requiredIds.every(completedHybridScenarios.contains);
-    if (allDone) {
-      markHybridScenariosCleared();
-    } else {
-      _bumpGuidance();
-    }
-  }
-
-  static void markHybridScenariosCleared() {
-    if (scenarioStage == ScenarioStage.hybrid) {
-      scenarioStage = ScenarioStage.completed;
-      TrainingNotificationCenter.push(
-        title: 'Scenario Practice complete',
-        body:
-            'All hybrid scenarios are done. Scenario Practice path is finished.',
-        locationHint: 'Mini Training > Scenario Practice',
-        type: TrainingNotificationType.success,
-      );
-      TrainingNotificationCenter.notifyHybridSessionUnlocked();
-      TrainingProgressRepository.instance.save();
-    }
-    _bumpGuidance();
-  }
-
   static bool get isChatScenariosUnlocked =>
       scenarioStage == ScenarioStage.chat ||
       scenarioStage == ScenarioStage.voice ||
-      scenarioStage == ScenarioStage.hybrid ||
       scenarioStage == ScenarioStage.completed;
 
   static bool get isVoiceScenariosUnlocked =>
       scenarioStage == ScenarioStage.voice ||
-      scenarioStage == ScenarioStage.hybrid ||
-      scenarioStage == ScenarioStage.completed;
-
-  static bool get isHybridScenariosUnlocked =>
-      scenarioStage == ScenarioStage.hybrid ||
       scenarioStage == ScenarioStage.completed;
 
   static bool get chatScenariosCleared {
@@ -662,16 +623,6 @@ class MiniTrainingProgress {
     return requiredIds.every(completedVoiceScenarios.contains);
   }
 
-  static bool get hybridScenariosCleared {
-    // Hybrid mode retired. Treat as complete when voice path is done
-    // or when stage already finished so older accounts are not blocked.
-    if (scenarioStage == ScenarioStage.completed ||
-        scenarioStage == ScenarioStage.hybrid) {
-      return true;
-    }
-    return voiceScenariosCleared;
-  }
-
   static bool get isSimulationTrainingUnlocked => chatScenariosCleared;
 
   static bool get isProgressDashboardUnlocked =>
@@ -697,8 +648,6 @@ class MiniTrainingProgress {
   static bool get isChatSessionUnlocked => chatScenariosCleared;
 
   static bool get isVoiceSessionUnlocked => voiceScenariosCleared;
-
-  static bool get isHybridSessionUnlocked => hybridScenariosCleared;
 
   static void debugUnlockChatSession() {
     final wasCleared = chatScenariosCleared;
@@ -754,17 +703,12 @@ class MiniTrainingProgress {
     _bumpGuidance();
   }
 
-  static void debugUnlockHybridSession() {
-    // Hybrid retired. Unlock full non-voice + voice path instead.
-    debugUnlockVoiceSession();
-  }
-
   static void debugUnlockSimulationTraining() {
     debugUnlockChatSession();
   }
 
   static void debugUnlockAllMiniTraining() {
-    debugUnlockHybridSession();
+    debugUnlockVoiceSession();
     TrainingNotificationCenter.notifyDebugUnlock();
     TrainingProgressRepository.instance.save();
     _bumpGuidance();

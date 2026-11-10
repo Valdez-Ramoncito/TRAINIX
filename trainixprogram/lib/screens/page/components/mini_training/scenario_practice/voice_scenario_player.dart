@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_soloud/flutter_soloud.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/voice_line_player.dart';
@@ -230,7 +229,7 @@ class _VoiceScenarioPlayerState extends State<VoiceScenarioPlayer> {
           _coachPrompt = null;
           _coachTarget = null;
         });
-        final customerText = turn.text ?? '';
+        final customerText = turn.text;
         await VoiceLinePlayer.instance.playText(
           customerText,
           emotion: _scenario.emotion,
@@ -398,7 +397,7 @@ class _VoiceScenarioPlayerState extends State<VoiceScenarioPlayer> {
 
   void _evaluateTranscript(String transcript) {
     final turn = _scenario.turns[_turnIndex];
-    final target = turn.resolvedTargetText ?? '';
+    final target = turn.resolvedTargetText;
     final ok = _matchesTarget(transcript, target);
 
     if (ok) {

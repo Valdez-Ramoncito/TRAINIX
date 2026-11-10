@@ -35,7 +35,7 @@ class ScreenHelpCatalog {
       'Knowledge Path: lessons unlock in order inside each category.',
       'Finish a category final to open the next category.',
       'After all categories, take the Grand Final.',
-      'Scenario Practice tab unlocks after the Grand Final (Chat, Voice, Hybrid).',
+      'Scenario Practice tab unlocks after the Grand Final (Chat, Voice).',
     ],
     footer: 'Use the Scenario Practice tab after the Grand Final.',
   );

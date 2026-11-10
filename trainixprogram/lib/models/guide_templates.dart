@@ -232,33 +232,4 @@ class GuideTemplates {
         ];
     }
   }
-
-  static int stepIndexFor({
-    required List<GuideStep> steps,
-    required SimulationStage stage,
-    required int maxStepIndex,
-    required int traineeTurns,
-  }) {
-    if (steps.isEmpty) return 0;
-    var floor = 0;
-    var ceiling = steps.length - 1;
-    for (var i = 0; i < steps.length; i++) {
-      if (steps[i].stage.index <= stage.index) {
-        ceiling = i;
-      }
-    }
-    for (var i = 0; i < steps.length; i++) {
-      if (steps[i].stage == stage) {
-        floor = i;
-        break;
-      }
-    }
-    if (stage.index < SimulationStage.exploring.index) {
-      return 0;
-    }
-    var idx = (traineeTurns - 1).clamp(floor, ceiling);
-    if (idx < maxStepIndex) idx = maxStepIndex;
-    if (idx > ceiling) idx = ceiling;
-    return idx.clamp(0, steps.length - 1);
-  }
 }

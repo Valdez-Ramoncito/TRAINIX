@@ -4,7 +4,6 @@ import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
 import 'package:trainixprogram/screens/mock_call_screen.dart';
-import 'package:trainixprogram/screens/session_report_screen.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
 import 'package:trainixprogram/screens/page/components/training/content/history/session_history_list.dart';
 import 'package:trainixprogram/screens/page/components/training/content/session/session_lobby.dart';
@@ -29,8 +28,6 @@ class _TrainingSessionState extends State<TrainingSession> {
         return MiniTrainingProgress.isChatSessionUnlocked;
       case SimulationMode.voice:
         return MiniTrainingProgress.isVoiceSessionUnlocked;
-      case SimulationMode.hybrid:
-        return MiniTrainingProgress.isHybridSessionUnlocked;
     }
   }
 
@@ -82,8 +79,6 @@ class _TrainingSessionState extends State<TrainingSession> {
         MiniTrainingProgress.debugUnlockChatSession();
       case SimulationMode.voice:
         MiniTrainingProgress.debugUnlockVoiceSession();
-      case SimulationMode.hybrid:
-        MiniTrainingProgress.debugUnlockHybridSession();
     }
     setState(() {});
   }

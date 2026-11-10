@@ -5,7 +5,7 @@ import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/models/simulation_stage.dart';
 
-enum SimulationChannel { chat, voice, hybrid }
+enum SimulationChannel { chat, voice }
 
 class CoachMessage {
   final bool isTrainee;

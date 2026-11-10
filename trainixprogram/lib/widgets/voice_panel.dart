@@ -22,6 +22,7 @@ import 'package:trainixprogram/widgets/sector_issue_guide_view.dart';
 import 'package:trainixprogram/widgets/scenario_guide_view.dart';
 import 'package:trainixprogram/widgets/agent_notepad.dart';
 import 'package:trainixprogram/widgets/session_guidance_banner.dart';
+import 'package:trainixprogram/screens/settings_screen.dart';
 
 //enumeration for the phases of the voice call
 enum _VoicePhase {
@@ -118,7 +119,6 @@ class _VoicePanelState extends State<VoicePanel> {
   String _familyCustomerKey = '';
   final List<CoachMessage> _coachMessages = [];
   bool _customerConfirmed = false;
-  String _lastTraineeText = '';
   double? _handleSeconds;
   bool _traineeHasSpoken = false;
   static int _scriptedPackSalt = 0;
@@ -517,7 +517,6 @@ class _VoicePanelState extends State<VoicePanel> {
       }
 
       if (_customerConfirmed) {
-        _lastTraineeText = words;
         final wantsEscalation = SimulationCoach.looksLikeEscalation(words);
         if (wantsEscalation && !_sessionEscalated) {
           if (mounted) {
@@ -553,8 +552,6 @@ class _VoicePanelState extends State<VoicePanel> {
         await _sendToCustomer(words);
         return;
       }
-
-      _lastTraineeText = words;
       setState(() {
         _traineeTranscript = words;
         _voicePhase = _VoicePhase.processing;
@@ -1101,7 +1098,7 @@ class _VoicePanelState extends State<VoicePanel> {
           _sessionController.mission.pack?.emotion,
       problem: guideProblem,
       customerName: guideName,
-      coachTip: coachVm.tip,
+      coachTip: AppSettings.coachTipsEnabled ? coachVm.tip : null,
       customerConfirmed: _customerConfirmed,
       awaitingClosing: _voicePhase == _VoicePhase.awaitingClosing,
       hasTraineeSpoken: _traineeHasSpoken,
@@ -1124,7 +1121,6 @@ class _VoicePanelState extends State<VoicePanel> {
         );
         _coachMessages.add(CoachMessage(isTrainee: true, text: msg));
         _traineeHasSpoken = true;
-        _lastTraineeText = msg;
         _traineeTranscript = msg;
         _sessionController.replaceMessages(
           List<CoachMessage>.from(_coachMessages),

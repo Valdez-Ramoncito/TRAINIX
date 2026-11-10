@@ -5,12 +5,10 @@ import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/chat_scenarios.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/models/training/scenarios/voice_scenarios.dart';
-import 'package:trainixprogram/models/training/scenarios/hybrid_scenarios.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/chat_scenario_player.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/voice_scenario_player.dart';
-import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/hybrid_scenario_player.dart';
 
 class ScenarioPracticeScreen extends StatefulWidget {
   final String stageName;
@@ -24,20 +22,15 @@ class ScenarioPracticeScreen extends StatefulWidget {
 class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
   bool get _isChat => widget.stageName == 'Chat';
   bool get _isVoice => widget.stageName == 'Voice';
-  bool get _isHybrid => widget.stageName == 'Hybrid';
 
   List<ScenarioDefinition> get _scenarios {
-    if (_isChat) return chatScenarios;
     if (_isVoice) return voiceScenarios;
-    if (_isHybrid) return hybridScenarios;
-    return const [];
+    return chatScenarios;
   }
 
   Set<String> get _completed {
-    if (_isChat) return MiniTrainingProgress.completedChatScenarios;
     if (_isVoice) return MiniTrainingProgress.completedVoiceScenarios;
-    if (_isHybrid) return MiniTrainingProgress.completedHybridScenarios;
-    return {};
+    return MiniTrainingProgress.completedChatScenarios;
   }
 
   bool _isUnlocked(int index) {
@@ -48,9 +41,7 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
 
   Future<void> _openScenario(ScenarioDefinition scenario) async {
     final Widget page;
-    if (_isHybrid) {
-      page = HybridScenarioPlayer(scenario: scenario);
-    } else if (_isVoice) {
+    if (_isVoice) {
       page = VoiceScenarioPlayer(scenario: scenario);
     } else {
       page = ChatScenarioPlayer(scenario: scenario);
@@ -74,11 +65,6 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
         MiniTrainingProgress.completedVoiceScenarios.add(id);
       }
       MiniTrainingProgress.markVoiceScenariosCleared();
-    } else if (_isHybrid) {
-      for (final id in requiredHybridScenarioIds) {
-        MiniTrainingProgress.completedHybridScenarios.add(id);
-      }
-      MiniTrainingProgress.markHybridScenariosCleared();
     }
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
@@ -110,11 +96,7 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
             Text(
               _isChat
                   ? 'Predefined chat scenarios by sector. Difficulty increases as you go.'
-                  : _isVoice
-                  ? 'Voice scenarios including Account Lookup, no-lookup, and already-resolved cases.'
-                  : _isHybrid
-                  ? 'Simultaneous chat and voice handling with separate account lookups.'
-                  : 'Scenarios for this stage will be added next.',
+                  : 'Voice scenarios including Account Lookup, no-lookup, and already-resolved cases.',
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.white70,

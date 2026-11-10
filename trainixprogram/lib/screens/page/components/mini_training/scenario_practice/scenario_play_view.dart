@@ -4,7 +4,6 @@ import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_account_lookup_panel.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_feedback_banner.dart';
-import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_mission_panel.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_chat_bubble.dart';
 
 class ScenarioPlayView extends StatelessWidget {
@@ -475,73 +474,11 @@ class ScenarioPlayView extends StatelessWidget {
               ),
             ),
           ],
-          if (inlineFeedback != null) ...[
+          if (inlineFeedback case final feedback?) ...[
             const Gap(10),
             Text(
-              inlineFeedback!,
+              feedback,
               style: const TextStyle(color: Colors.white54, fontSize: 11),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _guideHud(bool canNext) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A2233),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A3A55)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'GUIDE',
-                style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  color: Colors.white54,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (!scenario.isGuided) ...[
-                const Spacer(),
-                Text(
-                  'Mistakes: $mistakes / ${scenario.maxMistakes}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: mistakes > 0 ? Colors.redAccent : Colors.white54,
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const Gap(8),
-          Text(
-            hudText ?? 'Follow the guided steps.',
-            style: const TextStyle(fontSize: 14, height: 1.4),
-          ),
-          if (canNext) ...[
-            const Gap(12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                height: 36,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: onHudNext,
-                  child: const Text('Next'),
-                ),
-              ),
             ),
           ],
         ],
@@ -803,10 +740,10 @@ class ScenarioPlayView extends StatelessWidget {
             ),
           ),
         ],
-        if (inlineFeedback != null && coachPrompt == null) ...[
+        if (inlineFeedback case final feedback? when coachPrompt == null) ...[
           const Gap(8),
           Text(
-            inlineFeedback!,
+            feedback,
             style: const TextStyle(fontSize: 12, color: Colors.white54),
           ),
         ],

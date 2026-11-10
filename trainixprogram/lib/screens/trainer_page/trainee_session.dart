@@ -20,7 +20,6 @@ import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
 import 'package:trainixprogram/screens/trainer_page/components/header.dart';
 import 'package:trainixprogram/screens/trainer_page/live_training_room.dart';
-import 'package:trainixprogram/screens/trainer_page/live_training_history.dart';
 import 'package:trainixprogram/screens/trainer_page/log_monitoring_screen.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
 
@@ -46,10 +45,12 @@ class _TraineeSessionState extends State<TraineeSession> {
 
   void _checkReminders() {
     for (final s in LiveSessionStore.instance.roomsNeedingReminder()) {
+      final at = s.scheduledAt;
+      if (at == null) continue;
       LiveSessionStore.instance.markReminded(s.id);
       TrainingNotificationCenter.notifyLiveRoomReminder(
         roomName: s.name,
-        whenLabel: formatCreatedAt(s.scheduledAt!),
+        whenLabel: formatCreatedAt(at),
       );
     }
   }
@@ -210,13 +211,17 @@ class _TraineeSessionState extends State<TraineeSession> {
                           itemBuilder: (_, i) {
                             final s = _upcoming[i];
                             final open = canJoinBySchedule(s);
+                            final scheduledAt = s.scheduledAt;
                             return GestureDetector(
                               onTap: () {
                                 if (!open) {
+                                  final when = scheduledAt == null
+                                      ? 'the scheduled time'
+                                      : formatCreatedAt(scheduledAt);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
                                       content: Text(
-                                        'Opens 15 minutes before ${formatCreatedAt(s.scheduledAt!)}',
+                                        'Opens 15 minutes before $when',
                                       ),
                                     ),
                                   );
@@ -253,9 +258,9 @@ class _TraineeSessionState extends State<TraineeSession> {
                                     ),
                                     const Gap(6),
                                     Text(
-                                      s.scheduledAt == null
+                                      scheduledAt == null
                                           ? 'Scheduled'
-                                          : 'Starts ${compactScheduleTime(s.scheduledAt!)}',
+                                          : 'Starts ${compactScheduleTime(scheduledAt)}',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
@@ -639,11 +644,12 @@ class _TraineeSessionState extends State<TraineeSession> {
                                 );
                               });
                             },
-                            child: Text(
-                              scheduledAt == null
+                            child: Text(() {
+                              final at = scheduledAt;
+                              return at == null
                                   ? 'Pick date & time'
-                                  : formatCreatedAt(scheduledAt!),
-                            ),
+                                  : formatCreatedAt(at);
+                            }()),
                           ),
                           if (scheduledAt != null)
                             IconButton(
@@ -733,9 +739,10 @@ class _TraineeSessionState extends State<TraineeSession> {
                                     existing?.presence ?? const RoomPresence(),
                                 closed: existing?.closed ?? false,
                               );
-                              if (isEdit) {
+                              final editing = existing;
+                              if (editing != null) {
                                 if (!LiveSessionStore.instance.isOwnedBy(
-                                  existing!.id,
+                                  editing.id,
                                   ProfileData.displayName,
                                 )) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1076,11 +1083,11 @@ class _TrainerRoomCard extends StatelessWidget {
                 style: const TextStyle(color: Colors.white54, fontSize: 11),
               ),
             ],
-            if (session.description != null &&
-                session.description!.isNotEmpty) ...[
+            if (session.description case final description?
+                when description.isNotEmpty) ...[
               const Gap(6),
               Text(
-                session.description!,
+                description,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: Colors.white38, fontSize: 11),

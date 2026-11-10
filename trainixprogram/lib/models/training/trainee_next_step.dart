@@ -228,10 +228,6 @@ class TraineeNextStep {
     return 'This area is locked.';
   }
 
-  static bool isAreaVisuallyLocked(int cardId) {
-    return !canOpenCarouselCard(cardId);
-  }
-
   void open(BuildContext context) {
     switch (target) {
       case TraineeNextStepTarget.profile:

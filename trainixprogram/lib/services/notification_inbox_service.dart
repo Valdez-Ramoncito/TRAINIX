@@ -181,6 +181,10 @@ class NotificationInboxService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void refreshUi() {
+    notifyListeners();
+  }
+
   Future<void> loadFromRemote() async {
     if (!SupabaseService.isReady) return;
     final user = SupabaseService.client.auth.currentUser;

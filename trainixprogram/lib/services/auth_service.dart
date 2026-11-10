@@ -205,8 +205,6 @@ class AuthService {
     if (user == null) return;
 
     final meta = user.userMetadata ?? {};
-    final metaRole = parseRole(meta['role']);
-
     try {
       final row = await SupabaseService.client
           .from('profiles')

@@ -12,22 +12,6 @@ double displayScore10(double raw) {
   return raw.clamp(0, 10);
 }
 
-class TelemetryNoteEntry {
-  final String label;
-  final String note;
-  final String? quote;
-  final int flaggedCount;
-  final int totalCount;
-
-  const TelemetryNoteEntry({
-    required this.label,
-    required this.note,
-    required this.quote,
-    required this.flaggedCount,
-    required this.totalCount,
-  });
-}
-
 class ReportUI extends StatelessWidget {
   final List<SessionEvaluation> evaluations;
   final double? averageWpm;
@@ -48,38 +32,6 @@ class ReportUI extends StatelessWidget {
     this.onStartAnotherSession,
   });
 
-  static final Map<String, double Function(SessionEvaluation)>
-  _chatNoteCategoryScores = {
-    'Opening Spiel': (e) => e.openingSpielScore,
-    'Positive Scripting': (e) => e.positiveScriptingScore,
-    'Empathy': (e) => e.empathyScore,
-    'Active Listening': (e) => e.activeListeningScore,
-    'Problem Identification': (e) => e.problemIdentificationScore,
-    'Solution Delivery': (e) => e.solutionDeliveryScore,
-    'Typing Speed': (e) => e.typingSpeedScore ?? 10,
-    'Error Rate & Accuracy': (e) => e.errorRateAccuracyScore ?? 10,
-    'Response Consistency & Pace': (e) => e.responseConsistencyScore ?? 10,
-    'Communication Clarity': (e) => e.communicationClarityScore,
-    'Sector Knowledge': (e) => e.sectorKnowledgeScore,
-    'Closing Spiel': (e) => e.closingSpielScore,
-  };
-
-  static final Map<String, double Function(SessionEvaluation)>
-  _voiceNoteCategoryScores = {
-    'Opening Spiel': (e) => e.openingSpielScore,
-    'Positive Scripting': (e) => e.positiveScriptingScore,
-    'Empathy': (e) => e.empathyScore,
-    'Active Listening': (e) => e.activeListeningScore,
-    'Problem Identification': (e) => e.problemIdentificationScore,
-    'Solution Delivery': (e) => e.solutionDeliveryScore,
-    'Pace & Speed': (e) => e.paceAndSpeedScore ?? 10,
-    'Pronunciation & Clarity': (e) => e.pronunciationClarityScore ?? 10,
-    'Filler Word Usage': (e) => e.fillerWordUsageScore ?? 10,
-    'Tone & Inflection': (e) => e.toneScore,
-    'Sector Knowledge': (e) => e.sectorKnowledgeScore,
-    'Closing Spiel': (e) => e.closingSpielScore,
-  };
-
   double get _averageOverall {
     if (evaluations.isEmpty) return 0;
     return evaluations.map((e) => e.overallScore).reduce((a, b) => a + b) /
@@ -90,41 +42,6 @@ class ReportUI extends StatelessWidget {
     if (evaluations.isEmpty) return 0;
     return evaluations.map(selector).reduce((a, b) => a + b) /
         evaluations.length;
-  }
-
-  List<SessionEvaluation> get _chatTesdaEvaluations =>
-      evaluations.where((e) => e.typingSpeedScore != null).toList();
-
-  double? _averageChatTesda(double? Function(SessionEvaluation) selector) {
-    final vals = _chatTesdaEvaluations
-        .map(selector)
-        .whereType<double>()
-        .toList();
-    if (vals.isEmpty) return null;
-    return vals.reduce((a, b) => a + b) / vals.length;
-  }
-
-  List<SessionEvaluation> get _voiceTesdaEvaluations =>
-      evaluations.where((e) => e.paceAndSpeedScore != null).toList();
-
-  double? _averageVoiceTesda(double? Function(SessionEvaluation) selector) {
-    final vals = _voiceTesdaEvaluations
-        .map(selector)
-        .whereType<double>()
-        .toList();
-    if (vals.isEmpty) return null;
-    return vals.reduce((a, b) => a + b) / vals.length;
-  }
-
-  List<String> _aggregate(List<String> Function(SessionEvaluation) selector) {
-    final seen = <String>{};
-    final result = <String>[];
-    for (final e in evaluations) {
-      for (final s in selector(e)) {
-        if (s.isNotEmpty && seen.add(s)) result.add(s);
-      }
-    }
-    return result.take(5).toList();
   }
 
   String get _performanceLevel {
@@ -145,10 +62,7 @@ class ReportUI extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color bgColor = isDark
-        ? Theme.of(context).colorScheme.surface
-        : const Color(0xFF0B0F17);
+    final Color bgColor = Theme.of(context).colorScheme.surface;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -222,9 +136,7 @@ class ReportUI extends StatelessWidget {
   Widget _buildChannelAveragesCard() {
     final chatAvg = _avgForChannel('chat');
     final voiceAvg = _avgForChannel('voice');
-    final hasChat = chatAvg != null;
-    final hasVoice = voiceAvg != null;
-    if (!hasChat && !hasVoice) return const SizedBox.shrink();
+    if (chatAvg == null && voiceAvg == null) return const SizedBox.shrink();
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -247,21 +159,21 @@ class ReportUI extends StatelessWidget {
           const Gap(14),
           Row(
             children: [
-              if (hasChat)
+              if (chatAvg != null)
                 Expanded(
                   child: _channelAvgTile(
                     'Non-Voice',
-                    chatAvg!,
+                    chatAvg,
                     Icons.chat_bubble_outline,
                     const Color(0xFF3B82F6),
                   ),
                 ),
-              if (hasChat && hasVoice) const Gap(12),
-              if (hasVoice)
+              if (chatAvg != null && voiceAvg != null) const Gap(12),
+              if (voiceAvg != null)
                 Expanded(
                   child: _channelAvgTile(
                     'Voice',
-                    voiceAvg!,
+                    voiceAvg,
                     Icons.call_outlined,
                     const Color(0xFF70BD8A),
                   ),
@@ -350,7 +262,7 @@ class ReportUI extends StatelessWidget {
       evaluations.where((e) => e.channel == 'voice').toList();
 
   Widget _buildCustomerLists(BuildContext context) {
-    final hasHybridSplit = _chatEvals.isNotEmpty && _voiceEvals.isNotEmpty;
+    final hasMixedChannels = _chatEvals.isNotEmpty && _voiceEvals.isNotEmpty;
     if (evaluations.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
@@ -366,7 +278,7 @@ class ReportUI extends StatelessWidget {
       );
     }
 
-    if (hasHybridSplit) {
+    if (hasMixedChannels) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -461,7 +373,7 @@ class ReportUI extends StatelessWidget {
                             child: Text(
                               e.customerName.isEmpty
                                   ? 'Customer ${i + 1}'
-                                  : e.customerName,
+                                  : friendlyCustomerName(e.customerName),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -985,556 +897,6 @@ class ReportUI extends StatelessWidget {
     );
   }
 
-  // Strengths Card
-  Widget _buildStrengthsCard() {
-    final strengths = _aggregate((e) => e.strengths);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: Color(0xFF10B981),
-                size: 20,
-              ),
-              Gap(8),
-              Text(
-                'Key Strengths Identified',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-          const Divider(height: .3, color: Color.fromARGB(99, 16, 185, 129)),
-          const Gap(16),
-          if (strengths.isEmpty)
-            const Text(
-              'No specific strengths logged for this session.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-            )
-          else
-            ...strengths.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 10.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.star_rounded,
-                      color: Color(0xFF10B981),
-                      size: 16,
-                    ),
-                    const Gap(10),
-                    Expanded(
-                      child: Text(
-                        item,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E8F0),
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Areas for Improvement Card
-  Widget _buildImprovementsCard() {
-    final improvements = _aggregate((e) => e.areasForImprovement);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.trending_up_rounded,
-                color: Color(0xFFF59E0B),
-                size: 20,
-              ),
-              Gap(8),
-              Text(
-                'Areas for Improvement',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const Gap(16),
-          const Divider(height: .3, color: Color.fromARGB(127, 245, 159, 11)),
-          const Gap(16),
-          if (improvements.isEmpty)
-            const Text(
-              'No improvement areas flagged.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-            )
-          else
-            ...improvements.map(
-              (item) => Padding(
-                padding: const EdgeInsets.only(bottom: 10.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: Color(0xFFF59E0B),
-                      size: 16,
-                    ),
-                    const Gap(10),
-                    Expanded(
-                      child: Text(
-                        item,
-                        style: const TextStyle(
-                          color: Color(0xFFE2E8F0),
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // AI Feedback Summary Card
-  Widget _buildAiFeedbackCard() {
-    final feedback = evaluations.isNotEmpty ? evaluations.last.feedback : null;
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF1E293B)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.auto_awesome_rounded,
-                color: Color(0xFF8B5CF6),
-                size: 22,
-              ),
-              Gap(10),
-              Text(
-                'AI Evaluator Feedback',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Gap(14),
-          Text(
-            feedback != null && feedback.isNotEmpty
-                ? feedback
-                : 'No feedback available for this session.',
-            style: const TextStyle(
-              color: Color(0xFFE2E8F0),
-              fontSize: 14,
-              height: 1.6,
-            ),
-          ),
-          if (evaluations.length > 1) ...[
-            const Gap(12),
-            const Text(
-              '* Feedback shown is from the most recent interaction in this session.',
-              style: TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Chat TESDA Telemetry Card
-  Widget _buildChatTesdaCard() {
-    final chatEvals = _chatTesdaEvaluations;
-    if (chatEvals.isEmpty) return const SizedBox.shrink();
-
-    final typingSpeed = _averageChatTesda((e) => e.typingSpeedScore);
-    final errorRate = _averageChatTesda((e) => e.errorRateAccuracyScore);
-    final consistency = _averageChatTesda((e) => e.responseConsistencyScore);
-
-    final entries = <TelemetryNoteEntry>[];
-    _chatNoteCategoryScores.forEach((label, scoreOf) {
-      SessionEvaluation? worst;
-      double worstScore = 11;
-      int flaggedCount = 0;
-      for (final e in chatEvals) {
-        final note = e.categoryNotes?[label];
-        if (note == null) continue;
-        flaggedCount++;
-        final score = scoreOf(e);
-        if (score < worstScore) {
-          worstScore = score;
-          worst = e;
-        }
-      }
-      if (worst == null) return;
-      entries.add(
-        TelemetryNoteEntry(
-          label: label,
-          note: worst.categoryNotes![label]!,
-          quote: worst.categoryQuotes?[label],
-          flaggedCount: flaggedCount,
-          totalCount: chatEvals.length,
-        ),
-      );
-    });
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.chat_bubble_outline_rounded,
-                color: Color(0xFF3B82F6),
-                size: 20,
-              ),
-              Gap(8),
-              Text(
-                'Chat typing metrics',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Gap(4),
-          const Text(
-            'Measures typing speed and accuracy during the chat interaction.',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-          ),
-          const Gap(16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Typing Speed',
-                  typingSpeed,
-                  Icons.speed_rounded,
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Error & Accuracy',
-                  errorRate,
-                  Icons.spellcheck_rounded,
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Response Pace',
-                  consistency,
-                  Icons.timer_rounded,
-                ),
-              ),
-            ],
-          ),
-          if (entries.isNotEmpty) ...[
-            const Gap(20),
-            const Text(
-              'Evaluator Detailed Notes & Citations',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            const Gap(10),
-            ..._buildTelemetryNoteCards(entries),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Voice TESDA Telemetry Card
-  Widget _buildVoiceTesdaCard() {
-    final voiceEvals = _voiceTesdaEvaluations;
-    if (voiceEvals.isEmpty) return const SizedBox.shrink();
-
-    final pace = _averageVoiceTesda((e) => e.paceAndSpeedScore);
-    final pronunciation = _averageVoiceTesda(
-      (e) => e.pronunciationClarityScore,
-    );
-    final fillerWords = _averageVoiceTesda((e) => e.fillerWordUsageScore);
-
-    final entries = <TelemetryNoteEntry>[];
-    _voiceNoteCategoryScores.forEach((label, scoreOf) {
-      SessionEvaluation? worst;
-      double worstScore = 11;
-      int flaggedCount = 0;
-      for (final e in voiceEvals) {
-        final note = e.categoryNotes?[label];
-        if (note == null) continue;
-        flaggedCount++;
-        final score = scoreOf(e);
-        if (score < worstScore) {
-          worstScore = score;
-          worst = e;
-        }
-      }
-      if (worst == null) return;
-      entries.add(
-        TelemetryNoteEntry(
-          label: label,
-          note: worst.categoryNotes![label]!,
-          quote: worst.categoryQuotes?[label],
-          flaggedCount: flaggedCount,
-          totalCount: voiceEvals.length,
-        ),
-      );
-    });
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(
-                Icons.record_voice_over_rounded,
-                color: Color(0xFF0EA5E9),
-                size: 20,
-              ),
-              Gap(8),
-              Text(
-                'Voice delivery metrics',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Gap(4),
-          const Text(
-            'Measures pace, clarity, and delivery from the recorded voice interaction.',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-          ),
-          const Gap(16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Pace & Speed',
-                  pace,
-                  Icons.equalizer_rounded,
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Pronunciation',
-                  pronunciation,
-                  Icons.record_voice_over_rounded,
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                child: _buildTelemetryScoreBox(
-                  'Filler Usage',
-                  fillerWords,
-                  Icons.subtitles_off_rounded,
-                ),
-              ),
-            ],
-          ),
-          if (entries.isNotEmpty) ...[
-            const Gap(20),
-            const Text(
-              'Voice Evaluator Detailed Notes & Citations',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
-            ),
-            const Gap(10),
-            ..._buildTelemetryNoteCards(entries),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTelemetryScoreBox(String label, double? score, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1B),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color.fromARGB(255, 35, 36, 37)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: const Color(0xFF3B82F6), size: 20),
-          const Gap(6),
-          Text(
-            label,
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 11),
-          ),
-          const Gap(4),
-          Text(
-            score != null
-                ? '${displayScore10(score).toStringAsFixed(1)} / 10'
-                : 'N/A',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _buildTelemetryNoteCards(List<TelemetryNoteEntry> entries) {
-    return entries.map((entry) {
-      final countSuffix = entry.flaggedCount > 1
-          ? ' (flagged in ${entry.flaggedCount} of ${entry.totalCount} interactions)'
-          : '';
-
-      return Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A1A1B),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color.fromARGB(255, 47, 47, 48)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E293B),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    entry.label,
-                    style: const TextStyle(
-                      color: Color(0xFF3B82F6),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                if (countSuffix.isNotEmpty) ...[
-                  const Gap(8),
-                  Text(
-                    countSuffix,
-                    style: const TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const Gap(8),
-            Text(
-              entry.note,
-              style: const TextStyle(
-                color: Color(0xFFE2E8F0),
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-            if (entry.quote != null) ...[
-              const Gap(8),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 32, 32, 33),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF334155)),
-                ),
-                child: Text(
-                  '"${entry.quote}"',
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      );
-    }).toList();
-  }
-
   // Bottom action buttons navigation
   Widget _buildBottomActionButtons(BuildContext context) {
     return Row(
@@ -1542,8 +904,9 @@ class ReportUI extends StatelessWidget {
       children: [
         OutlinedButton.icon(
           onPressed: () {
-            if (onBackToMenu != null) {
-              onBackToMenu!();
+            final back = onBackToMenu;
+            if (back != null) {
+              back();
             } else {
               Navigator.pop(context);
             }
@@ -1563,8 +926,9 @@ class ReportUI extends StatelessWidget {
         const Gap(12),
         ElevatedButton.icon(
           onPressed: () {
-            if (onStartAnotherSession != null) {
-              onStartAnotherSession!();
+            final startAnother = onStartAnotherSession;
+            if (startAnother != null) {
+              startAnother();
             } else {
               final sector = Provider.of<SimulationProvider>(
                 context,
@@ -1624,7 +988,9 @@ class CustomerReportDetailScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0F17),
         title: Text(
-          e.customerName.isEmpty ? 'Customer detail' : e.customerName,
+          e.customerName.isEmpty
+              ? 'Customer detail'
+              : friendlyCustomerName(e.customerName),
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),

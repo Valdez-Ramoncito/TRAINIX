@@ -115,9 +115,13 @@ class PerformanceStatsPanel extends StatelessWidget {
             .length;
         final passRate = passCount / history.evaluations.length;
 
+        final liveEvals = history.evaluations
+            .where((e) => !isDebugEvaluation(e))
+            .toList();
+
         final strengths = <String>{};
         final improvements = <String>{};
-        for (final e in history.evaluations) {
+        for (final e in liveEvals) {
           for (final s in e.strengths) {
             final cleaned = friendlyEvalText(s);
             if (cleaned.isNotEmpty) strengths.add(cleaned);
@@ -129,16 +133,15 @@ class PerformanceStatsPanel extends StatelessWidget {
         }
 
         SessionEvaluation? bestCustomer;
-        for (final e in history.evaluations) {
+        for (final e in liveEvals) {
           if (bestCustomer == null ||
               e.overallScore > bestCustomer.overallScore) {
             bestCustomer = e;
           }
         }
-        var bestSession = history.sessions.isEmpty
-            ? null
-            : history.sessions.first;
-        for (final s in history.sessions) {
+        final liveSessions = history.sessions.where((s) => !isDebugSession(s));
+        var bestSession = liveSessions.isEmpty ? null : liveSessions.first;
+        for (final s in liveSessions) {
           if (bestSession == null ||
               s.overallScore > bestSession.overallScore) {
             bestSession = s;

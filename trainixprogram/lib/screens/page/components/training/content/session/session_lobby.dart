@@ -44,8 +44,6 @@ class _SessionLobbyState extends State<SessionLobby> {
         return 'Non-Voice Session';
       case SimulationMode.voice:
         return 'Voice Session';
-      case SimulationMode.hybrid:
-        return 'Voice Session';
     }
   }
 
@@ -54,8 +52,6 @@ class _SessionLobbyState extends State<SessionLobby> {
       case SimulationMode.chat:
         return 'Practice text customer handling with AI customers.';
       case SimulationMode.voice:
-        return 'Practice live voice calls with AI customers.';
-      case SimulationMode.hybrid:
         return 'Practice live voice calls with AI customers.';
     }
   }
@@ -66,8 +62,6 @@ class _SessionLobbyState extends State<SessionLobby> {
         return Icons.chat_bubble_outline_rounded;
       case SimulationMode.voice:
         return Icons.phone_in_talk_outlined;
-      case SimulationMode.hybrid:
-        return Icons.hub_outlined;
     }
   }
 
@@ -77,8 +71,6 @@ class _SessionLobbyState extends State<SessionLobby> {
         return MiniTrainingProgress.isChatSessionUnlocked;
       case SimulationMode.voice:
         return MiniTrainingProgress.isVoiceSessionUnlocked;
-      case SimulationMode.hybrid:
-        return MiniTrainingProgress.isHybridSessionUnlocked;
     }
   }
 
@@ -88,8 +80,6 @@ class _SessionLobbyState extends State<SessionLobby> {
         return 'Clear Chat Scenario Practice first.';
       case SimulationMode.voice:
         return 'Clear Voice Scenario Practice first.';
-      case SimulationMode.hybrid:
-        return 'Clear Hybrid Scenario Practice first.';
     }
   }
 
@@ -192,11 +182,7 @@ class _SessionLobbyState extends State<SessionLobby> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(24),
-            decoration: boxDecoration(
-              false,
-              unlocked,
-              isDark: Theme.of(context).brightness == Brightness.dark,
-            ),
+            decoration: boxDecoration(false, unlocked),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

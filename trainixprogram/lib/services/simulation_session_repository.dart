@@ -155,7 +155,7 @@ class SimulationSessionRepository {
       final list = <PlayedSession>[];
       for (final row in rows as List) {
         final map = Map<String, dynamic>.from(row as Map);
-        SimulationMode mode = SimulationMode.hybrid;
+        SimulationMode mode = SimulationMode.chat;
         for (final m in SimulationMode.values) {
           if (m.name == (map['mode'] as String? ?? '')) {
             mode = m;

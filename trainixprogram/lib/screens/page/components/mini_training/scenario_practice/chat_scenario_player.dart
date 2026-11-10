@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/models/training/soft_text_match.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -302,7 +301,7 @@ class _ChatScenarioPlayerState extends State<ChatScenarioPlayer> {
     if (_coachTarget == null || _waitingCustomer) return;
 
     final turn = _scenario.turns[_turnIndex];
-    final target = (turn.resolvedTargetText ?? '').trim();
+    final target = turn.resolvedTargetText.trim();
     final input = _inputController.text.trim();
     final ok = SoftTextMatch.typingMatches(input, target);
 

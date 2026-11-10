@@ -227,73 +227,6 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
     );
   }
 
-  Widget _buildList(List<SectorIssue> issues, int? matchIndex) {
-    if (issues.isEmpty) {
-      return const Center(
-        child: Text(
-          'No troubleshooting guides for this sector. Use escalation if needed.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white54),
-        ),
-      );
-    }
-
-    return ListView.separated(
-      itemCount: issues.length,
-      separatorBuilder: (_, __) => const Gap(10),
-      itemBuilder: (context, index) {
-        final issue = issues[index];
-        final highlighted = matchIndex == index;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedIndex = index),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: highlighted
-                  ? const Color(0xFF1E293B)
-                  : const Color.fromARGB(255, 28, 29, 29),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: highlighted
-                    ? const Color(0xFF3B82F6)
-                    : const Color.fromARGB(255, 50, 51, 54),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        issue.title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Gap(4),
-                      Text(
-                        issue.summary,
-                        style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildSteps(SectorIssue issue) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -727,10 +660,6 @@ class SectorIssueCatalog {
     }
     if (bestScore == 0) return null;
     return best;
-  }
-
-  static bool looksUnlisted(String sector, String problem) {
-    return problem.trim().isNotEmpty && matchIndex(sector, problem) == null;
   }
 
   static const List<SectorIssue> _tech = [

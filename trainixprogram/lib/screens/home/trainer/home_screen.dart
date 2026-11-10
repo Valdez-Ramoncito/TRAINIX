@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/background.dart';
-import 'package:trainixprogram/components/button/logout_button.dart'
-    hide HoverIconButton;
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/home/trainer/carousel.dart';
 import 'package:trainixprogram/screens/auth/loginscreen.dart';

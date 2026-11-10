@@ -28,9 +28,6 @@ class TrainingProgressRepository {
         'completed_voice_scenarios': MiniTrainingProgress
             .completedVoiceScenarios
             .toList(),
-        'completed_hybrid_scenarios': MiniTrainingProgress
-            .completedHybridScenarios
-            .toList(),
         'category_completion': {
           for (final e in trainingData.entries)
             e.key: {
@@ -83,7 +80,7 @@ class TrainingProgressRepository {
           break;
         }
       }
-      if (MiniTrainingProgress.scenarioStage == ScenarioStage.hybrid) {
+      if (stage == 'hybrid') {
         MiniTrainingProgress.scenarioStage = ScenarioStage.completed;
       }
 
@@ -103,10 +100,6 @@ class TrainingProgressRepository {
       loadSet(
         row['completed_voice_scenarios'],
         MiniTrainingProgress.completedVoiceScenarios,
-      );
-      loadSet(
-        row['completed_hybrid_scenarios'],
-        MiniTrainingProgress.completedHybridScenarios,
       );
 
       final catRaw = row['category_completion'];

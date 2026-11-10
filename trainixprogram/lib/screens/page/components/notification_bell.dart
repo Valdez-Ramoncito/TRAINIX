@@ -7,10 +7,10 @@ import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/simulation_hub_screen.dart';
 import 'package:trainixprogram/screens/trainer_page/log_monitoring_screen.dart';
 import 'package:trainixprogram/screens/trainer_page/trainee_session.dart';
+import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:trainixprogram/services/app_navigator.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
-import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
 export 'package:trainixprogram/services/app_navigator.dart' show AppNavigator;
 
@@ -27,7 +27,7 @@ class NotificationBellAnchor extends StatelessWidget {
         final signedIn =
             SupabaseService.isReady &&
             SupabaseService.client.auth.currentUser != null;
-        if (!signedIn) {
+        if (!signedIn || LoginScreen.isActive) {
           return const SizedBox.shrink();
         }
         final unread = NotificationInboxService.instance.unreadCount;
