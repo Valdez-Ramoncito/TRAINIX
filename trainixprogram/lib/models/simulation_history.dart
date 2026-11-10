@@ -245,12 +245,28 @@ class SimulationHistoryProvider with ChangeNotifier {
     );
     _sessions.add(played);
     for (final e in rated) {
-      if (!_evaluations.contains(e)) {
+      final already = _evaluations.any(
+        (existing) =>
+            existing.evaluatedAt == e.evaluatedAt &&
+            existing.customerName == e.customerName &&
+            existing.channel == e.channel &&
+            existing.overallScore == e.overallScore,
+      );
+      if (!already) {
         _evaluations.add(e);
       }
     }
     notifyListeners();
-    SimulationSessionRepository.instance.insert(played);
+    // Fire DB write without blocking UI; failures stay in lastError.
+    // Local hub/dashboard history already has the session.
+    // ignore: unawaited_futures
+    SimulationSessionRepository.instance.insert(played).then((ok) {
+      if (!ok) {
+        debugPrint(
+          'simulation_sessions insert failed: ${SimulationSessionRepository.lastError}',
+        );
+      }
+    });
     if (countForGuide) {
       MiniTrainingProgress.markSimulationSessionCompleted();
     }

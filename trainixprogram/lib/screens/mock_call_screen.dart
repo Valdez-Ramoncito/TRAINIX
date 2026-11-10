@@ -82,6 +82,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
   bool _voiceHasActiveCustomer = false;
   bool _chatHasActiveCustomer = false;
 
+  //voice interaction counted toward quota for the current customer
+  //(set on end-call so async evaluation cannot race the next call)
+  bool _voiceInteractionCounted = false;
+
   //whether chat is currently in its own after-work-report or grace-period
   //flow. Mirrors _voiceCallInProgress below, so the session can't kick
   //the trainee away from chat's own manual reporting step either
@@ -212,23 +216,23 @@ class _MockCallScreenState extends State<MockCallScreen> {
     setState(() {
       final rated = e.withDerivedCustomerRating();
       _sessionEvaluations.add(rated);
-      //increase the completed interactions
-      _completedInteractions++;
-      //this channel's customer is now counted  free its occupancy
-      //slot so the other channel's quota check sees accurate state
       if (channel == 'voice') {
+        //quota is counted on end-call so evaluation latency cannot
+        //open another customer past the limit. only count here if
+        //end-call never ran (e.g. resolved path without end).
+        if (!_voiceInteractionCounted) {
+          _completedInteractions++;
+          _voiceInteractionCounted = true;
+        }
         _voiceHasActiveCustomer = false;
       } else {
+        _completedInteractions++;
         _chatHasActiveCustomer = false;
       }
-      //if it has reached the required interactions
-      //set the session ending to true
       if (_completedInteractions >= _requiredInteractions) {
         _sessionEnding = true;
       }
     });
-    //if the session is ending but neither channel is still actively
-    //wrapping up its own call or chat, then finish the session
     if (_sessionEnding && !_voiceCallInProgress && !_chatInProgress) {
       _finishSession();
     }
@@ -278,14 +282,15 @@ class _MockCallScreenState extends State<MockCallScreen> {
     //record this whole play-through as one grouped session
     //this is what Session History / Score Trend / Total Sessions read from, so
     //a session with 3 resolved customers shows as 1 session there, not 3
-    historyProvider.saveSession(
-      evaluations: List.from(_sessionEvaluations),
-      multitaskingScore: finalMultitaskingScore,
-      mode: widget.mode,
-    );
-    MiniTrainingProgress.markSimulationSessionCompleted();
+    final evals = List<SessionEvaluation>.from(_sessionEvaluations);
+    if (evals.isNotEmpty) {
+      historyProvider.saveSession(
+        evaluations: evals,
+        multitaskingScore: finalMultitaskingScore,
+        mode: widget.mode,
+      );
+    }
 
-    //send the needed data then move to session report screen
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -485,16 +490,22 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //when a call ends
   void _onEndCall() {
-    //stop the timer
     _stopCallTimer();
-
-    //Also clears voice's quota-occupancy flag here as a safety net
-    //covering the case where a call ends without ever being resolved
-    _voiceHasActiveCustomer = false;
 
     setState(() {
       _elapsedSeconds.value = 0;
-      //then set the phase to after call
+      _voiceHasActiveCustomer = false;
+      //count this customer toward quota immediately so async evaluation
+      //cannot leave the session under-quota and start another call
+      if (!_voiceInteractionCounted &&
+          (_phase == SimulationPhase.active ||
+              _phase == SimulationPhase.onHold)) {
+        _completedInteractions++;
+        _voiceInteractionCounted = true;
+        if (_completedInteractions >= _requiredInteractions) {
+          _sessionEnding = true;
+        }
+      }
       _phase = SimulationPhase.afterCallWork;
     });
   }
@@ -508,11 +519,11 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //after sending a report, start the grace period
   void _onSendReport() {
-    // Last customer: go to session wrap-up, then finish after a short dwell.
+    //last customer: wrap up the session (do not open another call)
     if (_sessionEnding || _completedInteractions >= _requiredInteractions) {
       _sessionEnding = true;
       setState(() => _phase = SimulationPhase.wrappingUp);
-      if (!_chatInProgress && !_voiceCallInProgress) {
+      if (!_chatInProgress) {
         Future.delayed(const Duration(seconds: 4), () {
           if (!mounted) return;
           if (_phase == SimulationPhase.wrappingUp) {
@@ -569,10 +580,22 @@ class _MockCallScreenState extends State<MockCallScreen> {
     //if it returns true, make the phase incoming
     //else, wrap it up
     setState(() {
-      _phase = _tryStartNewInteraction('voice')
-          ? SimulationPhase.incoming
-          : SimulationPhase.wrappingUp;
+      if (_tryStartNewInteraction('voice')) {
+        _voiceInteractionCounted = false;
+        _phase = SimulationPhase.incoming;
+      } else {
+        _sessionEnding = true;
+        _phase = SimulationPhase.wrappingUp;
+      }
     });
+    if (_sessionEnding && !_chatInProgress) {
+      Future.delayed(const Duration(seconds: 4), () {
+        if (!mounted) return;
+        if (_phase == SimulationPhase.wrappingUp) {
+          _finishSession();
+        }
+      });
+    }
   }
 
   Widget _buildVoicePanel() {
@@ -593,6 +616,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
           setState(() {
             _phase = SimulationPhase.active;
             _voiceHasActiveCustomer = true;
+            _voiceInteractionCounted = false;
           });
         },
         onEvaluation: (e) => _handleEvaluation('voice', e),

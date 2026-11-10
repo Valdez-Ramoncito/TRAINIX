@@ -136,6 +136,8 @@ class _VoicePanelState extends State<VoicePanel> {
   String _acwDisposition = 'Resolved';
   bool _acwPrepared = false;
   bool _sessionEscalated = false;
+  bool _evaluationSubmitted = false;
+  bool _evaluationInFlight = false;
 
   //controller for report
   final TextEditingController _reportController = TextEditingController();
@@ -223,6 +225,14 @@ class _VoicePanelState extends State<VoicePanel> {
 
       if (widget.phase == SimulationPhase.afterCallWork) {
         _prepareAcwForm();
+        final hasScoreableWork =
+            _traineeHasSpoken ||
+            _coachMessages.any((m) => m.isTrainee && m.text.trim().isNotEmpty);
+        if (hasScoreableWork && !_evaluationSubmitted && !_evaluationInFlight) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _evaluateVoiceInteraction();
+          });
+        }
       }
 
       //if the current phase is on hold
@@ -277,6 +287,8 @@ class _VoicePanelState extends State<VoicePanel> {
           _heldOpeningLines.clear();
           _acwPrepared = false;
           _acwDisposition = 'Resolved';
+          _evaluationSubmitted = false;
+          _evaluationInFlight = false;
           _sessionEscalated = false;
           _coachMessages.clear();
           _sessionController.reset(notify: false);
@@ -748,6 +760,8 @@ class _VoicePanelState extends State<VoicePanel> {
 
   //evaluate the voice interaction
   Future<void> _evaluateVoiceInteraction() async {
+    if (_evaluationSubmitted || _evaluationInFlight) return;
+    _evaluationInFlight = true;
     final messageProvider = Provider.of<MessageProvider>(
       context,
       listen: false,
@@ -825,8 +839,6 @@ class _VoicePanelState extends State<VoicePanel> {
 
     await _clearRetainedAudio();
 
-    if (!mounted) return;
-
     final conv = evalMessages
         .map(
           (m) => {
@@ -847,6 +859,8 @@ class _VoicePanelState extends State<VoicePanel> {
 
     historyProvider.saveEvaluation(finalEvaluation);
     widget.onEvaluation?.call(finalEvaluation);
+    _evaluationSubmitted = true;
+    _evaluationInFlight = false;
   }
 
   //build the voice channel
@@ -1688,148 +1702,175 @@ class _VoicePanelState extends State<VoicePanel> {
     }
     final textTheme = Theme.of(context).textTheme;
     final suggested = _acwSuggestedNote();
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 640),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 50,
-                height: 50,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF191919),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF303030)),
-                ),
-                child: const Icon(
-                  Icons.edit_note,
-                  size: 32,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'After Call Work',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Use the suggested disposition and note from this case. Edit if needed, then submit.',
-                style: textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFF4F3F3),
-                  fontSize: 12,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF15201A),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF2E4A38)),
-                ),
-                child: Text(
-                  'Suggested from this case: $_acwDisposition. $suggested',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: Color(0xFFD7E8DB),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight > 32
+                  ? constraints.maxHeight - 32
+                  : 0,
+              maxWidth: 640,
+            ),
+            child: Align(
+              alignment: Alignment.center,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF191919),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: const Color(0xFF303030)),
+                    ),
+                    child: const Icon(
+                      Icons.edit_note,
+                      size: 32,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Disposition',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                value: _acwDisposition,
-                dropdownColor: const Color(0xFF1A1F26),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: const Color(0xFF1A1A1A),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'After Call Work',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                ),
-                items: const [
-                  DropdownMenuItem(value: 'Resolved', child: Text('Resolved')),
-                  DropdownMenuItem(
-                    value: 'Escalated',
-                    child: Text('Escalated'),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Use the suggested disposition and note from this case. Edit if needed, then submit.',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFFF4F3F3),
+                      fontSize: 12,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  DropdownMenuItem(
-                    value: 'Pending customer',
-                    child: Text('Pending customer'),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF15201A),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF2E4A38)),
+                    ),
+                    child: Text(
+                      'Suggested from this case: $_acwDisposition. $suggested',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: Color(0xFFD7E8DB),
+                      ),
+                    ),
                   ),
-                  DropdownMenuItem(
-                    value: 'Information only',
-                    child: Text('Information only'),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Disposition',
+                    style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _acwDisposition,
+                    dropdownColor: const Color(0xFF1A1F26),
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: const Color(0xFF1A1A1A),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'Resolved',
+                        child: Text('Resolved'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Escalated',
+                        child: Text('Escalated'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Pending customer',
+                        child: Text('Pending customer'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Information only',
+                        child: Text('Information only'),
+                      ),
+                    ],
+                    onChanged: (v) {
+                      if (v != null) setState(() => _acwDisposition = v);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _reportController,
+                    maxLines: 4,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Summary, next action, account notes...',
+                      hintStyle: textTheme.bodyMedium?.copyWith(
+                        fontSize: 12,
+                        color: const Color(0xFFBBBBBB),
+                      ),
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                      ),
+                      enabledBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                        borderSide: BorderSide(
+                          color: Color(0xFFBBBBBB),
+                          width: .5,
+                        ),
+                      ),
+                      focusedBorder: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(10)),
+                        borderSide: BorderSide(color: Colors.white, width: 1),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (_evaluationInFlight) {
+                        var waited = 0;
+                        while (_evaluationInFlight && mounted && waited < 150) {
+                          await Future<void>.delayed(
+                            const Duration(milliseconds: 100),
+                          );
+                          waited++;
+                        }
+                      }
+                      if (!mounted) return;
+                      _reportController.clear();
+                      _acwPrepared = false;
+                      widget.onSendReport?.call();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 20),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text('Submit Report'),
                   ),
                 ],
-                onChanged: (v) {
-                  if (v != null) setState(() => _acwDisposition = v);
-                },
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _reportController,
-                maxLines: 4,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Summary, next action, account notes...',
-                  hintStyle: textTheme.bodyMedium?.copyWith(
-                    fontSize: 12,
-                    color: const Color(0xFFBBBBBB),
-                  ),
-                  border: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                    borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                    borderSide: BorderSide(color: Colors.white, width: 1),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  _reportController.clear();
-                  _acwPrepared = false;
-                  widget.onSendReport?.call();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text('Submit Report'),
-              ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

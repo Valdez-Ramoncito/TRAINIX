@@ -148,10 +148,12 @@ class SimulationSessionRepository {
     lastError = null;
     if (!SupabaseService.isReady) return [];
     try {
-      final rows = await SupabaseService.client
-          .from(_table)
-          .select()
-          .order('completed_at', ascending: false);
+      final uid = SupabaseService.client.auth.currentUser?.id;
+      var query = SupabaseService.client.from(_table).select();
+      if (uid != null) {
+        query = query.eq('user_id', uid);
+      }
+      final rows = await query.order('completed_at', ascending: false);
       final list = <PlayedSession>[];
       for (final row in rows as List) {
         final map = Map<String, dynamic>.from(row as Map);
@@ -188,6 +190,56 @@ class SimulationSessionRepository {
     } catch (e) {
       lastError = e.toString();
       debugPrint('simulation_sessions fetch failed: $lastError');
+      // Fallback without user_id filter if column is missing on older schemas.
+      if (lastError!.contains('user_id')) {
+        try {
+          final rows = await SupabaseService.client
+              .from(_table)
+              .select()
+              .order('completed_at', ascending: false);
+          final list = <PlayedSession>[];
+          for (final row in rows as List) {
+            final map = Map<String, dynamic>.from(row as Map);
+            SimulationMode mode = SimulationMode.chat;
+            for (final m in SimulationMode.values) {
+              if (m.name == (map['mode'] as String? ?? '')) {
+                mode = m;
+                break;
+              }
+            }
+            final evalsRaw = map['evaluations'];
+            final evals = <SessionEvaluation>[];
+            if (evalsRaw is List) {
+              for (final e in evalsRaw) {
+                if (e is Map) {
+                  evals.add(_evalFromMap(Map<String, dynamic>.from(e)));
+                }
+              }
+            }
+            list.add(
+              PlayedSession(
+                evaluations: evals,
+                multitaskingScore: (map['multitasking_score'] as num?)
+                    ?.toDouble(),
+                completedAt: map['completed_at'] != null
+                    ? DateTime.tryParse(
+                            map['completed_at'] as String,
+                          )?.toLocal() ??
+                          DateTime.now()
+                    : DateTime.now(),
+                mode: mode,
+              ),
+            );
+          }
+          debugPrint(
+            'simulation_sessions fetch count (no user_id): ${list.length}',
+          );
+          return list;
+        } catch (e2) {
+          lastError = e2.toString();
+          debugPrint('simulation_sessions fetch failed: $lastError');
+        }
+      }
       return [];
     }
   }
