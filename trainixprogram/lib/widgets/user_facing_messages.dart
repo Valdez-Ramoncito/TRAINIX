@@ -29,13 +29,16 @@ String friendlyEvalText(String raw) {
     'call center',
   );
   t = t.replaceAll(RegExp(r'Per\$\d+\b'), 'Personally,');
-  t = t.replaceAll(RegExp(r'\$\d+'), '');
   t = t.replaceAll(RegExp(r'\(debug sample\)', caseSensitive: false), '');
   t = t.replaceAll(RegExp(r'\bdebug sample\b', caseSensitive: false), '');
   t = t.replaceAll(RegExp(r'\(\s*[,;:\-\s]*\)'), '');
   t = t.replaceAll(RegExp(r'\s{2,}'), ' ');
-  t = t.replaceAll(RegExp(r'\s+([,.;])'), r'$1');
+  // Dart replaceAll does not expand $1 as a backreference. Use mapped replace.
+  t = t.replaceAllMapped(RegExp(r'\s+([,.;])'), (m) => m.group(1)!);
   t = t.replaceAllMapped(RegExp(r'\.\s+([A-Z])'), (m) => '.\n\n${m.group(1)}');
+  // Strip model artifacts and any leftover $n tokens from older cleaners.
+  t = t.replaceAll(RegExp(r'\$\d+'), '');
+  t = t.replaceAll(RegExp(r'\s{2,}'), ' ');
   t = t.trim();
   if (t.isEmpty) return '';
   if (RegExp(r'^[\W_]+$').hasMatch(t)) return '';
