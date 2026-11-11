@@ -319,6 +319,7 @@ class MiniTrainingProgress {
   static bool seenMiniIntro = false;
   static bool seenScenarioIntro = false;
   static bool seenSimulationIntro = false;
+  static bool seenTypingIntro = false;
   static bool hasCompletedSimulationSession = false;
   static bool hasReviewedProgressDashboard = false;
 
@@ -347,6 +348,7 @@ class MiniTrainingProgress {
       'seen_mini_intro': seenMiniIntro,
       'seen_scenario_intro': seenScenarioIntro,
       'seen_simulation_intro': seenSimulationIntro,
+      'seen_typing_intro': seenTypingIntro,
       'has_completed_simulation_session': hasCompletedSimulationSession,
       'has_reviewed_progress_dashboard': hasReviewedProgressDashboard,
     };
@@ -359,6 +361,7 @@ class MiniTrainingProgress {
     seenMiniIntro = raw['seen_mini_intro'] == true;
     seenScenarioIntro = raw['seen_scenario_intro'] == true;
     seenSimulationIntro = raw['seen_simulation_intro'] == true;
+    seenTypingIntro = raw['seen_typing_intro'] == true;
     hasCompletedSimulationSession =
         raw['has_completed_simulation_session'] == true;
     hasReviewedProgressDashboard =
@@ -372,6 +375,7 @@ class MiniTrainingProgress {
       seenMiniIntro = true;
       seenScenarioIntro = true;
       seenSimulationIntro = true;
+      seenTypingIntro = true;
     }
     TrainingProgressRepository.instance.save();
     _bumpGuidance();
@@ -382,6 +386,7 @@ class MiniTrainingProgress {
     seenMiniIntro = false;
     seenScenarioIntro = false;
     seenSimulationIntro = false;
+    seenTypingIntro = false;
     TrainingProgressRepository.instance.save();
     _bumpGuidance();
   }
@@ -396,6 +401,8 @@ class MiniTrainingProgress {
         seenScenarioIntro = true;
       case 'simulation_intro':
         seenSimulationIntro = true;
+      case 'typing_practice_intro':
+        seenTypingIntro = true;
       default:
         return;
     }
@@ -415,6 +422,7 @@ class MiniTrainingProgress {
     seenMiniIntro = false;
     seenScenarioIntro = false;
     seenSimulationIntro = false;
+    seenTypingIntro = false;
     hasCompletedSimulationSession = false;
     hasReviewedProgressDashboard = false;
     for (final cat in trainingData.values) {

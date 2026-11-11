@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
+import 'package:trainixprogram/models/training/typing/typing_practice_store.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
@@ -302,6 +303,7 @@ class AuthService {
 
   Future<void> signOut() async {
     MiniTrainingProgress.resetAll();
+    TypingPracticeStore.reset();
     TrainixDebug.resetForLogout();
     NotificationInboxService.instance.clearLocalOnly();
     NotificationInboxService.instance.stopRealtime();

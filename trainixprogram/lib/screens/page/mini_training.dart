@@ -8,6 +8,7 @@ import 'package:trainixprogram/screens/page/components/mini_training/category_ti
 import 'package:trainixprogram/screens/page/components/mini_training/header.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice_tab.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/training_notification_banner.dart';
+import 'package:trainixprogram/screens/page/components/mini_training/typing_practice/typing_practice_tab.dart';
 import 'package:trainixprogram/screens/page/training.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
@@ -29,7 +30,7 @@ class _MiniTrainingState extends State<MiniTraining>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -176,6 +177,7 @@ class _MiniTrainingState extends State<MiniTraining>
                       tabs: const [
                         Tab(text: "Knowledge Path"),
                         Tab(text: "Scenario Practice"),
+                        Tab(text: "Typing Practice"),
                       ],
                     ),
                     const Gap(20),
@@ -189,6 +191,7 @@ class _MiniTrainingState extends State<MiniTraining>
                               _tabController.animateTo(0);
                             },
                           ),
+                          const TypingPracticeTab(),
                         ],
                       ),
                     ),

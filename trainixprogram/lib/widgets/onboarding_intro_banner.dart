@@ -31,6 +31,8 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
         return !MiniTrainingProgress.seenScenarioIntro;
       case 'simulation_intro':
         return !MiniTrainingProgress.seenSimulationIntro;
+      case 'typing_practice_intro':
+        return !MiniTrainingProgress.seenTypingIntro;
       default:
         return false;
     }

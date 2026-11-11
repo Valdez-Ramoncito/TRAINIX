@@ -36,8 +36,22 @@ class ScreenHelpCatalog {
       'Finish a category final to open the next category.',
       'After all categories, take the Grand Final.',
       'Scenario Practice tab unlocks after the Grand Final (Chat, Voice).',
+      'Typing Practice is optional speed and accuracy drills. It never gates progress.',
     ],
     footer: 'Use the Scenario Practice tab after the Grand Final.',
+  );
+
+  static const typingPractice = ScreenHelpContent(
+    title: 'Typing Practice',
+    bullets: [
+      'Choose 30s, 60s, or 2 min. Timer starts on the first key.',
+      'Packs: General warm-up, agent Scripts, or Chat-style turns.',
+      'Net WPM counts correct characters. Accuracy tracks keystroke quality.',
+      'No-backspace mode blocks delete to train clean first-pass typing.',
+      'Personal bests and recent runs stay in memory for this session.',
+    ],
+    footer:
+        'Optional tool only. It does not unlock or lock Mini Training or Simulation.',
   );
 
   static const knowledgePath = ScreenHelpContent(
