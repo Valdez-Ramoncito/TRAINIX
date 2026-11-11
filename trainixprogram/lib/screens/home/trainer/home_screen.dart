@@ -37,6 +37,8 @@ class HomeScreenTrainer extends StatelessWidget {
               icon: Icons.logout_rounded,
               tooltip: 'Log out',
               onPressed: () async {
+                final ok = await AuthService.confirmSignOut(context);
+                if (!ok || !context.mounted) return;
                 await AuthService.instance.signOut();
                 if (!context.mounted) return;
                 Navigator.pushAndRemoveUntil(

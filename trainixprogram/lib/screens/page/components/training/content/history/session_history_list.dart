@@ -109,6 +109,9 @@ class SessionHistoryList extends StatelessWidget {
                             builder: (_) => SessionReportScreen(
                               evaluations: session.evaluations,
                               multitaskingScore: session.multitaskingScore,
+                              averageTypingWpm: session.averageTypingWpm,
+                              averageWpm: session.averageSpeakingWpm,
+                              fillerWordCount: session.fillerWordCount,
                             ),
                           ),
                         );

@@ -152,7 +152,11 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                   isComplete: data.isComplete,
                   isNext: data.isNext,
                   isLast: false,
-                  child: GestureDetector(
+                  child: MouseRegion(
+                    cursor: (data.isNext || data.isComplete)
+                        ? SystemMouseCursors.click
+                        : SystemMouseCursors.basic,
+                    child: GestureDetector(
                     onTap: () async {
                       if (data.isNext || data.isComplete) {
                         await Navigator.of(context).push(
@@ -303,6 +307,7 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                       ),
                     ),
                   ),
+                  ),
                 );
               }
 
@@ -310,7 +315,11 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                 isComplete: grandPassed,
                 isNext: grandUnlocked && !grandPassed,
                 isLast: true,
-                child: GestureDetector(
+                child: MouseRegion(
+                  cursor: grandUnlocked
+                      ? SystemMouseCursors.click
+                      : SystemMouseCursors.basic,
+                  child: GestureDetector(
                   onTap: () async {
                     if (!grandUnlocked) return;
                     await Navigator.of(context).push(
@@ -375,6 +384,7 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                         ],
                       ),
                     ),
+                  ),
                   ),
                 ),
               );

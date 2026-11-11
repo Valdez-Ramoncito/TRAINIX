@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/services/auth_service.dart';
 
 class LogoutButton extends StatefulWidget {
   final VoidCallback? onTap;
@@ -12,6 +13,13 @@ class LogoutButton extends StatefulWidget {
 class _LogoutButtonState extends State<LogoutButton> {
   bool _isHovered = false;
 
+  Future<void> _confirmThenRun() async {
+    final action = widget.onTap;
+    if (action == null) return;
+    final confirmed = await AuthService.confirmSignOut(context);
+    if (confirmed) action();
+  }
+
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -19,7 +27,7 @@ class _LogoutButtonState extends State<LogoutButton> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
-        onTap: widget.onTap,
+        onTap: _confirmThenRun,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),

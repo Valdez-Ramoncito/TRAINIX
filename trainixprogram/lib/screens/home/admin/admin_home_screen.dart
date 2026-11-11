@@ -74,6 +74,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Future<void> _logout() async {
+    final ok = await AuthService.confirmSignOut(context);
+    if (!ok || !mounted) return;
     await AuthService.instance.signOut();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(

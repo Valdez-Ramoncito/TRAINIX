@@ -339,7 +339,7 @@ class ScenarioPlayView extends StatelessWidget {
   Widget _scriptGuidePanel() {
     return Container(
       color: const Color(0xFF121212),
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 56),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

@@ -812,7 +812,7 @@ class ReportUI extends StatelessWidget {
                 ? '${multitaskingScore!.toStringAsFixed(0)}%'
                 : 'Not recorded',
             subtitle:
-                'Identity checks, tool use, and follow-through in this session',
+                'Tool use and follow-through; identity only when the case needs an account',
           ),
           if (multitaskingScore != null) ...[
             const Gap(12),
@@ -824,7 +824,7 @@ class ReportUI extends StatelessWidget {
                 border: Border.all(color: const Color(0xFF334155)),
               ),
               child: const Text(
-                'Based on identity verification, Account Lookup actions, and completing required tool steps. Taking notes is a small bonus, not required.',
+                'Based on required tool steps and completing the interaction. Identity verification and Account Lookup count only when the case needs an account. Taking notes is a small bonus, not required.',
                 style: TextStyle(
                   color: Color(0xFF9CA3AF),
                   fontSize: 11,
@@ -845,6 +845,7 @@ class ReportUI extends StatelessWidget {
     required String subtitle,
   }) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: const Color(0xFF1A1A1B),
@@ -852,6 +853,7 @@ class ReportUI extends StatelessWidget {
         border: Border.all(color: const Color(0xFF1E293B)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -874,6 +876,7 @@ class ReportUI extends StatelessWidget {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                const Gap(2),
                 Text(
                   value,
                   style: const TextStyle(
@@ -882,14 +885,16 @@ class ReportUI extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const Gap(4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: Color.fromARGB(255, 119, 130, 145),
+                    fontSize: 11,
+                    height: 1.35,
+                  ),
+                ),
               ],
-            ),
-          ),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: Color.fromARGB(255, 119, 130, 145),
-              fontSize: 11,
             ),
           ),
         ],

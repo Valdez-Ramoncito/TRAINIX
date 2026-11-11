@@ -206,9 +206,12 @@ class TrainingNotificationCenter {
   }
 
   static void notifyScenarioCompleted(String scenarioTitle) {
+    final label = scenarioTitle.trim().isEmpty
+        ? 'Scenario'
+        : scenarioTitle.trim();
     push(
-      title: 'Scenario completed',
-      body: '$scenarioTitle is marked complete.',
+      title: 'Scenario complete',
+      body: 'You finished "$label". Keep going when you are ready.',
       locationHint: 'Mini Training > Scenario Practice',
       type: TrainingNotificationType.success,
     );
@@ -231,6 +234,7 @@ class TrainingNotificationCenter {
           'Non-Voice scenarios are complete. Simulation Training is open from the main menu.',
       locationHint: 'Main Menu > Training Simulation',
       type: TrainingNotificationType.unlock,
+      actionType: 'open_simulation',
     );
   }
 

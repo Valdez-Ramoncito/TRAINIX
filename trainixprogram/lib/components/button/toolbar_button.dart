@@ -32,8 +32,12 @@ class ToolbarIconState extends State<ToolbarIcon> {
         fontWeight: FontWeight.w400,
       ),
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _isHovered = true),
+        cursor: widget.onTap == null
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
+        onEnter: (_) {
+          if (widget.onTap != null) setState(() => _isHovered = true);
+        },
         onExit: (_) => setState(() => _isHovered = false),
         child: GestureDetector(
           onTap: widget.onTap,
@@ -42,12 +46,12 @@ class ToolbarIconState extends State<ToolbarIcon> {
             margin: const EdgeInsets.symmetric(vertical: 4),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: _isHovered
+              color: _isHovered && widget.onTap != null
                   ? Colors.white.withValues(alpha: 0.08)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _isHovered
+                color: _isHovered && widget.onTap != null
                     ? Colors.white.withValues(alpha: 0.15)
                     : Colors.transparent,
               ),
@@ -55,7 +59,9 @@ class ToolbarIconState extends State<ToolbarIcon> {
             child: Icon(
               widget.icon,
               size: 24,
-              color: _isHovered ? Colors.white : Colors.grey,
+              color: widget.onTap == null
+                  ? Colors.white24
+                  : (_isHovered ? Colors.white : Colors.grey),
             ),
           ),
         ),

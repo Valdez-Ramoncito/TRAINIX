@@ -8,12 +8,17 @@ class LiveSessionRunRepository {
 
   static const _table = 'live_session_runs';
 
-  Map<String, dynamic> _toRow(LiveTrainingHistoryEntry e) {
+  Map<String, dynamic> _toRow(
+    LiveTrainingHistoryEntry e, {
+    String? traineeUserId,
+  }) {
     return {
       'room_id': e.roomId,
       'room_name': e.roomName,
       'trainer_name': e.trainerName,
       'trainee_name': e.traineeName,
+      if (traineeUserId != null && traineeUserId.isNotEmpty)
+        'trainee_user_id': traineeUserId,
       'mode': e.mode.name,
       'started_at': e.startedAt.toUtc().toIso8601String(),
       'ended_at': e.endedAt.toUtc().toIso8601String(),
@@ -115,6 +120,13 @@ class LiveSessionRunRepository {
   static String? lastError;
 
   Future<bool> insert(LiveTrainingHistoryEntry entry) async {
+    return insertForTrainee(entry, null);
+  }
+
+  Future<bool> insertForTrainee(
+    LiveTrainingHistoryEntry entry,
+    String? traineeUserId,
+  ) async {
     lastError = null;
     if (!SupabaseService.isReady) {
       lastError = 'Supabase is not ready';
@@ -122,31 +134,103 @@ class LiveSessionRunRepository {
       return false;
     }
     try {
-      await SupabaseService.client.from(_table).insert(_toRow(entry));
+      await SupabaseService.client
+          .from(_table)
+          .insert(_toRow(entry, traineeUserId: traineeUserId));
       debugPrint('live_session_runs insert ok: ${entry.roomId}');
       return true;
     } catch (e) {
       lastError = e.toString();
       debugPrint('live_session_runs insert failed: $lastError');
+      if (lastError!.contains('trainee_user_id')) {
+        try {
+          await SupabaseService.client
+              .from(_table)
+              .insert(_toRow(entry, traineeUserId: null));
+          debugPrint('live_session_runs insert ok (no trainee_user_id)');
+          return true;
+        } catch (e2) {
+          lastError = e2.toString();
+          debugPrint('live_session_runs insert failed: $lastError');
+        }
+      }
       return false;
     }
   }
 
-  Future<List<LiveTrainingHistoryEntry>> fetchAll() async {
+  Future<List<LiveTrainingHistoryEntry>> fetchAll({
+    String? traineeUserId,
+    String? traineeName,
+    bool scopeToCurrentUser = false,
+  }) async {
     if (!SupabaseService.isReady) return [];
     try {
-      final rows = await SupabaseService.client
-          .from(_table)
-          .select()
-          .order('ended_at', ascending: false);
-      final list = <LiveTrainingHistoryEntry>[];
-      for (final row in rows as List) {
-        list.add(_fromRow(Map<String, dynamic>.from(row as Map)));
+      final uid = traineeUserId ??
+          (scopeToCurrentUser
+              ? SupabaseService.client.auth.currentUser?.id
+              : null);
+      List<LiveTrainingHistoryEntry> list = [];
+      if (uid != null) {
+        try {
+          final rows = await SupabaseService.client
+              .from(_table)
+              .select()
+              .eq('trainee_user_id', uid)
+              .order('ended_at', ascending: false);
+          for (final row in rows as List) {
+            list.add(_fromRow(Map<String, dynamic>.from(row as Map)));
+          }
+        } catch (e) {
+          debugPrint('live_session_runs uid filter failed: $e');
+        }
+      }
+      if (list.isEmpty) {
+        final rows = await SupabaseService.client
+            .from(_table)
+            .select()
+            .order('ended_at', ascending: false);
+        for (final row in rows as List) {
+          list.add(_fromRow(Map<String, dynamic>.from(row as Map)));
+        }
+      }
+      if (scopeToCurrentUser ||
+          (traineeName != null && traineeName.trim().isNotEmpty)) {
+        list = list.where((e) {
+          return LiveTrainingSession.sameTraineeIdentity(
+            e.traineeName,
+            traineeName,
+          );
+        }).toList();
       }
       return list;
     } catch (e) {
       lastError = e.toString();
       debugPrint('live_session_runs fetch failed: $lastError');
+      if (lastError!.contains('trainee_user_id')) {
+        try {
+          final rows = await SupabaseService.client
+              .from(_table)
+              .select()
+              .order('ended_at', ascending: false);
+          var list = <LiveTrainingHistoryEntry>[];
+          for (final row in rows as List) {
+            list.add(_fromRow(Map<String, dynamic>.from(row as Map)));
+          }
+          if (scopeToCurrentUser ||
+              (traineeName != null && traineeName.trim().isNotEmpty)) {
+            list = list.where((e) {
+              return LiveTrainingSession.sameTraineeIdentity(
+                e.traineeName,
+                traineeName,
+              );
+            }).toList();
+          }
+          return list;
+        } catch (e2) {
+          lastError = e2.toString();
+          debugPrint('live_session_runs fetch fallback failed: $lastError');
+        }
+      }
       return [];
     }
   }

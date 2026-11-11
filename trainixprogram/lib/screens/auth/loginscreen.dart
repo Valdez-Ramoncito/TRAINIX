@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
     LoginScreen.isActive = true;
     NotificationInboxService.instance.clearLocalOnly();
     TrainingNotificationCenter.clearToasts();
+    LiveSessionStore.instance.clearLocal();
     _checkDatabase();
   }
 
@@ -63,14 +64,17 @@ class _LoginScreenState extends State<LoginScreen> {
     await NotificationInboxService.instance.loadFromRemote();
     NotificationInboxService.instance.startRealtime();
     NotificationInboxService.instance.refreshUi();
+    LiveSessionStore.instance.clearLocal();
     await LiveSessionStore.instance.loadFromRemote();
     LiveSessionStore.instance.startRealtime();
     await TraineeActivityLogStore.instance.loadFromRemote();
     if (mounted) {
-      await Provider.of<SimulationHistoryProvider>(
+      final history = Provider.of<SimulationHistoryProvider>(
         context,
         listen: false,
-      ).loadFromRemote();
+      );
+      history.clear();
+      await history.loadFromRemote();
     }
     if (!mounted) return;
 
@@ -160,22 +164,38 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _handleAuth() async {
     if (_busy) return;
-    final email = _emailController.text.trim();
+    final email = AuthService.sanitizeEmail(_emailController.text);
     final password = _passwordController.text;
+    final displayName = AuthService.sanitizeDisplayName(_nameController.text);
 
-    if (email.isEmpty || password.isEmpty) {
+    final emailError = AuthService.validateEmail(email);
+    if (emailError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email and password are required.')),
+        SnackBar(content: Text(emailError)),
       );
       return;
     }
-
-    if (email.toLowerCase() == 'trainer' && password == 'trainer') {
-      setState(() => _busy = true);
-      ProfileData.setCurrentByEmail('trainer', role: AppRole.trainer);
-      await _afterAuthNavigate();
-      if (mounted) setState(() => _busy = false);
+    final passwordError = AuthService.validatePassword(
+      password,
+      forSignUp: _isSignUp,
+    );
+    if (passwordError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(passwordError)),
+      );
       return;
+    }
+    if (_isSignUp) {
+      final nameError = AuthService.validateDisplayName(
+        displayName,
+        required: true,
+      );
+      if (nameError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(nameError)),
+        );
+        return;
+      }
     }
 
     setState(() => _busy = true);
@@ -185,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ok = await AuthService.instance.signUp(
         email: email,
         password: password,
-        displayName: _nameController.text.trim(),
+        displayName: displayName,
         role: _signUpRole,
       );
     } else {

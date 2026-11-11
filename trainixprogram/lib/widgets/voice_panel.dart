@@ -14,6 +14,7 @@ import 'package:trainixprogram/models/simulation_stage.dart';
 import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/models/simulation_session_controller.dart';
+import 'package:trainixprogram/models/sim_mission.dart';
 import 'package:trainixprogram/models/sim_mission_catalog.dart';
 import 'package:trainixprogram/models/training/pack_session_scorer.dart';
 import 'package:trainixprogram/screens/mock_call_ui/left_call.dart';
@@ -225,10 +226,13 @@ class _VoicePanelState extends State<VoicePanel> {
 
       if (widget.phase == SimulationPhase.afterCallWork) {
         _prepareAcwForm();
-        final hasScoreableWork =
-            _traineeHasSpoken ||
-            _coachMessages.any((m) => m.isTrainee && m.text.trim().isNotEmpty);
-        if (hasScoreableWork && !_evaluationSubmitted && !_evaluationInFlight) {
+        final hasScoreableWork = _traineeHasSpoken ||
+            _coachMessages.any(
+              (m) => m.isTrainee && m.text.trim().isNotEmpty,
+            );
+        if (hasScoreableWork &&
+            !_evaluationSubmitted &&
+            !_evaluationInFlight) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _evaluateVoiceInteraction();
           });
@@ -602,7 +606,6 @@ class _VoicePanelState extends State<VoicePanel> {
         _sessionController.mission.pack != null) {
       try {
         _syncMissionFromCoach();
-        // After the agent completes the open step, release held opening lines.
         final openDoneNow = _sessionController.mission.state.done.contains(
           'open',
         );
@@ -611,6 +614,53 @@ class _VoicePanelState extends State<VoicePanel> {
             _heldOpeningLines,
           );
           _heldOpeningLines.clear();
+        }
+        if (_sessionController.mission.pendingCustomerLines.isEmpty &&
+            _sessionController.mission.lastTraineeDidNotAdvance) {
+          final pack = _sessionController.mission.pack!;
+          final step = _sessionController.mission.currentStep;
+          final rude =
+              SimulationCoach.isInsultingAgentReply(spoken) ||
+              SimulationCoach.isNegativeAgentReply(spoken);
+          final offTopic = SimulationCoach.isOffTopicReply(
+            spoken,
+            pack.problemSummary,
+          );
+          final wordCount = spoken
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((w) => w.isNotEmpty)
+              .length;
+          if (rude || (offTopic && wordCount <= 6)) {
+            final reaction = SimulationCoach.offTrackCustomerReaction(
+              agentText: spoken,
+              problem: pack.problemSummary,
+              emotion: pack.emotion,
+              customerName: pack.customerName,
+            );
+            _sessionController.mission.queueOffTrackCustomerReaction(reaction);
+          } else if (step != null && step.kind != SimStepKind.tool) {
+            final judged =
+                await _typeCastService.openRouterAPI.judgeMissionTurn(
+              agentMessage: spoken,
+              stepLabel: step.label,
+              stepTip: step.tip,
+              stepExamples: step.examples,
+              problem: pack.problemSummary,
+              emotion: pack.emotion,
+              customerName: pack.customerName,
+            );
+            if (!mounted) return;
+            if (judged.adequate) {
+              _sessionController.mission.forceCompleteCurrentSpeakStep(
+                fallbackCustomerLine: judged.customerReply,
+              );
+            } else {
+              _sessionController.mission.queueOffTrackCustomerReaction(
+                judged.customerReply,
+              );
+            }
+          }
         }
         await _postScriptedCustomerLinesVoice();
         if (!mounted) return;

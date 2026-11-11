@@ -191,7 +191,7 @@ class VoiceScenarioPlayView extends StatelessWidget {
                     width: 300,
                     child: Container(
                       color: const Color(0xFF121212),
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 16),
+                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 56),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -214,8 +214,18 @@ class VoiceScenarioPlayView extends StatelessWidget {
                             ),
                           ),
                           const Gap(12),
-                          if (scenario.missionSteps.isNotEmpty)
+                          if (scenario.missionSteps.isNotEmpty) ...[
+                            const Text(
+                              'Missions',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const Gap(8),
                             Expanded(
+                              flex: 2,
                               child: ListView(
                                 children: scenario.missionSteps.map((step) {
                                   final done = completedMissionIds.contains(
@@ -223,8 +233,22 @@ class VoiceScenarioPlayView extends StatelessWidget {
                                   );
                                   final current =
                                       currentMissionStepId == step.id;
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 8),
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 8),
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: current
+                                          ? const Color(0xFF1A2E1A)
+                                          : const Color(0xFF1A1A1A),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: done
+                                            ? const Color(0xFF70BD8A)
+                                            : current
+                                            ? const Color(0xFF34D399)
+                                            : const Color(0xFF333333),
+                                      ),
+                                    ),
                                     child: Text(
                                       '${done
                                           ? "Done"
@@ -236,13 +260,17 @@ class VoiceScenarioPlayView extends StatelessWidget {
                                             ? const Color(0xFF70BD8A)
                                             : Colors.white70,
                                         fontSize: 12,
+                                        fontWeight: current
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
                                       ),
                                     ),
                                   );
                                 }).toList(),
                               ),
-                            )
-                          else
+                            ),
+                            const Gap(12),
+                          ] else
                             const Spacer(),
                           const Text(
                             'Coach note',
@@ -392,28 +420,35 @@ class VoiceScenarioPlayView extends StatelessWidget {
   Widget _guideHud() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2233),
+        color: const Color(0xFF161616),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A3A55)),
+        border: Border.all(color: const Color(0xFF2A2A2A)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              const Icon(
+                Icons.flag_outlined,
+                size: 16,
+                color: Color(0xFF70BD8A),
+              ),
+              const Gap(8),
               const Text(
-                'GUIDE',
+                'Objective',
                 style: TextStyle(
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  color: Colors.white54,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
+                  color: Color(0xFF70BD8A),
                 ),
               ),
+              const Spacer(),
+              if (canNext)
+                TextButton(onPressed: onHudNext, child: const Text('Continue')),
               if (!scenario.isGuided) ...[
-                const Spacer(),
                 Text(
                   'Mistakes: $mistakes / ${scenario.maxMistakes}',
                   style: TextStyle(
@@ -424,29 +459,16 @@ class VoiceScenarioPlayView extends StatelessWidget {
               ],
             ],
           ),
-          const Gap(8),
+          const Gap(6),
           Text(
             hudText ?? 'Follow the guided steps.',
-            style: const TextStyle(fontSize: 14, height: 1.4),
-          ),
-          if (canNext) ...[
-            const Gap(12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(
-                height: 36,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: onHudNext,
-                  child: const Text('Next'),
-                ),
-              ),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              height: 1.35,
             ),
+          ),
           ],
-        ],
       ),
     );
   }

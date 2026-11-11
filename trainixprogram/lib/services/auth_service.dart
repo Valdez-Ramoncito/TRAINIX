@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -13,6 +14,61 @@ class AuthService {
   static final AuthService instance = AuthService._();
 
   static String? lastError;
+
+  static final RegExp _emailPattern = RegExp(
+    r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$',
+  );
+
+  static String sanitizeEmail(String raw) {
+    return raw.trim().toLowerCase().replaceAll(RegExp(r'\s+'), '');
+  }
+
+  static String sanitizeDisplayName(String raw) {
+    final cleaned = raw
+        .replaceAll(RegExp(r'[\u0000-\u001F\u007F]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    if (cleaned.length <= 48) return cleaned;
+    return cleaned.substring(0, 48).trim();
+  }
+
+  static String? validateEmail(String email) {
+    final e = sanitizeEmail(email);
+    if (e.isEmpty) return 'Email is required.';
+    if (e.length > 120) return 'Email is too long.';
+    if (!_emailPattern.hasMatch(e)) return 'Enter a valid email address.';
+    return null;
+  }
+
+  static String? validatePassword(
+    String password, {
+    bool forSignUp = false,
+  }) {
+    if (password.isEmpty) return 'Password is required.';
+    if (password.length > 128) return 'Password is too long.';
+    if (forSignUp) {
+      if (password.length < 8) {
+        return 'Password must be at least 8 characters.';
+      }
+      final hasLetter = RegExp(r'[A-Za-z]').hasMatch(password);
+      final hasDigit = RegExp(r'[0-9]').hasMatch(password);
+      if (!hasLetter || !hasDigit) {
+        return 'Password must include letters and numbers.';
+      }
+    } else if (password.length < 6) {
+      return 'Password must be at least 6 characters.';
+    }
+    return null;
+  }
+
+  static String? validateDisplayName(String name, {bool required = false}) {
+    final n = sanitizeDisplayName(name);
+    if (n.isEmpty) {
+      return required ? 'Display name is required.' : null;
+    }
+    if (n.length < 2) return 'Display name is too short.';
+    return null;
+  }
 
   bool get isSignedIn =>
       SupabaseService.isReady &&
@@ -72,13 +128,23 @@ class AuthService {
 
   Future<bool> signIn({required String email, required String password}) async {
     lastError = null;
+    final emailError = validateEmail(email);
+    if (emailError != null) {
+      lastError = emailError;
+      return false;
+    }
+    final passwordError = validatePassword(password);
+    if (passwordError != null) {
+      lastError = passwordError;
+      return false;
+    }
     if (!SupabaseService.isReady) {
       lastError = 'Supabase is not ready';
       return false;
     }
     try {
       final res = await SupabaseService.client.auth.signInWithPassword(
-        email: email.trim(),
+        email: sanitizeEmail(email),
         password: password,
       );
       if (res.user == null) {
@@ -108,18 +174,34 @@ class AuthService {
     required AppRole role,
   }) async {
     lastError = null;
+    final emailError = validateEmail(email);
+    if (emailError != null) {
+      lastError = emailError;
+      return false;
+    }
+    final passwordError = validatePassword(password, forSignUp: true);
+    if (passwordError != null) {
+      lastError = passwordError;
+      return false;
+    }
+    final nameError = validateDisplayName(displayName, required: true);
+    if (nameError != null) {
+      lastError = nameError;
+      return false;
+    }
     if (!SupabaseService.isReady) {
       lastError = 'Supabase is not ready';
       return false;
     }
+    final safeName = sanitizeDisplayName(displayName);
     try {
       final res = await SupabaseService.client.auth.signUp(
-        email: email.trim(),
+        email: sanitizeEmail(email),
         password: password,
         data: {
-          'display_name': displayName.trim().isEmpty
-              ? email.trim().split('@').first
-              : displayName.trim(),
+          'display_name': safeName.isEmpty
+              ? sanitizeEmail(email).split('@').first
+              : safeName,
           'role': role.name,
         },
       );
@@ -128,14 +210,15 @@ class AuthService {
         return false;
       }
       final uid = res.user!.id;
-      final name = displayName.trim().isEmpty
-          ? email.trim().split('@').first
-          : displayName.trim();
+      final safeEmail = sanitizeEmail(email);
+      final name = safeName.isEmpty
+          ? safeEmail.split('@').first
+          : safeName;
 
       ProfileData.current = AppUser(
         id: uid,
         displayName: name,
-        email: email.trim(),
+        email: safeEmail,
         role: role,
       );
 
@@ -143,7 +226,7 @@ class AuthService {
         try {
           await SupabaseService.client.from('profiles').upsert({
             'id': uid,
-            'email': email.trim(),
+            'email': safeEmail,
             'display_name': name,
             'role': role.name,
           });
@@ -186,12 +269,44 @@ class AuthService {
     }
   }
 
+  static Future<bool> confirmSignOut(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        title: const Text(
+          'Sign out?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'You will need your email and password to sign back in.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Sign out',
+              style: TextStyle(color: Color(0xFFF87171)),
+            ),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> signOut() async {
     MiniTrainingProgress.resetAll();
     TrainixDebug.resetForLogout();
     NotificationInboxService.instance.clearLocalOnly();
     NotificationInboxService.instance.stopRealtime();
     LiveSessionStore.instance.stopRealtime();
+    LiveSessionStore.instance.clearLocal();
     TrainingNotificationCenter.clearToasts();
     if (!SupabaseService.isReady) return;
     try {

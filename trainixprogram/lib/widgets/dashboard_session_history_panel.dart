@@ -237,7 +237,60 @@ class _LiveCoachingHistoryPanelState extends State<LiveCoachingHistoryPanel> {
                         ),
                       ),
                 ],
-                if (e.checklistTotal > 0) ...[
+                if (e.checklist.isNotEmpty) ...[
+                  const Gap(10),
+                  const Text(
+                    'Checklist',
+                    style: TextStyle(
+                      color: Colors.white60,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Gap(4),
+                  ...e.checklist.map(
+                    (c) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Icon(
+                            c.done
+                                ? Icons.check_box_rounded
+                                : Icons.check_box_outline_blank_rounded,
+                            size: 16,
+                            color: c.done
+                                ? const Color(0xFF70BD8A)
+                                : Colors.white38,
+                          ),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              c.label,
+                              style: TextStyle(
+                                color: c.done
+                                    ? Colors.white70
+                                    : Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (e.needsFollowUp)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'Follow-up needed',
+                        style: TextStyle(
+                          color: Color(0xFFFBBF24),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                ] else if (e.checklistTotal > 0) ...[
                   const Gap(8),
                   Text(
                     'Checklist ${e.checklistDone}/${e.checklistTotal}'
@@ -361,6 +414,9 @@ class SimulationHistoryPanel extends StatelessWidget {
                       builder: (_) => SessionReportScreen(
                         evaluations: session.evaluations,
                         multitaskingScore: session.multitaskingScore,
+                        averageTypingWpm: session.averageTypingWpm,
+                        averageWpm: session.averageSpeakingWpm,
+                        fillerWordCount: session.fillerWordCount,
                       ),
                     ),
                   );
@@ -474,7 +530,7 @@ class SimulationHistoryPanel extends StatelessWidget {
                       if (session.multitaskingScore != null) ...[
                         const Gap(8),
                         Text(
-                          'Session attentiveness: ${session.multitaskingScore!.toStringAsFixed(0)}% (Account Lookup, guides, notes, and tool follow-through).',
+                          'Session attentiveness: ${session.multitaskingScore!.toStringAsFixed(0)}% (tools, notes, and follow-through; Account Lookup only when required).',
                           style: const TextStyle(
                             color: Colors.white38,
                             fontSize: 11,

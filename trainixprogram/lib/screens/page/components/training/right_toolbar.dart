@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/session_button.dart';
 import 'package:trainixprogram/components/button/toolbar_button.dart';
+import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/home/homeScreen.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
@@ -15,6 +16,10 @@ class RightToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dashboardReady =
+        MiniTrainingProgress.hasCompletedSimulationSession ||
+        !MiniTrainingProgress.isGuideActive;
+
     return SizedBox(
       width: double.infinity,
       child: Padding(
@@ -49,13 +54,19 @@ class RightToolbar extends StatelessWidget {
             ),
             ToolbarIcon(
               icon: Icons.bar_chart_rounded,
-              tooltip: 'Progress Dashboard',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DashboardScreen()),
-                );
-              },
+              tooltip: dashboardReady
+                  ? 'Progress Dashboard'
+                  : 'Finish a simulation session first',
+              onTap: dashboardReady
+                  ? () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const DashboardScreen(),
+                        ),
+                      );
+                    }
+                  : null,
             ),
             ToolbarIcon(
               icon: Icons.settings_outlined,

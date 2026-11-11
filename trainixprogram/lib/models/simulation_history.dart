@@ -13,12 +13,18 @@ class PlayedSession {
   final double? multitaskingScore;
   final DateTime completedAt;
   final SimulationMode mode;
+  final double? averageTypingWpm;
+  final double? averageSpeakingWpm;
+  final int? fillerWordCount;
 
   const PlayedSession({
     required this.evaluations,
     required this.multitaskingScore,
     required this.completedAt,
     this.mode = SimulationMode.chat,
+    this.averageTypingWpm,
+    this.averageSpeakingWpm,
+    this.fillerWordCount,
   });
 
   //every evaluation in a session shares the same sector
@@ -232,6 +238,9 @@ class SimulationHistoryProvider with ChangeNotifier {
     double? multitaskingScore,
     SimulationMode mode = SimulationMode.chat,
     bool countForGuide = true,
+    double? averageTypingWpm,
+    double? averageSpeakingWpm,
+    int? fillerWordCount,
   }) {
     if (evaluations.isEmpty) return;
     final rated = evaluations
@@ -242,6 +251,9 @@ class SimulationHistoryProvider with ChangeNotifier {
       multitaskingScore: multitaskingScore,
       completedAt: DateTime.now(),
       mode: mode,
+      averageTypingWpm: averageTypingWpm,
+      averageSpeakingWpm: averageSpeakingWpm,
+      fillerWordCount: fillerWordCount,
     );
     _sessions.add(played);
     for (final e in rated) {
@@ -291,14 +303,20 @@ class SimulationHistoryProvider with ChangeNotifier {
 
   Future<void> loadFromRemote() async {
     final remote = await SimulationSessionRepository.instance.fetchAll();
-    if (remote.isEmpty) return;
     _sessions
       ..clear()
       ..addAll(remote);
-    _evaluations..clear();
+    _evaluations.clear();
     for (final s in remote) {
       _evaluations.addAll(s.evaluations);
     }
+    _multitaskingScores
+      ..clear()
+      ..addAll(
+        remote
+            .map((s) => s.multitaskingScore)
+            .whereType<double>(),
+      );
     notifyListeners();
   }
 

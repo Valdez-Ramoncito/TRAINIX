@@ -91,7 +91,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
   //the trainee away from chat's own manual reporting step either
   bool _chatInProgress = false;
 
-  // Session attentiveness: tools, guides, notes, and follow-through.
+  // Session attentiveness: tools, notes, and follow-through.
+  // Identity / Account Lookup only counts when the case needs an account.
   double? get _multitaskingScore {
     if (_completedInteractions <= 0 &&
         !_chatInProgress &&
@@ -106,8 +107,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
       if (hit) points += weight;
     }
 
+    final chatNeedsAccount = _chatAccounts.needsAccount;
     final chatId = _chatAccounts.identityVerified;
     final chatTool = _chatAccounts.toolWorkDone;
+    final voiceNeedsAccount = _voiceAccounts.needsAccount;
     final voiceId = _voiceAccounts.identityVerified;
     final voiceTool = _voiceAccounts.toolWorkDone;
     final notesUsed = SessionNotesStore.notes.any(
@@ -115,17 +118,20 @@ class _MockCallScreenState extends State<MockCallScreen> {
     );
 
     if (widget.mode == SimulationMode.chat) {
-      add(chatId, 1.5);
+      if (chatNeedsAccount) {
+        add(chatId, 1.5);
+      }
       add(chatTool, 2);
     }
     if (widget.mode == SimulationMode.voice) {
-      add(voiceId, 1.5);
+      if (voiceNeedsAccount) {
+        add(voiceId, 1.5);
+      }
       add(voiceTool, 2);
     }
     if (_completedInteractions > 0) {
       add(true, 1);
     }
-    // Notes are a small bonus only.
     if (notesUsed) {
       points += 0.5;
       maxPoints += 0.5;
@@ -283,11 +289,20 @@ class _MockCallScreenState extends State<MockCallScreen> {
     //this is what Session History / Score Trend / Total Sessions read from, so
     //a session with 3 resolved customers shows as 1 session there, not 3
     final evals = List<SessionEvaluation>.from(_sessionEvaluations);
+    final avgVoiceWpm = _voiceWpmSamples.isEmpty
+        ? null
+        : _voiceWpmSamples.reduce((a, b) => a + b) / _voiceWpmSamples.length;
+    final avgTypingWpm = _chatWpmSamples.isEmpty
+        ? null
+        : _chatWpmSamples.reduce((a, b) => a + b) / _chatWpmSamples.length;
     if (evals.isNotEmpty) {
       historyProvider.saveSession(
         evaluations: evals,
         multitaskingScore: finalMultitaskingScore,
         mode: widget.mode,
+        averageTypingWpm: avgTypingWpm,
+        averageSpeakingWpm: avgVoiceWpm,
+        fillerWordCount: _voiceFillerCount,
       );
     }
 
@@ -296,15 +311,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
       MaterialPageRoute(
         builder: (_) => SessionReportScreen(
           evaluations: _sessionEvaluations,
-          averageWpm: _voiceWpmSamples.isEmpty
-              ? null
-              : _voiceWpmSamples.reduce((a, b) => a + b) /
-                    _voiceWpmSamples.length,
+          averageWpm: avgVoiceWpm,
           fillerWordCount: _voiceFillerCount,
-          averageTypingWpm: _chatWpmSamples.isEmpty
-              ? null
-              : _chatWpmSamples.reduce((a, b) => a + b) /
-                    _chatWpmSamples.length,
+          averageTypingWpm: avgTypingWpm,
           multitaskingScore: finalMultitaskingScore,
         ),
       ),
@@ -436,6 +445,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
       evaluations: fakeEvaluations,
       multitaskingScore: fakeMultitasking,
       mode: widget.mode,
+      averageTypingWpm: fakeAvgTypingWpm,
+      averageSpeakingWpm: fakeAvgWpm,
+      fillerWordCount: fakeFillerWords,
     );
     MiniTrainingProgress.markSimulationSessionCompleted();
 

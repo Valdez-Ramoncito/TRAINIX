@@ -1,4 +1,5 @@
 import 'package:trainixprogram/models/training/script_personalization.dart';
+import 'package:trainixprogram/models/training/soft_text_match.dart';
 import 'package:trainixprogram/models/simulation_stage.dart';
 
 enum PracticeFocus { general, typing, pronunciation, irateHandling }
@@ -853,11 +854,164 @@ class SimulationCoach {
       'you have to fix it yourself',
       'dunno',
       'no clue',
+      'shut up',
+      'go away',
+      'leave me alone',
+      'stop calling',
+      'i hate',
+      'you are stupid',
+      'youre stupid',
+      'dumb customer',
+      'idiot',
+      'moron',
+      'useless',
+      'waste of time',
+      'get lost',
+      'who cares',
+      'not my concern',
+      'fix it yourself',
+      'call someone else',
+      'i quit',
+      'this is dumb',
+      'this is stupid',
+      'screw you',
+      'fuck you',
+      'f you',
+      'damn you',
+      'bitch',
+      'asshole',
+      'bastard',
+      'shut your',
     ];
     for (final p in patterns) {
       if (t.contains(p)) return true;
     }
     return false;
+  }
+
+  static bool isInsultingAgentReply(String text) {
+    var t = text.toLowerCase().trim();
+    if (t.isEmpty) return false;
+    t = t.replaceAll("'", '').replaceAll("'", '');
+    const insults = [
+      'stupid',
+      'idiot',
+      'moron',
+      'dumb',
+      'useless',
+      'shut up',
+      'go away',
+      'get lost',
+      'screw you',
+      'fuck you',
+      'f you',
+      'bitch',
+      'asshole',
+      'bastard',
+      'hate you',
+      'you suck',
+      'waste of time',
+      'worthless',
+      'pathetic',
+      'loser',
+    ];
+    for (final p in insults) {
+      if (t.contains(p)) return true;
+    }
+    return false;
+  }
+
+  /// Customer reaction when the agent is off-script, rude, or nonsensical.
+  /// Does not advance mission steps. Used so the customer does not go silent.
+  static String offTrackCustomerReaction({
+    required String agentText,
+    required String problem,
+    required String emotion,
+    required String customerName,
+  }) {
+    final rude = isInsultingAgentReply(agentText) || isNegativeAgentReply(agentText);
+    final noise = isOffTopicReply(agentText, problem);
+    final issue = problem.trim().isEmpty ? 'my issue' : problem.trim();
+    final shortIssue = issue.length > 60 ? 'this issue' : issue;
+
+    if (rude) {
+      const rudePool = [
+        'Excuse me? That is not how I expect to be treated. Can we stay professional and focus on my issue?',
+        'I am not okay with that tone. I called for help, not to be dismissed. Please help me with my concern.',
+        'That was unprofessional. I still need help with my problem. Can you assist me properly?',
+        'Please do not speak to me that way. I need someone who will actually help with this.',
+        'I will need a supervisor if this continues. For now, can you help me with my issue the right way?',
+      ];
+      return rudePool[agentText.hashCode.abs() % rudePool.length];
+    }
+
+    if (noise) {
+      const noisePool = [
+        'Sorry, I did not understand that. Can you help me with my issue?',
+        'I am not sure what you mean. Can we go back to my concern?',
+        'That did not make sense to me. I still need help with this.',
+        'Could you clarify? I am here about my problem and need a clear next step.',
+        'I think we got off track. Can you help me resolve my issue?',
+      ];
+      return noisePool[agentText.hashCode.abs() % noisePool.length];
+    }
+
+    final emo = emotion.toLowerCase();
+    if (emo.contains('frustrat') || emo.contains('angry') || emo.contains('impatient')) {
+      const pushPool = [
+        'That does not address what I asked. I need a clear answer on my issue.',
+        'I am still waiting for help on this. Can you focus on my concern?',
+        'Please stay on my issue. What is the next step to fix it?',
+        'I need you to work on my problem, not something else. Can you help with that?',
+      ];
+      return pushPool[agentText.hashCode.abs() % pushPool.length]
+          .replaceAll('my issue', shortIssue)
+          .replaceAll('my problem', shortIssue)
+          .replaceAll('my concern', shortIssue);
+    }
+
+    const mildPool = [
+      'I am not sure that answers my question. Can you help me with my issue?',
+      'Could we focus on my concern? I still need help with that.',
+      'Sorry, that did not seem related. What can you do about my issue?',
+      'I need guidance on my problem. Can you walk me through the next step?',
+    ];
+    return mildPool[agentText.hashCode.abs() % mildPool.length]
+        .replaceAll('my issue', shortIssue)
+        .replaceAll('my problem', shortIssue)
+        .replaceAll('my concern', shortIssue);
+  }
+
+  /// True when agent text is weak vs current step examples/pass phrases.
+  /// Expanded replies that still cover the step intent are not weak.
+  static bool isWeakStepAlignment({
+    required String agentText,
+    required List<String> examples,
+    required List<String> passPhrases,
+  }) {
+    final t = agentText.toLowerCase().trim();
+    if (t.isEmpty) return true;
+    if (isInsultingAgentReply(t) || isNegativeAgentReply(t)) return true;
+    if (passPhrases.isEmpty && examples.isEmpty) return false;
+    var phraseHits = 0;
+    for (final p in passPhrases) {
+      final needle = p.toLowerCase().trim();
+      if (needle.isEmpty) continue;
+      if (t.contains(needle)) phraseHits++;
+    }
+    if (phraseHits >= 1) return false;
+    for (final ex in examples) {
+      if (SoftTextMatch.typingMatches(agentText, ex)) return false;
+      final words = SoftTextMatch.contentWords(SoftTextMatch.normalize(ex));
+      if (words.isEmpty) continue;
+      final norm = SoftTextMatch.normalize(agentText);
+      var hits = 0;
+      for (final w in words) {
+        if (norm.contains(w)) hits++;
+      }
+      if (words.isNotEmpty && hits / words.length >= 0.35) return false;
+    }
+    return true;
   }
 
   static String suggestionForNegative(String text) {

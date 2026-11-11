@@ -1107,4 +1107,124 @@ class OpenRouterAPIService {
     provider.addMessage("assistant", merged.reply);
     return merged;
   }
+
+  /// Judges a professional agent turn that missed hard keywords.
+  /// Returns whether the step intent was met and a short customer reply.
+  Future<({bool adequate, String customerReply})> judgeMissionTurn({
+    required String agentMessage,
+    required String stepLabel,
+    required String stepTip,
+    required List<String> stepExamples,
+    required String problem,
+    required String emotion,
+    required String customerName,
+  }) async {
+    final examplesBlock = stepExamples.isEmpty
+        ? '(none)'
+        : stepExamples.map((e) => '- $e').join('\n');
+    final systemPrompt = '''
+You are scoring one contact-center agent turn inside a training simulation.
+Respond with ONLY a single JSON object. No markdown. No extra text.
+Schema:
+{"adequate":true|false,"customerReply":"short customer reply in character"}
+
+Rules:
+- adequate=true if the agent was professional and covered the step intent, even if wording differs from examples.
+- adequate=false if the message is off-topic, too vague, rude, or does not move the step forward.
+- customerReply must be 1-2 short sentences as the customer named $customerName.
+- Emotion: $emotion. Problem: $problem.
+- If adequate=true, reply cooperatively and stay on the issue.
+- If adequate=false, ask for clarification or ask the agent to address the step, stay polite.
+- Never speak as the agent. Never mention training, scripts, AI, or keywords.
+''';
+    final userContent = '''
+Step label: $stepLabel
+Step tip: $stepTip
+Example agent lines:
+$examplesBlock
+
+Agent message:
+$agentMessage
+''';
+
+    for (int attempt = 0; attempt < 2; attempt++) {
+      try {
+        final response = await http.post(
+          Uri.parse('https://openrouter.ai/api/v1/chat/completions'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ${dotenv.env['OPENROUTER_API_KEY']}',
+          },
+          body: jsonEncode({
+            "model": _currentModel(),
+            "messages": [
+              {"role": "system", "content": systemPrompt},
+              {"role": "user", "content": userContent},
+            ],
+            "temperature": 0.2,
+            "max_tokens": 220,
+            "reasoning": {"exclude": true},
+          }),
+        );
+
+        if (response.statusCode == 429 ||
+            response.statusCode == 502 ||
+            response.statusCode == 503 ||
+            response.statusCode == 524) {
+          _fallBackToNextModel();
+          continue;
+        }
+        if (response.statusCode != 200) {
+          _fallBackToNextModel();
+          continue;
+        }
+
+        final data = jsonDecode(response.body);
+        final rawContent = data['choices']?[0]?['message']?['content'];
+        final content = rawContent is String
+            ? _stripReasoningTags(rawContent)
+            : '';
+        if (content.trim().isEmpty) {
+          _fallBackToNextModel();
+          continue;
+        }
+
+        final parsed = _parseMissionJudge(content);
+        if (parsed != null) return parsed;
+      } catch (e) {
+        print('judgeMissionTurn error: $e');
+      }
+    }
+
+    final fallback = SimulationCoach.offTrackCustomerReaction(
+      agentText: agentMessage,
+      problem: problem,
+      emotion: emotion,
+      customerName: customerName,
+    );
+    return (adequate: false, customerReply: fallback);
+  }
+
+  ({bool adequate, String customerReply})? _parseMissionJudge(String raw) {
+    var text = raw.trim();
+    final fence = RegExp(r'```(?:json)?\s*([\s\S]*?)```', multiLine: true);
+    final fenceMatch = fence.firstMatch(text);
+    if (fenceMatch != null) {
+      text = fenceMatch.group(1)!.trim();
+    }
+    final start = text.indexOf('{');
+    final end = text.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try {
+      final map = jsonDecode(text.substring(start, end + 1));
+      if (map is! Map) return null;
+      final adequate = map['adequate'] == true;
+      final reply = (map['customerReply'] ?? map['reply'] ?? '').toString().trim();
+      if (reply.isEmpty) return null;
+      if (SimulationCoach.looksLikeAgentSpeech(reply)) return null;
+      return (adequate: adequate, customerReply: reply);
+    } catch (_) {
+      return null;
+    }
+  }
 }

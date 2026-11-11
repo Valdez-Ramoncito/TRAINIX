@@ -29,7 +29,7 @@ class Header extends StatelessWidget {
                   ),
                   const Gap(6),
                   Text(
-                    'Practice chat, voice, and hybrid customer sessions',
+                    'Practice non-voice and voice customer sessions',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.white54,
                       fontSize: 13,
@@ -90,7 +90,7 @@ class Header extends StatelessWidget {
           flagKey: 'simulation_intro',
           title: 'About Simulation Training',
           body:
-              'Choose Chat, Voice, or Hybrid from the left menu. Locked modes open after you clear the matching Scenario Practice stage in Mini Training.',
+              'Choose Non-Voice or Voice from the left menu. Locked modes open after you clear the matching Scenario Practice stage in Mini Training.',
         ),
       ],
     );

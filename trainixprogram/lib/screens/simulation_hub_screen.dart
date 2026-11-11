@@ -527,7 +527,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         Text(
           unlocked
               ? 'Start a new practice session or review past runs.'
-              : 'Simulation Training unlocks after you clear Chat Scenario Practice.',
+              : 'Simulation Training unlocks after you clear Non-Voice Scenario Practice.',
           style: const TextStyle(
             fontSize: 13,
             color: Colors.white70,
@@ -539,7 +539,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           flagKey: 'simulation_intro',
           title: 'About Simulation Training',
           body:
-              'New Session starts practice in chat or voice. Modes unlock after you clear the matching Scenario Practice stage in Mini Training.',
+              'New Session starts practice in non-voice or voice. Modes unlock after you clear the matching Scenario Practice stage in Mini Training.',
         ),
         if (!unlocked)
           LockedPathBanner(
@@ -555,8 +555,8 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         _hubCard(
           title: 'New Session',
           subtitle: unlocked
-              ? 'Choose Chat or Voice and start practicing.'
-              : 'Locked until Chat Scenario Practice is cleared',
+              ? 'Choose Non-Voice or Voice and start practicing.'
+              : 'Locked until Non-Voice Scenario Practice is cleared',
           icon: Icons.play_circle_outline_rounded,
           enabled: unlocked,
           onTap: () => setState(() => _pickingMode = true),

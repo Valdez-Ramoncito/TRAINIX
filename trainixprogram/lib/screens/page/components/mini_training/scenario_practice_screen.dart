@@ -95,7 +95,7 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
             const Gap(8),
             Text(
               _isChat
-                  ? 'Predefined chat scenarios by sector. Difficulty increases as you go.'
+                  ? 'Predefined non-voice scenarios by sector. Difficulty increases as you go.'
                   : 'Voice scenarios including Account Lookup, no-lookup, and already-resolved cases.',
               style: const TextStyle(
                 fontSize: 14,
@@ -127,7 +127,11 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
                         final s = scenarios[index];
                         final done = _completed.contains(s.id);
                         final unlocked = _isUnlocked(index);
-                        return GestureDetector(
+                        return MouseRegion(
+                          cursor: unlocked
+                              ? SystemMouseCursors.click
+                              : SystemMouseCursors.basic,
+                          child: GestureDetector(
                           onTap: unlocked ? () => _openScenario(s) : null,
                           child: Container(
                             width: double.infinity,
@@ -198,6 +202,7 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
                               ],
                             ),
                           ),
+                        ),
                         );
                       },
                     ),

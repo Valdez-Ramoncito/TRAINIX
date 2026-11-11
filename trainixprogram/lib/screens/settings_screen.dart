@@ -2,7 +2,9 @@ import 'package:trainixprogram/services/auth_service.dart';
 import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
@@ -284,6 +286,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 style: TextStyle(color: Color(0xFFF87171)),
               ),
               onTap: () async {
+                final confirmed = await AuthService.confirmSignOut(context);
+                if (!confirmed || !context.mounted) return;
+                try {
+                  Provider.of<SimulationHistoryProvider>(
+                    context,
+                    listen: false,
+                  ).clear();
+                } catch (_) {}
                 await AuthService.instance.signOut();
                 if (!context.mounted) return;
                 Navigator.pushAndRemoveUntil(

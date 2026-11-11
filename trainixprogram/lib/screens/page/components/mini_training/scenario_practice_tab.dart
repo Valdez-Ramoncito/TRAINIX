@@ -57,47 +57,51 @@ class _ScenarioPracticeTabState extends State<ScenarioPracticeTab> {
   }) {
     final percent = total == 0 ? 0 : ((done / total) * 100).round();
 
-    return GestureDetector(
-      onTap: isUnlocked ? onTap : null,
-      child: Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 14),
-        height: 100,
-        decoration: boxDecoration(isCompleted, isUnlocked && !isCompleted),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: isUnlocked || isCompleted
-                            ? Colors.white
-                            : Colors.white54,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+    return MouseRegion(
+      cursor: isUnlocked
+          ? SystemMouseCursors.click
+          : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: isUnlocked ? onTap : null,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 14),
+          height: 100,
+          decoration: boxDecoration(isCompleted, isUnlocked && !isCompleted),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: isUnlocked || isCompleted
+                              ? Colors.white
+                              : Colors.white54,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: isUnlocked || isCompleted
-                            ? const Color.fromARGB(255, 210, 210, 210)
-                            : Colors.white38,
-                        fontSize: 13,
-                        height: 1.3,
+                      const Gap(8),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: isUnlocked || isCompleted
+                              ? const Color.fromARGB(255, 210, 210, 210)
+                              : Colors.white38,
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              if (isCompleted)
+                if (isCompleted)
                 const CheckProgress()
               else if (!isUnlocked)
                 Column(
@@ -162,6 +166,7 @@ class _ScenarioPracticeTabState extends State<ScenarioPracticeTab> {
                   ],
                 ),
             ],
+            ),
           ),
         ),
       ),

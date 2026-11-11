@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/models/training/scenarios/chat_scenarios.dart';
+import 'package:trainixprogram/models/training/scenarios/voice_scenarios.dart';
 import 'package:trainixprogram/services/training_progress_repository.dart';
 
 part 'categories/opening_spiel.dart';
@@ -481,7 +483,10 @@ class MiniTrainingProgress {
 
   static void markChatScenarioCompleted(String scenarioId) {
     completedChatScenarios.add(scenarioId);
-    TrainingNotificationCenter.notifyScenarioCompleted(scenarioId);
+    final def = chatScenarioById(scenarioId);
+    TrainingNotificationCenter.notifyScenarioCompleted(
+      def?.title ?? 'Non-Voice scenario',
+    );
     TrainingProgressRepository.instance.save();
     const requiredIds = [
       'chat_1',
@@ -548,7 +553,10 @@ class MiniTrainingProgress {
   static void markVoiceScenarioCompleted(String scenarioId) {
     completedVoiceScenarios.add(scenarioId);
     TrainingProgressRepository.instance.save();
-    TrainingNotificationCenter.notifyScenarioCompleted(scenarioId);
+    final def = voiceScenarioById(scenarioId);
+    TrainingNotificationCenter.notifyScenarioCompleted(
+      def?.title ?? 'Voice scenario',
+    );
     const requiredIds = [
       'voice_1',
       'voice_2',

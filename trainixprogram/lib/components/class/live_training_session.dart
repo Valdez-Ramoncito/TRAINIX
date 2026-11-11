@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/services/live_room_repository.dart';
 import 'package:trainixprogram/services/live_session_run_repository.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
@@ -86,15 +87,22 @@ class LiveTrainingSession {
 
   bool isDesignatedFor(String? traineeName) {
     if (!isPrivate) return false;
-    final target = designatedTraineeName?.trim().toLowerCase();
-    final who = traineeName?.trim().toLowerCase();
-    if (target == null || target.isEmpty || who == null || who.isEmpty) {
-      return false;
-    }
-    if (target == who) return true;
-    final t0 = target.split(RegExp(r'\s+')).first;
-    final w0 = who.split(RegExp(r'\s+')).first;
-    return t0 == w0;
+    return sameTraineeIdentity(designatedTraineeName, traineeName);
+  }
+
+  static String normalizeTraineeKey(String? raw) {
+    final s = (raw ?? '').trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    return s;
+  }
+
+  static bool sameTraineeIdentity(String? a, String? b) {
+    final na = normalizeTraineeKey(a);
+    final nb = normalizeTraineeKey(b);
+    if (na.isEmpty || nb.isEmpty) return false;
+    if (na == nb) return true;
+    final ca = na.replaceAll(' ', '');
+    final cb = nb.replaceAll(' ', '');
+    return ca.isNotEmpty && ca == cb;
   }
 
   LiveTrainingSession copyWith({
@@ -384,12 +392,21 @@ class LiveSessionStore {
           _sessions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         }
 
-        final runs = await LiveSessionRunRepository.instance.fetchAll();
-        if (runs.isNotEmpty) {
-          _historyArchive
-            ..clear()
-            ..addAll(runs);
+        final isTrainee = ProfileData.role == AppRole.trainee;
+        if (isTrainee) {
+          final me = ProfileData.displayName;
+          _sessions.retainWhere(
+            (s) => s.isPublic || s.isDesignatedFor(me),
+          );
         }
+
+        final runs = await LiveSessionRunRepository.instance.fetchAll(
+          traineeName: isTrainee ? ProfileData.displayName : null,
+          scopeToCurrentUser: isTrainee,
+        );
+        _historyArchive
+          ..clear()
+          ..addAll(runs);
         _notify();
       } while (_pendingRemoteLoad);
     } finally {
@@ -407,6 +424,14 @@ class LiveSessionStore {
       return;
     }
     final remote = LiveRoomRepository.instance.fromRowPublic(row);
+    if (ProfileData.role == AppRole.trainee) {
+      final me = ProfileData.displayName;
+      if (!remote.isPublic && !remote.isDesignatedFor(me)) {
+        _sessions.removeWhere((s) => s.id == id);
+        _notify();
+        return;
+      }
+    }
     final i = _sessions.indexWhere((s) => s.id == id);
     if (i == -1) {
       _sessions.insert(0, remote);
@@ -869,7 +894,22 @@ class LiveSessionStore {
       final s = _sessions[i];
       final snap = _snapshotHistory(s, next);
       _historyArchive.add(snap);
-      LiveSessionRunRepository.instance.insert(snap);
+      Future(() async {
+        String? resolvedTraineeId;
+        final traineeName =
+            snap.traineeName ?? s.designatedTraineeName ?? '';
+        if (traineeName.trim().isNotEmpty) {
+          try {
+            final match = await ProfileDirectoryService.instance
+                .resolveTrainee(traineeName);
+            resolvedTraineeId = match?.id;
+          } catch (_) {}
+        }
+        await LiveSessionRunRepository.instance.insertForTrainee(
+          snap,
+          resolvedTraineeId,
+        );
+      });
       final closed = s.copyWith(
         closed: true,
         presence: const RoomPresence(),
@@ -1006,16 +1046,21 @@ class LiveSessionStore {
   }
 
   List<LiveTrainingHistoryEntry> historyForTrainee(String traineeName) {
-    final key = traineeName.trim().toLowerCase();
     final out = historyEntries().where((e) {
-      final n = e.traineeName?.trim().toLowerCase() ?? '';
-      if (n.isEmpty || key.isEmpty) return false;
-      if (n == key) return true;
-      final n0 = n.split(RegExp(r'\s+')).first;
-      final k0 = key.split(RegExp(r'\s+')).first;
-      return n0.isNotEmpty && k0.isNotEmpty && n0 == k0;
+      return LiveTrainingSession.sameTraineeIdentity(
+        e.traineeName,
+        traineeName,
+      );
     }).toList();
     return out;
+  }
+
+  void clearLocal() {
+    _sessions.clear();
+    _historyArchive.clear();
+    _workbenches.clear();
+    _remindedIds.clear();
+    _notify();
   }
 }
 

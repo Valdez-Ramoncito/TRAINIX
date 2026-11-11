@@ -276,7 +276,11 @@ class _CategoryTrainState extends State<CategoryTrain> {
                       accent = const Color(0xFF86EFAC);
                     }
 
-                    return Material(
+                    return MouseRegion(
+                      cursor: isLocked
+                          ? SystemMouseCursors.basic
+                          : SystemMouseCursors.click,
+                      child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
@@ -402,6 +406,7 @@ class _CategoryTrainState extends State<CategoryTrain> {
                           ),
                         ),
                       ),
+                    ),
                     );
                   },
                 ),

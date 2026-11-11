@@ -1623,6 +1623,52 @@ class _ChatPanelState extends State<ChatPanel> {
         );
         messageProvider.addMessage('user', text);
         _syncMissionMessages();
+        if (_sessionController.mission.pendingCustomerLines.isEmpty &&
+            _sessionController.mission.lastTraineeDidNotAdvance) {
+          final pack = _sessionController.mission.pack!;
+          final step = _sessionController.mission.currentStep;
+          final rude =
+              SimulationCoach.isInsultingAgentReply(text) ||
+              SimulationCoach.isNegativeAgentReply(text);
+          final offTopic = SimulationCoach.isOffTopicReply(
+            text,
+            pack.problemSummary,
+          );
+          final wordCount = text
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((w) => w.isNotEmpty)
+              .length;
+          if (rude || (offTopic && wordCount <= 6)) {
+            final reaction = SimulationCoach.offTrackCustomerReaction(
+              agentText: text,
+              problem: pack.problemSummary,
+              emotion: pack.emotion,
+              customerName: pack.customerName,
+            );
+            _sessionController.mission.queueOffTrackCustomerReaction(reaction);
+          } else if (step != null && step.kind != SimStepKind.tool) {
+            final judged = await openRouterAPI.judgeMissionTurn(
+              agentMessage: text,
+              stepLabel: step.label,
+              stepTip: step.tip,
+              stepExamples: step.examples,
+              problem: pack.problemSummary,
+              emotion: pack.emotion,
+              customerName: pack.customerName,
+            );
+            if (!mounted) return;
+            if (judged.adequate) {
+              _sessionController.mission.forceCompleteCurrentSpeakStep(
+                fallbackCustomerLine: judged.customerReply,
+              );
+            } else {
+              _sessionController.mission.queueOffTrackCustomerReaction(
+                judged.customerReply,
+              );
+            }
+          }
+        }
         await _postScriptedCustomerLines();
         if (!mounted) return;
         final closeDone = _sessionController.mission.state.done.contains(

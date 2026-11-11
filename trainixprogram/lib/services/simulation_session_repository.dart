@@ -103,14 +103,17 @@ class SimulationSessionRepository {
       lastError = 'Supabase is not ready';
       return false;
     }
+    final uid = SupabaseService.client.auth.currentUser?.id;
+    final evals = session.evaluations.map(_evalToMap).toList();
     try {
-      final evals = session.evaluations.map(_evalToMap).toList();
-      final uid = SupabaseService.client.auth.currentUser?.id;
       final row = <String, dynamic>{
         'mode': session.mode.name,
         'sector': session.sector,
         'overall_score': session.overallScore,
         'multitasking_score': session.multitaskingScore,
+        'typing_wpm': session.averageTypingWpm,
+        'speaking_wpm': session.averageSpeakingWpm,
+        'filler_count': session.fillerWordCount,
         'completed_at': session.completedAt.toUtc().toIso8601String(),
         'evaluations': evals,
       };
@@ -121,19 +124,24 @@ class SimulationSessionRepository {
     } catch (e) {
       lastError = e.toString();
       debugPrint('simulation_sessions insert failed: $lastError');
-      // Retry without user_id if column is missing.
-      if (lastError!.contains('user_id')) {
+      if (lastError!.contains('typing_wpm') ||
+          lastError!.contains('speaking_wpm') ||
+          lastError!.contains('filler_count') ||
+          lastError!.contains('user_id')) {
         try {
-          final evals = session.evaluations.map(_evalToMap).toList();
-          await SupabaseService.client.from(_table).insert({
+          final fallback = <String, dynamic>{
             'mode': session.mode.name,
             'sector': session.sector,
             'overall_score': session.overallScore,
             'multitasking_score': session.multitaskingScore,
             'completed_at': session.completedAt.toUtc().toIso8601String(),
             'evaluations': evals,
-          });
-          debugPrint('simulation_sessions insert ok (no user_id)');
+          };
+          if (uid != null && !lastError!.contains('user_id')) {
+            fallback['user_id'] = uid;
+          }
+          await SupabaseService.client.from(_table).insert(fallback);
+          debugPrint('simulation_sessions insert ok (legacy columns)');
           return true;
         } catch (e2) {
           lastError = e2.toString();
@@ -182,6 +190,9 @@ class SimulationSessionRepository {
                       DateTime.now()
                 : DateTime.now(),
             mode: mode,
+            averageTypingWpm: (map['typing_wpm'] as num?)?.toDouble(),
+            averageSpeakingWpm: (map['speaking_wpm'] as num?)?.toDouble(),
+            fillerWordCount: (map['filler_count'] as num?)?.toInt(),
           ),
         );
       }
@@ -190,56 +201,6 @@ class SimulationSessionRepository {
     } catch (e) {
       lastError = e.toString();
       debugPrint('simulation_sessions fetch failed: $lastError');
-      // Fallback without user_id filter if column is missing on older schemas.
-      if (lastError!.contains('user_id')) {
-        try {
-          final rows = await SupabaseService.client
-              .from(_table)
-              .select()
-              .order('completed_at', ascending: false);
-          final list = <PlayedSession>[];
-          for (final row in rows as List) {
-            final map = Map<String, dynamic>.from(row as Map);
-            SimulationMode mode = SimulationMode.chat;
-            for (final m in SimulationMode.values) {
-              if (m.name == (map['mode'] as String? ?? '')) {
-                mode = m;
-                break;
-              }
-            }
-            final evalsRaw = map['evaluations'];
-            final evals = <SessionEvaluation>[];
-            if (evalsRaw is List) {
-              for (final e in evalsRaw) {
-                if (e is Map) {
-                  evals.add(_evalFromMap(Map<String, dynamic>.from(e)));
-                }
-              }
-            }
-            list.add(
-              PlayedSession(
-                evaluations: evals,
-                multitaskingScore: (map['multitasking_score'] as num?)
-                    ?.toDouble(),
-                completedAt: map['completed_at'] != null
-                    ? DateTime.tryParse(
-                            map['completed_at'] as String,
-                          )?.toLocal() ??
-                          DateTime.now()
-                    : DateTime.now(),
-                mode: mode,
-              ),
-            );
-          }
-          debugPrint(
-            'simulation_sessions fetch count (no user_id): ${list.length}',
-          );
-          return list;
-        } catch (e2) {
-          lastError = e2.toString();
-          debugPrint('simulation_sessions fetch failed: $lastError');
-        }
-      }
       return [];
     }
   }

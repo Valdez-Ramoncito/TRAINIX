@@ -4,6 +4,7 @@ import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/models/simulation_stage.dart';
 import 'package:trainixprogram/models/training/script_personalization.dart';
+import 'package:trainixprogram/models/training/soft_text_match.dart';
 
 /// Scenario-practice style mission step for simulation.
 enum SimStepKind { speak, tool, optionalSpeak }
@@ -141,6 +142,69 @@ class SimMissionRunner {
     final out = List<String>.from(pendingCustomerLines);
     pendingCustomerLines.clear();
     return out;
+  }
+
+  /// Queue a customer reaction when the agent is off-script, rude, or noise.
+  /// Does not complete or advance any mission step.
+  void queueOffTrackCustomerReaction(String line) {
+    final cleaned = line.trim();
+    if (cleaned.isEmpty) return;
+    if (pendingCustomerLines.isNotEmpty) return;
+    pendingCustomerLines.add(cleaned);
+  }
+
+  /// True when the latest trainee turn did not complete the current speak step.
+  bool get lastTraineeDidNotAdvance {
+    final step = currentStep;
+    if (step == null) return false;
+    if (step.kind == SimStepKind.tool) return false;
+    final trainee = evidence.lastTraineeText.trim();
+    if (trainee.isEmpty) return false;
+    if (trainee == _speakConsumedTraineeText) return true;
+    return !_stepPassed(step);
+  }
+
+  /// Soft-pass the current speak step after an LLM judges the turn adequate.
+  /// Uses the scripted after-pass line when present, otherwise [fallbackCustomerLine].
+  void forceCompleteCurrentSpeakStep({String? fallbackCustomerLine}) {
+    final step = currentStep;
+    if (step == null) return;
+    if (step.kind == SimStepKind.tool) return;
+    if (state.done.contains(step.id)) return;
+    final trainee = evidence.lastTraineeText.trim();
+    if (trainee.isNotEmpty) {
+      _speakConsumedTraineeText = trainee;
+    }
+    if (step.customerLineAfterPass != null &&
+        step.customerLineAfterPass!.trim().isNotEmpty) {
+      pendingCustomerLines.add(
+        ScriptPersonalization.resolve(step.customerLineAfterPass!.trim()),
+      );
+    } else if (fallbackCustomerLine != null &&
+        fallbackCustomerLine.trim().isNotEmpty) {
+      pendingCustomerLines.add(fallbackCustomerLine.trim());
+    }
+    final p = pack;
+    if (p == null) return;
+    final done = {...state.done, step.id};
+    final nextIndex = state.currentIndex + 1;
+    if (nextIndex >= p.steps.length) {
+      state = SimMissionState(
+        currentIndex: p.steps.length,
+        done: done,
+        currentId: null,
+      );
+      return;
+    }
+    state = SimMissionState(
+      currentIndex: nextIndex,
+      done: done,
+      currentId: p.steps[nextIndex].id,
+    );
+    final next = p.steps[nextIndex];
+    if (next.customerLine != null && next.customerLine!.trim().isNotEmpty) {
+      pendingCustomerLines.add(next.customerLine!);
+    }
   }
 
   void replaceMessages(List<CoachMessage> next) {
@@ -470,6 +534,7 @@ class SimMissionRunner {
         final trainee = evidence.lastTraineeText.trim();
         if (trainee.isEmpty) return false;
         if (trainee == _speakConsumedTraineeText) return false;
+        if (SimulationCoach.isInsultingAgentReply(trainee)) return false;
         if (step.id == 'close') {
           if (state.done.length < 2) return false;
           final customerBefore = _customerSpokeJustBeforeLastTrainee();
@@ -510,14 +575,34 @@ class SimMissionRunner {
             'how may i',
           ], trainee);
         }
-        return _phrasesHit(step.passPhrases, trainee);
+        return _phrasesHit(step.passPhrases, trainee) ||
+            _examplesAligned(step.examples, trainee);
       case SimStepKind.optionalSpeak:
         final trainee = evidence.lastTraineeText.trim();
         if (trainee.isEmpty) return false;
         if (trainee == _speakConsumedTraineeText) return false;
+        if (SimulationCoach.isInsultingAgentReply(trainee)) return false;
         return _phrasesHit(step.passPhrases, trainee) ||
-            _anyPhrase(step.passPhrases, evidence.customerCorpus);
+            _anyPhrase(step.passPhrases, evidence.customerCorpus) ||
+            _examplesAligned(step.examples, trainee);
     }
+  }
+
+  /// Accept expanded or rephrased replies that stay close to a step example.
+  bool _examplesAligned(List<String> examples, String text) {
+    if (examples.isEmpty || text.trim().isEmpty) return false;
+    for (final ex in examples) {
+      if (SoftTextMatch.typingMatches(text, ex)) return true;
+      final words = SoftTextMatch.contentWords(SoftTextMatch.normalize(ex));
+      if (words.isEmpty) continue;
+      final t = SoftTextMatch.normalize(text);
+      var hits = 0;
+      for (final w in words) {
+        if (t.contains(w)) hits++;
+      }
+      if (hits / words.length >= 0.5) return true;
+    }
+    return false;
   }
 
   bool _customerSpokeJustBeforeLastTrainee() {
