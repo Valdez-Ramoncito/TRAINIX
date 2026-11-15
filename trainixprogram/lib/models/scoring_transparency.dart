@@ -281,8 +281,189 @@ class ScoringTransparency {
     ),
   ];
 
+  static const List<ScoringDimension> channelDimensions = [
+    ScoringDimension(
+      key: 'confidence',
+      label: 'Confidence',
+      short: 'Steady, assured delivery without weak or apologetic hesitation.',
+      tesda: 'ICT313365',
+      excellent: 'Assured volume and pacing; no undercutting of the agent role.',
+      good: 'Mostly steady; occasional soft hesitation.',
+      developing: 'Frequent hesitation or trailing off.',
+      needsWork: 'Frail, uncertain, or apologetic delivery throughout.',
+      gapExamples:
+          'Trailing volume, long uncertain pauses, or phrases that undercut authority.',
+      deductionAnchors: [
+        '-2 to -4: Frequent hesitation or frail volume',
+        '-2 to -3: Undercutting phrases that signal low confidence',
+        '-1 to -1.5: Occasional soft hesitation (partial)',
+      ],
+      sourceNote:
+          'Voice delivery category under ICT313365. Separate from Tone warmth.',
+    ),
+    ScoringDimension(
+      key: 'spokenClarity',
+      label: 'Spoken Clarity',
+      short: 'Spoken message is easy to follow (structure and completeness).',
+      tesda: 'ICT313365',
+      excellent: 'Listener can track the point without rework.',
+      good: 'Mostly clear; one dense stretch.',
+      developing: 'Hard to follow in places.',
+      needsWork: 'Spoken message is confusing even when words are audible.',
+      gapExamples:
+          'Incomplete sentences, jumbled order, or points the listener cannot track.',
+      deductionAnchors: [
+        '-2 to -3: Spoken message hard to follow',
+        '-1 to -1.5: Dense stretch that is still recoverable (partial)',
+      ],
+      sourceNote:
+          'Voice Spoken Clarity is separate from Pronunciation and Diction.',
+    ),
+    ScoringDimension(
+      key: 'diction',
+      label: 'Diction',
+      short: 'Articulation quality: crisp vs mumbled endings and syllables.',
+      tesda: 'ICT313365',
+      excellent: 'Crisp articulation throughout.',
+      good: 'Mostly clear; occasional soft endings.',
+      developing: 'Mumbled stretches that slow understanding.',
+      needsWork: 'Poor articulation that blocks understanding.',
+      gapExamples: 'Swallowed endings, mumbled clauses, or slurred stretches.',
+      deductionAnchors: [
+        '-2: Mumbled or poorly articulated stretch',
+        '-1 to -1.5: Soft endings that still allow understanding (partial)',
+      ],
+      sourceNote:
+          'Voice Diction is separate from Pronunciation of specific words.',
+    ),
+    ScoringDimension(
+      key: 'pronunciation',
+      label: 'Pronunciation',
+      short: 'Correct sound production of words so meaning is clear.',
+      tesda: 'ICT313365',
+      excellent: 'Words are pronounced correctly and are easy to recognize.',
+      good: 'Minor mispronunciations that do not change meaning.',
+      developing: 'Several mispronunciations that slow understanding.',
+      needsWork: 'Severe mispronunciation that blocks meaning.',
+      gapExamples:
+          'Wrong stress or sound that changes meaning, or repeated mispronunciation of key terms.',
+      deductionAnchors: [
+        '-2: Severe mispronunciation that changes meaning or blocks understanding',
+        '-1 to -1.5: Mild mispronunciation of a key term (partial)',
+      ],
+      sourceNote:
+          'Voice Pronunciation is separate from Diction and Spoken Clarity.',
+    ),
+    ScoringDimension(
+      key: 'paceAndSpeed',
+      label: 'Pace & Speed',
+      short: 'Speech rate in a healthy contact-center band.',
+      tesda: 'ICT313365',
+      excellent: 'Steady rate in the recommended band.',
+      good: 'Slightly fast or slow but still clear.',
+      developing: 'Noticeably rushed or slow.',
+      needsWork: 'Extreme pace or unannounced long dead air.',
+      gapExamples: 'Rushing, dragging, or long silent gaps without explanation.',
+      deductionAnchors: [
+        '-3: Rushing past a healthy baseline',
+        '-3: Speaking noticeably slower than a healthy baseline',
+        '-5: Unannounced dead air roughly over 10 seconds',
+      ],
+      sourceNote:
+          'WPM bands are Trainix/BPO convention under ICT313365, not TESDA numbers.',
+    ),
+    ScoringDimension(
+      key: 'fillerWordUsage',
+      label: 'Filler Word Usage',
+      short: 'Minimal verbal fillers (um, uh, like, you know).',
+      tesda: 'ICT313365',
+      excellent: 'Almost no fillers.',
+      good: 'Occasional fillers that do not distract.',
+      developing: 'Noticeable clusters of fillers.',
+      needsWork: 'Fillers dominate turns and hurt clarity.',
+      gapExamples: 'Repeated um/uh clusters or filler-heavy turns.',
+      deductionAnchors: [
+        '-2: Noticeable cluster of fillers',
+        '-1 to -1.5: Occasional fillers (partial)',
+      ],
+      sourceNote: 'Voice filler scoring under ICT313365 clarity and conciseness.',
+    ),
+    ScoringDimension(
+      key: 'grammar',
+      label: 'Grammar',
+      short: 'Sentence structure, agreement, and grammatical correctness.',
+      tesda: 'ICT313365',
+      excellent: 'Grammatically clean messages.',
+      good: 'Minor grammar slips that do not change meaning.',
+      developing: 'Several grammar errors that slow reading.',
+      needsWork: 'Frequent grammar errors that harm professionalism.',
+      gapExamples:
+          'Broken agreement, incomplete sentence structure, or punctuation that changes meaning.',
+      deductionAnchors: [
+        '-2: Clear grammar error in a message',
+        '-1 to -1.5: Mild structure issue (partial)',
+      ],
+      sourceNote:
+          'Non-Voice Grammar is separate from keystroke accuracy and word choice.',
+    ),
+    ScoringDimension(
+      key: 'correctWordUse',
+      label: 'Correct Word Use',
+      short: 'Correct vocabulary and appropriate word selection.',
+      tesda: 'ICT313365',
+      excellent: 'Precise, appropriate terms throughout.',
+      good: 'Mostly precise; one weak word choice.',
+      developing: 'Several wrong or informal substitutions.',
+      needsWork: 'Wrong words that change meaning or feel unprofessional.',
+      gapExamples:
+          'Wrong word that changes meaning, or slang used instead of the right term.',
+      deductionAnchors: [
+        '-2: Wrong or inappropriate word choice',
+        '-1 to -1.5: Mild imprecise term (partial)',
+      ],
+      sourceNote:
+          'Non-Voice Correct Word Use is separate from Grammar structure.',
+    ),
+    ScoringDimension(
+      key: 'errorRateAccuracy',
+      label: 'Error Rate & Accuracy',
+      short: 'Keystroke precision from typing telemetry.',
+      tesda: 'ICT311203',
+      excellent: 'High keystroke accuracy at or above the practice threshold.',
+      good: 'Solid accuracy with minor corrections.',
+      developing: 'Accuracy under the practice threshold.',
+      needsWork: 'Heavy correction pattern / low keystroke accuracy.',
+      gapExamples: 'Accuracy under 95% practice threshold (Trainix convention).',
+      deductionAnchors: [
+        '-3: Keystroke accuracy under 95%',
+      ],
+      sourceNote:
+          'Chat keystroke accuracy under ICT311203. Spelling and grammar are scored separately.',
+    ),
+    ScoringDimension(
+      key: 'typingSpeed',
+      label: 'Typing Speed',
+      short: 'Typing pace for chat replies.',
+      tesda: 'ICT311203',
+      excellent: 'Steady pace at or above the practice baseline.',
+      good: 'Near baseline with minor lag.',
+      developing: 'Noticeably below baseline.',
+      needsWork: 'Very slow typing that delays the customer.',
+      gapExamples: 'WPM well below the practice baseline for chat work.',
+      deductionAnchors: [
+        '-2: WPM in the 25-29 band',
+        '-5: WPM below 25',
+      ],
+      sourceNote:
+          'Typing WPM bands are Trainix/BPO convention under ICT311203, not TESDA numbers.',
+    ),
+  ];
+
   static ScoringDimension? byLabel(String label) {
     for (final d in sharedDimensions) {
+      if (d.label == label) return d;
+    }
+    for (final d in channelDimensions) {
       if (d.label == label) return d;
     }
     return null;
@@ -303,6 +484,7 @@ class ScoringTransparency {
       case 'Solution Delivery':
         return Icons.handshake_outlined;
       case 'Communication Clarity':
+      case 'Spoken Clarity':
         return Icons.chat_bubble_outline;
       case 'Tone':
         return Icons.record_voice_over_outlined;
@@ -310,6 +492,24 @@ class ScoringTransparency {
         return Icons.menu_book_outlined;
       case 'Closing Spiel':
         return Icons.flag_outlined;
+      case 'Confidence':
+        return Icons.trending_up_rounded;
+      case 'Diction':
+        return Icons.record_voice_over_rounded;
+      case 'Pronunciation':
+        return Icons.mic_none_rounded;
+      case 'Pace & Speed':
+        return Icons.speed_rounded;
+      case 'Filler Word Usage':
+        return Icons.graphic_eq_rounded;
+      case 'Grammar':
+        return Icons.spellcheck_rounded;
+      case 'Correct Word Use':
+        return Icons.text_fields_rounded;
+      case 'Error Rate & Accuracy':
+        return Icons.fact_check_outlined;
+      case 'Typing Speed':
+        return Icons.keyboard_rounded;
       default:
         return Icons.analytics_outlined;
     }

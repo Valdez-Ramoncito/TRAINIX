@@ -27,6 +27,10 @@ class SessionEvaluation {
   final double? paceAndSpeedScore;
   final double? pronunciationClarityScore;
   final double? fillerWordUsageScore;
+  final double? confidenceScore;
+  final double? dictionScore;
+  final double? grammarScore;
+  final double? wordChoiceScore;
 
   final Map<String, String>? categoryNotes;
   final Map<String, String>? categoryQuotes;
@@ -65,6 +69,10 @@ class SessionEvaluation {
     this.paceAndSpeedScore,
     this.pronunciationClarityScore,
     this.fillerWordUsageScore,
+    this.confidenceScore,
+    this.dictionScore,
+    this.grammarScore,
+    this.wordChoiceScore,
     this.categoryNotes,
     this.categoryQuotes,
     this.categorySuggestions,
@@ -137,6 +145,10 @@ class SessionEvaluation {
       paceAndSpeedScore: paceAndSpeedScore,
       pronunciationClarityScore: pronunciationClarityScore,
       fillerWordUsageScore: fillerWordUsageScore,
+      confidenceScore: confidenceScore,
+      dictionScore: dictionScore,
+      grammarScore: grammarScore,
+      wordChoiceScore: wordChoiceScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
       categorySuggestions: categorySuggestions,
@@ -242,6 +254,10 @@ class SessionEvaluation {
       paceAndSpeedScore: paceAndSpeedScore,
       pronunciationClarityScore: pronunciationClarityScore,
       fillerWordUsageScore: fillerWordUsageScore,
+      confidenceScore: confidenceScore,
+      dictionScore: dictionScore,
+      grammarScore: grammarScore,
+      wordChoiceScore: wordChoiceScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
       categorySuggestions: categorySuggestions,
@@ -289,6 +305,10 @@ class SessionEvaluation {
       paceAndSpeedScore: paceAndSpeedScore,
       pronunciationClarityScore: pronunciationClarityScore,
       fillerWordUsageScore: fillerWordUsageScore,
+      confidenceScore: confidenceScore,
+      dictionScore: dictionScore,
+      grammarScore: grammarScore,
+      wordChoiceScore: wordChoiceScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
       categorySuggestions: categorySuggestions,
@@ -325,6 +345,8 @@ class SessionEvaluation {
     final typingSpeed = parse('TYPING_SPEED_WPM');
     final errorRate = parse('ERROR_RATE_AND_ACCURACY');
     final consistency = parse('RESPONSE_CONSISTENCY_AND_PACE');
+    final grammar = parse('GRAMMAR');
+    final wordChoice = parse('CORRECT_WORD_USE');
     final clarity = parse('COMMUNICATION_CLARITY');
     final sectorKnowledge = parse('SECTOR_KNOWLEDGE');
     final closing = parse('CLOSING_SPIEL');
@@ -358,6 +380,8 @@ class SessionEvaluation {
       'TYPING_SPEED_WPM': 'Typing Speed',
       'ERROR_RATE_AND_ACCURACY': 'Error Rate & Accuracy',
       'RESPONSE_CONSISTENCY_AND_PACE': 'Response Consistency & Pace',
+      'GRAMMAR': 'Grammar',
+      'CORRECT_WORD_USE': 'Correct Word Use',
       'COMMUNICATION_CLARITY': 'Communication Clarity',
       'SECTOR_KNOWLEDGE': 'Sector Knowledge',
       'CLOSING_SPIEL': 'Closing Spiel',
@@ -474,6 +498,8 @@ class SessionEvaluation {
       typingSpeedScore: typingSpeed,
       errorRateAccuracyScore: errorRate,
       responseConsistencyScore: consistency,
+      grammarScore: grammar,
+      wordChoiceScore: wordChoice,
       categoryNotes: notes,
       categoryQuotes: quotes,
       categorySuggestions: suggestions,
@@ -506,19 +532,24 @@ class SessionEvaluation {
     final problemId = parse('PROBLEM_IDENTIFICATION');
     final solution = parse('SOLUTION_DELIVERY');
     final pace = parse('PACE_AND_SPEED');
-    final pronunciation = parse('PRONUNCIATION_AND_CLARITY');
+    final pronunciation = fields.containsKey('PRONUNCIATION')
+        ? parse('PRONUNCIATION')
+        : parse('PRONUNCIATION_AND_CLARITY');
+    final diction = fields.containsKey('DICTION')
+        ? parse('DICTION')
+        : pronunciation;
+    final spokenClarity = fields.containsKey('SPOKEN_CLARITY')
+        ? parse('SPOKEN_CLARITY')
+        : pronunciation;
     final fillerWords = parse('FILLER_WORD_USAGE');
     final tone = parse('TONE_AND_INFLECTION');
+    final confidence =
+        fields.containsKey('CONFIDENCE') ? parse('CONFIDENCE') : tone;
     final sectorKnowledge = parse('SECTOR_KNOWLEDGE');
     final closing = parse('CLOSING_SPIEL');
 
-    //voice doesn't have a separate "communication clarity" category in
-    //this rubric. Spoken clarity is pronunciation for voice.
-    //proxied directly from pronunciation so the shared Dashboard
-    //"Communication Clarity" category keeps a value across both channels
-    final clarityProxy = pronunciation;
-
-    //Overall Score
+    //Overall Score uses spoken clarity as Communication Clarity, not
+    //pronunciation. Delivery categories stay separate on the report.
     final overall =
         [
           opening,
@@ -527,7 +558,7 @@ class SessionEvaluation {
           active,
           problemId,
           solution,
-          clarityProxy,
+          spokenClarity,
           tone,
           sectorKnowledge,
           closing,
@@ -542,7 +573,11 @@ class SessionEvaluation {
       'PROBLEM_IDENTIFICATION': 'Problem Identification',
       'SOLUTION_DELIVERY': 'Solution Delivery',
       'PACE_AND_SPEED': 'Pace & Speed',
-      'PRONUNCIATION_AND_CLARITY': 'Pronunciation & Clarity',
+      'PRONUNCIATION': 'Pronunciation',
+      'PRONUNCIATION_AND_CLARITY': 'Pronunciation',
+      'DICTION': 'Diction',
+      'SPOKEN_CLARITY': 'Spoken Clarity',
+      'CONFIDENCE': 'Confidence',
       'FILLER_WORD_USAGE': 'Filler Word Usage',
       'TONE_AND_INFLECTION': 'Tone',
       'SECTOR_KNOWLEDGE': 'Sector Knowledge',
@@ -587,7 +622,7 @@ class SessionEvaluation {
     final activeE = keepIfEvidenced('Active Listening', active);
     final problemE = keepIfEvidenced('Problem Identification', problemId);
     final solutionE = keepIfEvidenced('Solution Delivery', solution);
-    final clarityE = keepIfEvidenced('Communication Clarity', clarityProxy);
+    final clarityE = keepIfEvidenced('Spoken Clarity', spokenClarity);
     final toneE = keepIfEvidenced('Tone', tone);
     final sectorE = keepIfEvidenced('Sector Knowledge', sectorKnowledge);
     final closingE = keepIfEvidenced('Closing Spiel', closing);
@@ -620,6 +655,8 @@ class SessionEvaluation {
       paceAndSpeedScore: pace,
       pronunciationClarityScore: pronunciation,
       fillerWordUsageScore: fillerWords,
+      confidenceScore: confidence,
+      dictionScore: diction,
       categoryNotes: notes,
       categoryQuotes: quotes,
       categorySuggestions: suggestions,

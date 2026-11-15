@@ -226,6 +226,8 @@ class PerformanceStatsPanel extends StatelessWidget {
                     const Gap(14),
                     _skillsCard(context, sortedSkills),
                     const Gap(14),
+                    _channelSkillsCard(context, liveEvals),
+                    const Gap(14),
                     _generalAnalysisCard(
                       context,
                       strongest: strongest,
@@ -716,6 +718,186 @@ class PerformanceStatsPanel extends StatelessWidget {
     );
   }
 
+  Widget _channelSkillsCard(
+    BuildContext context,
+    List<SessionEvaluation> evals,
+  ) {
+    double? avgOf(Iterable<double> values) {
+      final list = values.toList();
+      if (list.isEmpty) return null;
+      return list.reduce((a, b) => a + b) / list.length;
+    }
+
+    final voiceEvals = evals.where((e) => e.channel == 'voice').toList();
+    final chatEvals = evals.where((e) => e.channel == 'chat').toList();
+
+    final voiceRows = <(String, double?)>[
+      ('Tone', avgOf(voiceEvals.map((e) => e.toneScore))),
+      ('Confidence', avgOf(voiceEvals.map((e) => e.confidenceScore).whereType<double>())),
+      (
+        'Spoken Clarity',
+        avgOf(voiceEvals.map((e) => e.communicationClarityScore)),
+      ),
+      ('Diction', avgOf(voiceEvals.map((e) => e.dictionScore).whereType<double>())),
+      (
+        'Pronunciation',
+        avgOf(
+          voiceEvals.map((e) => e.pronunciationClarityScore).whereType<double>(),
+        ),
+      ),
+      (
+        'Pace & Speed',
+        avgOf(voiceEvals.map((e) => e.paceAndSpeedScore).whereType<double>()),
+      ),
+      (
+        'Filler Word Usage',
+        avgOf(voiceEvals.map((e) => e.fillerWordUsageScore).whereType<double>()),
+      ),
+    ];
+    final chatRows = <(String, double?)>[
+      ('Grammar', avgOf(chatEvals.map((e) => e.grammarScore).whereType<double>())),
+      (
+        'Correct Word Use',
+        avgOf(chatEvals.map((e) => e.wordChoiceScore).whereType<double>()),
+      ),
+      (
+        'Communication Clarity',
+        avgOf(chatEvals.map((e) => e.communicationClarityScore)),
+      ),
+      (
+        'Error Rate & Accuracy',
+        avgOf(
+          chatEvals.map((e) => e.errorRateAccuracyScore).whereType<double>(),
+        ),
+      ),
+      (
+        'Typing Speed',
+        avgOf(chatEvals.map((e) => e.typingSpeedScore).whereType<double>()),
+      ),
+    ];
+
+    final hasVoice = voiceRows.any((r) => r.$2 != null);
+    final hasChat = chatRows.any((r) => r.$2 != null);
+    if (!hasVoice && !hasChat) return const SizedBox.shrink();
+
+    Widget section(String title, Color accent, IconData icon, List<(String, double?)> rows) {
+      final visible = rows.where((r) => r.$2 != null).toList();
+      if (visible.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 16, color: accent),
+              const Gap(6),
+              Text(
+                title,
+                style: TextStyle(
+                  color: accent,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const Gap(10),
+          ...visible.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _DashboardRubricSkillTile(
+                label: e.$1,
+                score: e.$2!,
+                color: stageColor(e.$2!),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 21, 21, 21),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tune_rounded, size: 18, color: Color(0xFFA78BFA)),
+              Gap(8),
+              Text(
+                'Channel skill averages',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const Gap(4),
+          const Text(
+            'Voice delivery and Non-Voice language categories, scored separately from the 10 shared overall skills. Expand a skill for criteria, possible deductions, and source notes.',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              height: 1.35,
+            ),
+          ),
+          if (hasVoice) ...[
+            const Gap(14),
+            section(
+              'Voice delivery',
+              const Color(0xFF70BD8A),
+              Icons.mic_rounded,
+              voiceRows,
+            ),
+            if (voiceRows.where((r) => r.$2 != null).length >= 3) ...[
+              const Gap(12),
+              _SkillRadarCard(
+                title: 'Voice delivery profile',
+                subtitle:
+                    'Tone, confidence, clarity, diction, pronunciation, and related delivery scores. Outer ring is 10.',
+                skills: voiceRows
+                    .where((r) => r.$2 != null)
+                    .map((r) => MapEntry(r.$1, r.$2!))
+                    .toList(),
+                accent: const Color(0xFF70BD8A),
+              ),
+            ],
+          ],
+          if (hasChat) ...[
+            const Gap(14),
+            section(
+              'Non-Voice language',
+              const Color(0xFF3B82F6),
+              Icons.chat_bubble_outline_rounded,
+              chatRows,
+            ),
+            if (chatRows.where((r) => r.$2 != null).length >= 3) ...[
+              const Gap(12),
+              _SkillRadarCard(
+                title: 'Non-Voice language profile',
+                subtitle:
+                    'Grammar, word use, clarity, accuracy, and typing scores. Outer ring is 10.',
+                skills: chatRows
+                    .where((r) => r.$2 != null)
+                    .map((r) => MapEntry(r.$1, r.$2!))
+                    .toList(),
+                accent: const Color(0xFF3B82F6),
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _skillsCard(
     BuildContext context,
     List<MapEntry<String, double>> sortedSkills,
@@ -747,65 +929,34 @@ class PerformanceStatsPanel extends StatelessWidget {
           ),
           const Gap(4),
           const Text(
-            'Mean of each competency across all scored customers. Sorted strongest to weakest.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 11, height: 1.35),
+            'Mean of each of the 10 shared competencies across scored customers. Expand a skill for rubric criteria and possible deductions. Sorted strongest to weakest.',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              height: 1.35,
+            ),
           ),
           const Gap(14),
-          ...sortedSkills.map((e) {
-            final c = stageColor(e.value);
-            final pct = (e.value / 10.0).clamp(0.0, 1.0);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 28,
-                    child: Icon(
-                      ScoringTransparency.iconFor(e.key),
-                      size: 16,
-                      color: c,
-                    ),
-                  ),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      e.key,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    flex: 5,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: pct,
-                        minHeight: 8,
-                        backgroundColor: const Color(0xFF2A2A2A),
-                        color: c,
-                      ),
-                    ),
-                  ),
-                  const Gap(10),
-                  SizedBox(
-                    width: 36,
-                    child: Text(
-                      e.value.toStringAsFixed(1),
-                      textAlign: TextAlign.right,
-                      style: TextStyle(
-                        color: c,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ],
+          if (sortedSkills.length >= 3) ...[
+            _SkillRadarCard(
+              title: 'Skill profile',
+              subtitle:
+                  'Shape of your 10 shared competencies. Outer ring is 10.',
+              skills: sortedSkills,
+              accent: const Color(0xFF60A5FA),
+            ),
+            const Gap(14),
+          ],
+          ...sortedSkills.map(
+            (e) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _DashboardRubricSkillTile(
+                label: e.key,
+                score: e.value,
+                color: stageColor(e.value),
               ),
-            );
-          }),
+            ),
+          ),
         ],
       ),
     );
@@ -1071,7 +1222,11 @@ class PerformanceStatsPanel extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(Icons.rule_folder_outlined, size: 18, color: Color(0xFF60A5FA)),
+              Icon(
+                Icons.rule_folder_outlined,
+                size: 18,
+                color: Color(0xFF60A5FA),
+              ),
               Gap(8),
               Text(
                 'How practice scoring works',
@@ -1085,24 +1240,50 @@ class PerformanceStatsPanel extends StatelessWidget {
           ),
           const Gap(10),
           const Text(
-            'Each skill starts at 10. Observed gaps lower the score. Overall is the average of the 10 skills. Pass practice mark is 7.0. Excellent is 8.5 and above.',
-            style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 12, height: 1.4),
+            'Each skill starts at 10. The evaluator deducts only for observed gaps in the transcript, audio, or telemetry. Overall is the average of the 10 shared skills. Pass practice mark is 7.0. Excellent is 8.5 and above.',
+            style: TextStyle(
+              color: Color(0xFFCBD5E1),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          const Gap(10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF15201A),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF2E4A38)),
+            ),
+            child: const Text(
+              'Evidence rule: if the model cannot cite a concrete line, audio moment, or telemetry value, that category stays at 10 (Full marks). Cuts without evidence are rejected by the app.',
+              style: TextStyle(
+                color: Color(0xFFD7E8DB),
+                fontSize: 11,
+                height: 1.4,
+              ),
+            ),
           ),
           const Gap(10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: const [
-              _BandChip('9–10 Excellent', Color(0xFF70BD8A)),
-              _BandChip('7–8.4 Good', Color(0xFF3B82F6)),
-              _BandChip('5–6.9 Developing', Color(0xFFF59E0B)),
-              _BandChip('0–4.9 Needs work', Color(0xFFEF4444)),
+              _BandChip('9-10 Excellent', Color(0xFF70BD8A)),
+              _BandChip('7-8.4 Good', Color(0xFF3B82F6)),
+              _BandChip('5-6.9 Developing', Color(0xFFF59E0B)),
+              _BandChip('0-4.9 Needs work', Color(0xFFEF4444)),
             ],
           ),
           const Gap(10),
           const Text(
-            'Open any session report for the full scoring guide, CSAT formula, and per-customer skill breakdown.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 11, height: 1.35),
+            'Expand skill rows above for criteria and deductions. Open a session report for per-customer evidence quotes, suggested stronger lines, and CSAT/AHT detail.',
+            style: TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 11,
+              height: 1.35,
+            ),
           ),
         ],
       ),
@@ -1268,6 +1449,401 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter oldDelegate) => true;
+}
+
+class _DashboardRubricSkillTile extends StatefulWidget {
+  final String label;
+  final double score;
+  final Color color;
+
+  const _DashboardRubricSkillTile({
+    required this.label,
+    required this.score,
+    required this.color,
+  });
+
+  @override
+  State<_DashboardRubricSkillTile> createState() =>
+      _DashboardRubricSkillTileState();
+}
+
+class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = ScoringTransparency.levelFor(widget.score);
+    final dim = ScoringTransparency.byLabel(widget.label);
+    final meaning = dim?.criterionForScore(widget.score) ?? level.meaning;
+    final pct = (widget.score / 10.0).clamp(0.0, 1.0);
+
+    return Material(
+      color: const Color(0xFF151515),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        mouseCursor: SystemMouseCursors.click,
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => setState(() => _open = !_open),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _open
+                  ? widget.color.withValues(alpha: 0.45)
+                  : const Color(0xFF2A2A2B),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    ScoringTransparency.iconFor(widget.label),
+                    size: 16,
+                    color: widget.color,
+                  ),
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      widget.label,
+                      style: const TextStyle(
+                        color: Color(0xFFE2E8F0),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: widget.color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: widget.color.withValues(alpha: 0.45),
+                      ),
+                    ),
+                    child: Text(
+                      level.label,
+                      style: TextStyle(
+                        color: widget.color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const Gap(8),
+                  Text(
+                    widget.score.toStringAsFixed(1),
+                    style: TextStyle(
+                      color: widget.color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const Gap(4),
+                  Icon(
+                    _open
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    size: 18,
+                    color: const Color(0xFF94A3B8),
+                  ),
+                ],
+              ),
+              const Gap(8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 7,
+                  backgroundColor: const Color(0xFF2A2A2A),
+                  color: widget.color,
+                ),
+              ),
+              if (_open) ...[
+                const Gap(10),
+                if (dim != null) ...[
+                  Text(
+                    dim.short,
+                    style: const TextStyle(
+                      color: Color(0xFFCBD5E1),
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                  const Gap(8),
+                ],
+                Text(
+                  meaning,
+                  style: TextStyle(
+                    color: widget.color.withValues(alpha: 0.95),
+                    fontSize: 11,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (dim != null && dim.gapExamples.isNotEmpty) ...[
+                  const Gap(8),
+                  Text(
+                    'Gaps: ${dim.gapExamples}',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 11,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+                if (dim != null && dim.deductionAnchors.isNotEmpty) ...[
+                  const Gap(8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111827),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF1F2937)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Possible deductions for this skill',
+                          style: TextStyle(
+                            color: Color(0xFF94A3B8),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Gap(6),
+                        ...dim.deductionAnchors.map(
+                          (a) => Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Text(
+                              a,
+                              style: const TextStyle(
+                                color: Color(0xFFCBD5E1),
+                                fontSize: 11,
+                                height: 1.35,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (dim.sourceNote.isNotEmpty) ...[
+                          const Gap(4),
+                          Text(
+                            'Source: ${dim.sourceNote}',
+                            style: const TextStyle(
+                              color: Color(0xFF64748B),
+                              fontSize: 10,
+                              height: 1.35,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+                const Gap(6),
+                const Text(
+                  'Session reports add customer-level evidence quotes and suggested stronger lines for each interaction.',
+                  style: TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 10,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SkillRadarCard extends StatelessWidget {
+  final List<MapEntry<String, double>> skills;
+  final String title;
+  final String subtitle;
+  final Color accent;
+
+  const _SkillRadarCard({
+    required this.skills,
+    this.title = 'Skill profile',
+    this.subtitle = 'Shape of your strongest competencies. Outer ring is 10.',
+    this.accent = const Color(0xFF60A5FA),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final top = skills.take(8).toList();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF151515),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A2A2B)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFFE2E8F0),
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+          const Gap(4),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: Color(0xFF64748B),
+              fontSize: 10,
+              height: 1.3,
+            ),
+          ),
+          const Gap(8),
+          Center(
+            child: SizedBox(
+              width: 220,
+              height: 220,
+              child: CustomPaint(
+                painter: _RadarPainter(skills: top, accent: accent),
+              ),
+            ),
+          ),
+          const Gap(6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: top.map((e) {
+              final c = e.value >= 8.5
+                  ? const Color(0xFF70BD8A)
+                  : e.value >= 7
+                      ? const Color(0xFF3B82F6)
+                      : e.value >= 5
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFFEF4444);
+              final short = e.key.length > 18
+                  ? '${e.key.substring(0, 16)}…'
+                  : e.key;
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: c,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const Gap(4),
+                  Text(
+                    '$short ${e.value.toStringAsFixed(1)}',
+                    style: const TextStyle(
+                      color: Color(0xFF94A3B8),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RadarPainter extends CustomPainter {
+  final List<MapEntry<String, double>> skills;
+  final Color accent;
+
+  _RadarPainter({
+    required this.skills,
+    this.accent = const Color(0xFF60A5FA),
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (skills.isEmpty) return;
+    final n = skills.length;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = math.min(size.width, size.height) * 0.38;
+    final gridPaint = Paint()
+      ..color = const Color(0xFF2A2A2B)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final axisPaint = Paint()
+      ..color = const Color(0xFF334155)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final fillPaint = Paint()
+      ..color = accent.withValues(alpha: 0.22)
+      ..style = PaintingStyle.fill;
+    final strokePaint = Paint()
+      ..color = accent
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    for (final t in [0.25, 0.5, 0.75, 1.0]) {
+      final path = Path();
+      for (var i = 0; i < n; i++) {
+        final ang = -math.pi / 2 + (2 * math.pi * i / n);
+        final p = Offset(
+          center.dx + radius * t * math.cos(ang),
+          center.dy + radius * t * math.sin(ang),
+        );
+        if (i == 0) {
+          path.moveTo(p.dx, p.dy);
+        } else {
+          path.lineTo(p.dx, p.dy);
+        }
+      }
+      path.close();
+      canvas.drawPath(path, gridPaint);
+    }
+
+    for (var i = 0; i < n; i++) {
+      final ang = -math.pi / 2 + (2 * math.pi * i / n);
+      final p = Offset(
+        center.dx + radius * math.cos(ang),
+        center.dy + radius * math.sin(ang),
+      );
+      canvas.drawLine(center, p, axisPaint);
+    }
+
+    final data = Path();
+    for (var i = 0; i < n; i++) {
+      final ang = -math.pi / 2 + (2 * math.pi * i / n);
+      final t = (skills[i].value / 10.0).clamp(0.0, 1.0);
+      final p = Offset(
+        center.dx + radius * t * math.cos(ang),
+        center.dy + radius * t * math.sin(ang),
+      );
+      if (i == 0) {
+        data.moveTo(p.dx, p.dy);
+      } else {
+        data.lineTo(p.dx, p.dy);
+      }
+    }
+    data.close();
+    canvas.drawPath(data, fillPaint);
+    canvas.drawPath(data, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _RadarPainter oldDelegate) => true;
 }
 
 class _DashboardScroll extends StatefulWidget {

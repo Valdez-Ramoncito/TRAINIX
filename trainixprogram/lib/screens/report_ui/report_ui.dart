@@ -271,6 +271,8 @@ class _ReportUIState extends State<ReportUI> {
                   onToggle: (v) => setState(() => _openTelemetry = v),
                   child: Column(
                     children: [
+                      _buildChannelSkillScoresCard(),
+                      const Gap(12),
                       _buildInteractionStatsCard(),
                       const Gap(12),
                       _buildCsatAndAhtCard(),
@@ -2210,9 +2212,35 @@ class _ReportUIState extends State<ReportUI> {
       case 'Communication Clarity':
         return [
           'Communication Clarity',
+          'Spoken Clarity',
           'Pronunciation & Clarity',
           'PRONUNCIATION_AND_CLARITY',
         ];
+      case 'Spoken Clarity':
+        return ['Spoken Clarity', 'SPOKEN_CLARITY', 'Communication Clarity'];
+      case 'Pronunciation':
+        return [
+          'Pronunciation',
+          'PRONUNCIATION',
+          'Pronunciation & Clarity',
+          'PRONUNCIATION_AND_CLARITY',
+        ];
+      case 'Diction':
+        return ['Diction', 'DICTION'];
+      case 'Confidence':
+        return ['Confidence', 'CONFIDENCE'];
+      case 'Pace & Speed':
+        return ['Pace & Speed', 'PACE_AND_SPEED'];
+      case 'Filler Word Usage':
+        return ['Filler Word Usage', 'FILLER_WORD_USAGE'];
+      case 'Grammar':
+        return ['Grammar', 'GRAMMAR'];
+      case 'Correct Word Use':
+        return ['Correct Word Use', 'CORRECT_WORD_USE'];
+      case 'Error Rate & Accuracy':
+        return ['Error Rate & Accuracy', 'ERROR_RATE_AND_ACCURACY'];
+      case 'Typing Speed':
+        return ['Typing Speed', 'TYPING_SPEED_WPM'];
       default:
         return [label];
     }
@@ -2624,6 +2652,209 @@ class _ReportUIState extends State<ReportUI> {
 
   bool get _hasVoiceChannel =>
       evaluations.any((e) => e.channel.toLowerCase() == 'voice');
+
+  double? _avgOptional(double? Function(SessionEvaluation e) pick) {
+    final vals = evaluations.map(pick).whereType<double>().toList();
+    if (vals.isEmpty) return null;
+    return vals.reduce((a, b) => a + b) / vals.length;
+  }
+
+  Widget _buildChannelSkillScoresCard() {
+    final voiceRows = <(String, double?)>[
+      ('Tone', _avgOptional((e) => e.channel == 'voice' ? e.toneScore : null)),
+      (
+        'Confidence',
+        _avgOptional((e) => e.channel == 'voice' ? e.confidenceScore : null),
+      ),
+      (
+        'Spoken Clarity',
+        _avgOptional(
+          (e) => e.channel == 'voice' ? e.communicationClarityScore : null,
+        ),
+      ),
+      (
+        'Diction',
+        _avgOptional((e) => e.channel == 'voice' ? e.dictionScore : null),
+      ),
+      (
+        'Pronunciation',
+        _avgOptional(
+          (e) => e.channel == 'voice' ? e.pronunciationClarityScore : null,
+        ),
+      ),
+      (
+        'Pace & Speed',
+        _avgOptional((e) => e.channel == 'voice' ? e.paceAndSpeedScore : null),
+      ),
+      (
+        'Filler Word Usage',
+        _avgOptional(
+          (e) => e.channel == 'voice' ? e.fillerWordUsageScore : null,
+        ),
+      ),
+    ];
+    final chatRows = <(String, double?)>[
+      (
+        'Grammar',
+        _avgOptional((e) => e.channel == 'chat' ? e.grammarScore : null),
+      ),
+      (
+        'Correct Word Use',
+        _avgOptional((e) => e.channel == 'chat' ? e.wordChoiceScore : null),
+      ),
+      (
+        'Communication Clarity',
+        _avgOptional(
+          (e) => e.channel == 'chat' ? e.communicationClarityScore : null,
+        ),
+      ),
+      (
+        'Error Rate & Accuracy',
+        _avgOptional(
+          (e) => e.channel == 'chat' ? e.errorRateAccuracyScore : null,
+        ),
+      ),
+      (
+        'Typing Speed',
+        _avgOptional((e) => e.channel == 'chat' ? e.typingSpeedScore : null),
+      ),
+    ];
+    final showVoice = _hasVoiceChannel && voiceRows.any((r) => r.$2 != null);
+    final showChat = _hasChatChannel && chatRows.any((r) => r.$2 != null);
+    if (!showVoice && !showChat) return const SizedBox.shrink();
+
+    Widget rubricCards(List<(String, double?)> rows) {
+      final cards = <Widget>[];
+      for (final r in rows) {
+        final score = r.$2;
+        if (score == null) continue;
+        final val = displayScore10(score);
+        final level = ScoringTransparency.levelFor(val);
+        final dim = ScoringTransparency.byLabel(r.$1);
+        final color = Color(level.colorValue);
+        final meaning = dim?.criterionForScore(val) ?? level.meaning;
+        cards.add(
+          _buildRubricDataRow(
+            label: r.$1,
+            score: val,
+            levelLabel: level.label,
+            meaning: meaning,
+            color: color,
+            gapExamples: dim?.gapExamples,
+            deductionAnchors: dim?.deductionAnchors ?? const [],
+            sourceNote: dim?.sourceNote ?? '',
+            evidenceNotes: _evidenceForDimension(r.$1),
+            suggestions: _suggestionsForDimension(r.$1),
+          ),
+        );
+      }
+      if (cards.isEmpty) return const SizedBox.shrink();
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth > 700;
+          if (!wide) return Column(children: cards);
+          final rowsOut = <Widget>[];
+          for (var i = 0; i < cards.length; i += 2) {
+            rowsOut.add(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: cards[i]),
+                  const Gap(10),
+                  Expanded(
+                    child: i + 1 < cards.length
+                        ? cards[i + 1]
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            );
+            if (i + 2 < cards.length) rowsOut.add(const Gap(10));
+          }
+          return Column(children: rowsOut);
+        },
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 21, 21, 22),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.tune_rounded, color: Color(0xFFA78BFA), size: 20),
+              Gap(8),
+              Text(
+                'Channel skill scores',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const Gap(8),
+          const Text(
+            'Separate from the 10 shared overall dimensions. Each card starts at 10 with deductions for observed gaps. Open a card for criteria, deductions, evidence, and a stronger line.',
+            style: TextStyle(
+              color: Color(0xFF94A3B8),
+              fontSize: 12,
+              height: 1.4,
+            ),
+          ),
+          if (showVoice) ...[
+            const Gap(16),
+            const Row(
+              children: [
+                Icon(Icons.mic_rounded, size: 16, color: Color(0xFF70BD8A)),
+                Gap(6),
+                Text(
+                  'Voice delivery',
+                  style: TextStyle(
+                    color: Color(0xFF70BD8A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(10),
+            rubricCards(voiceRows),
+          ],
+          if (showChat) ...[
+            const Gap(16),
+            const Row(
+              children: [
+                Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 16,
+                  color: Color(0xFF3B82F6),
+                ),
+                Gap(6),
+                Text(
+                  'Non-Voice language',
+                  style: TextStyle(
+                    color: Color(0xFF3B82F6),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+            const Gap(10),
+            rubricCards(chatRows),
+          ],
+        ],
+      ),
+    );
+  }
 
   // Interaction Stats Card (channel-aware)
   Widget _buildInteractionStatsCard() {

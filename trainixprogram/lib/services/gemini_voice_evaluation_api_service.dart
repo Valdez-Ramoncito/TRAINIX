@@ -101,25 +101,37 @@ class GeminiVoiceEvaluationApiService {
       '-3 for rushing noticeably past that, -3 for speaking noticeably '
       'slower, -5 for unannounced dead air/silence you can hear exceeding '
       'roughly 10 seconds.\n'
-      '8. PRONUNCIATION_AND_CLARITY (Core Unit 1, ICT313365  '
-      '"communication proficiency includes accurate and appropriate use '
-      'of vocabulary, grammar, pronunciation"): clear enunciation, '
-      'absence of mumbling or accent interference that impairs '
-      'understanding. -2 per severe mispronunciation or mumbled '
-      'sentence you can actually hear.\n'
-      '9. FILLER_WORD_USAGE (Core Unit 1, ICT313365  part of the 3 C\'s: '
+      '8. PRONUNCIATION (Core Unit 1, ICT313365): correct sound production '
+      'of words. Score separately from diction and clarity. -2 per severe '
+      'mispronunciation that changes meaning or blocks understanding.\n'
+      '9. DICTION (Core Unit 1, ICT313365): word articulation and '
+      'enunciation quality (crisp vs mumbled endings, swallowed syllables). '
+      'Score separately from pronunciation of specific words. -2 per '
+      'mumbled or poorly articulated stretch that is hard to follow.\n'
+      '10. SPOKEN_CLARITY (Core Unit 1, ICT313365  clarity, conciseness, '
+      'coherence): how easy the message is to follow as speech (structure, '
+      'completeness of sentences, whether the listener can track the point). '
+      'Not the same as pronunciation or diction. -2 to -3 when the spoken '
+      'message is hard to follow even if individual words are audible.\n'
+      '11. CONFIDENCE (Core Unit 1 / delivery): steady, assured delivery '
+      'without excessive hesitation, trailing off, or apologetic uncertainty '
+      'that weakens the agent role. Score separately from tone warmth. '
+      '-2 to -4 for frequent hesitation, frail volume, or undercutting '
+      'phrases that signal low confidence.\n'
+      '12. FILLER_WORD_USAGE (Core Unit 1, ICT313365  part of the 3 C\'s: '
       'clarity, conciseness, coherence): minimizing verbal fillers '
       '("uhm", "ah", "you know", "like"). General convention (not '
       'TESDA-specified): -2 per noticeable cluster of fillers.\n'
-      '10. TONE_AND_INFLECTION (Core Unit 3, ICT313367  "avoids '
+      '13. TONE_AND_INFLECTION (Core Unit 3, ICT313367  "avoids '
       'manifestations of stress in conversations"): professional, warm, '
-      'modulated delivery. -5 for flat/monotone/robotic delivery or '
-      'sounding defensive/argumentative in the audio.\n'
-      '11. SECTOR_KNOWLEDGE (Core Unit 2, ICT313366): accurate '
+      'modulated delivery. Score warmth and inflection separately from '
+      'confidence. -5 for flat/monotone/robotic delivery or sounding '
+      'defensive/argumentative in the audio.\n'
+      '14. SECTOR_KNOWLEDGE (Core Unit 2, ICT313366): accurate '
       'terminology and compliance for the sector. -5 for failing an '
       'identity/security check where clearly warranted; -3 for incorrect '
       'sector-specific terminology.\n'
-      '12. CLOSING_SPIEL (Core Unit 2, ICT313366  inbound procedure '
+      '15. CLOSING_SPIEL (Core Unit 2, ICT313366  inbound procedure '
       'explicitly requires a closing spiel): confirmation of resolution, '
       'offer of further help, sign-off. -3 if missing the offer of '
       'further help; -3 if missing a sign-off entirely.\n\n'
@@ -208,14 +220,14 @@ class GeminiVoiceEvaluationApiService {
         ? 'Audio recordings of the AGENT\'s turns are attached below as '
               'separate audio clips, in chronological order matching the '
               'transcript. Use them as your PRIMARY evidence for '
-              'PACE_AND_SPEED, PRONUNCIATION_AND_CLARITY, FILLER_WORD_USAGE, '
-              'and TONE_AND_INFLECTION.'
+              'PACE_AND_SPEED, PRONUNCIATION, DICTION, SPOKEN_CLARITY, '
+              'CONFIDENCE, FILLER_WORD_USAGE, and TONE_AND_INFLECTION.'
         : 'No audio was available for this evaluation (recording or '
-              'retrieval failed). Score PACE_AND_SPEED, PRONUNCIATION_AND_'
-              'CLARITY, FILLER_WORD_USAGE, and TONE_AND_INFLECTION at a '
-              'neutral 7, and set each of their _NOTE fields to exactly: '
-              'Audio unavailable for this interaction. Do not guess at '
-              'acoustic qualities from text alone.';
+              'retrieval failed). Score PACE_AND_SPEED, PRONUNCIATION, '
+              'DICTION, SPOKEN_CLARITY, CONFIDENCE, FILLER_WORD_USAGE, and '
+              'TONE_AND_INFLECTION at a neutral 7, and set each of their '
+              '_NOTE fields to exactly: Audio unavailable for this '
+              'interaction. Do not guess at acoustic qualities from text alone.';
 
     return '$_tesdaRubricInstructions\n\n'
         'SECTOR: $sector\n'
@@ -264,10 +276,22 @@ class GeminiVoiceEvaluationApiService {
         'PACE_AND_SPEED_NOTE: <citation or "Full marks">\n'
         'PACE_AND_SPEED_QUOTE: <verbatim agent line or "N/A">\n'
         'PACE_AND_SPEED_SUGGEST: <N/A>\n'
-        'PRONUNCIATION_AND_CLARITY: <0-10>\n'
-        'PRONUNCIATION_AND_CLARITY_NOTE: <citation or "Full marks">\n'
-        'PRONUNCIATION_AND_CLARITY_QUOTE: <verbatim agent line or "N/A">\n'
-        'PRONUNCIATION_AND_CLARITY_SUGGEST: <N/A>\n'
+        'PRONUNCIATION: <0-10>\n'
+        'PRONUNCIATION_NOTE: <citation or "Full marks">\n'
+        'PRONUNCIATION_QUOTE: <verbatim agent line or "N/A">\n'
+        'PRONUNCIATION_SUGGEST: <N/A>\n'
+        'DICTION: <0-10>\n'
+        'DICTION_NOTE: <citation or "Full marks">\n'
+        'DICTION_QUOTE: <verbatim agent line or "N/A">\n'
+        'DICTION_SUGGEST: <N/A>\n'
+        'SPOKEN_CLARITY: <0-10>\n'
+        'SPOKEN_CLARITY_NOTE: <citation or "Full marks">\n'
+        'SPOKEN_CLARITY_QUOTE: <verbatim agent line or "N/A">\n'
+        'SPOKEN_CLARITY_SUGGEST: <better agent line or "N/A">\n'
+        'CONFIDENCE: <0-10>\n'
+        'CONFIDENCE_NOTE: <citation or "Full marks">\n'
+        'CONFIDENCE_QUOTE: <verbatim agent line or "N/A">\n'
+        'CONFIDENCE_SUGGEST: <better agent line or "N/A">\n'
         'FILLER_WORD_USAGE: <0-10>\n'
         'FILLER_WORD_USAGE_NOTE: <citation or "Full marks">\n'
         'FILLER_WORD_USAGE_QUOTE: <verbatim agent line or "N/A">\n'
@@ -345,10 +369,26 @@ class GeminiVoiceEvaluationApiService {
       'PACE_AND_SPEED_NOTE',
       'PACE_AND_SPEED_QUOTE',
       'PACE_AND_SPEED_SUGGEST',
+      'PRONUNCIATION',
+      'PRONUNCIATION_NOTE',
+      'PRONUNCIATION_QUOTE',
+      'PRONUNCIATION_SUGGEST',
       'PRONUNCIATION_AND_CLARITY',
       'PRONUNCIATION_AND_CLARITY_NOTE',
       'PRONUNCIATION_AND_CLARITY_QUOTE',
       'PRONUNCIATION_AND_CLARITY_SUGGEST',
+      'DICTION',
+      'DICTION_NOTE',
+      'DICTION_QUOTE',
+      'DICTION_SUGGEST',
+      'SPOKEN_CLARITY',
+      'SPOKEN_CLARITY_NOTE',
+      'SPOKEN_CLARITY_QUOTE',
+      'SPOKEN_CLARITY_SUGGEST',
+      'CONFIDENCE',
+      'CONFIDENCE_NOTE',
+      'CONFIDENCE_QUOTE',
+      'CONFIDENCE_SUGGEST',
       'FILLER_WORD_USAGE',
       'FILLER_WORD_USAGE_NOTE',
       'FILLER_WORD_USAGE_QUOTE',

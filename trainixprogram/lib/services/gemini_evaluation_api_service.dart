@@ -92,14 +92,22 @@ class GeminiEvaluationApiService {
       'from the transcript.\n'
       '8. ERROR_RATE_AND_ACCURACY (Common Unit 2, ICT311203  the docx '
       'requires that "accuracy of information is checked" but names no '
-      'numeric threshold): keystroke precision plus spelling/grammar in '
-      'the actual messages. The keystroke-accuracy percentage is given to '
-      'you below (derived from backspace count)  use it as your primary '
-      'signal. The 95% threshold below is general BPO-industry '
-      'convention, NOT TESDA-specified. Deduct -2 per clear spelling/'
-      'grammar error you see in the transcript itself, -3 additional if '
-      'accuracy drops under 95%.\n'
-      '9. RESPONSE_CONSISTENCY_AND_PACE (no single named TESDA element  '
+      'numeric threshold): keystroke precision from the telemetry only. '
+      'The keystroke-accuracy percentage is given to you below (derived '
+      'from backspace count)  use it as your primary signal. The 95% '
+      'threshold is general BPO-industry convention, NOT TESDA-specified. '
+      '-3 if accuracy drops under 95%. Do not score spelling or grammar '
+      'here; those are separate categories.\n'
+      '9. GRAMMAR (Core Unit 1, ICT313365): sentence structure, agreement, '
+      'and grammatical correctness in agent messages. Score separately '
+      'from keystroke accuracy and from word choice. -2 per clear grammar '
+      'error in the transcript.\n'
+      '10. CORRECT_WORD_USE (Core Unit 1, ICT313365 accurate vocabulary): '
+      'correct word selection and appropriate terms. Wrong word that '
+      'changes meaning, or slang used instead of the right term, scores '
+      'here. Score separately from grammar. -2 per wrong or inappropriate '
+      'word choice.\n'
+      '11. RESPONSE_CONSISTENCY_AND_PACE (no single named TESDA element  '
       'this category operationalizes the general expectation of prompt, '
       'consistent service implied across Core Unit 2/ICT313366 and '
       'Common Unit 2/ICT311203, but the specific reply-latency numbers '
@@ -108,7 +116,7 @@ class GeminiEvaluationApiService {
       'single reply taking longer than 60 seconds with no explanation '
       'visible in the transcript; -3 for erratic/uneven intervals '
       'between replies.\n'
-      '10. COMMUNICATION_CLARITY (Core Unit 1, ICT313365  the 3 C\'s of '
+      '12. COMMUNICATION_CLARITY (Core Unit 1, ICT313365  the 3 C\'s of '
       'communication: clarity, conciseness, coherence): short, digestible '
       'chat messages instead of dense walls of text. Note: the docx '
       'doesn\'t name "wall of text" or slang avoidance specifically  '
@@ -116,11 +124,11 @@ class GeminiEvaluationApiService {
       'conciseness" for a text channel. -3 for any single message that '
       'reads as an unformatted wall of text; -2 for informal chat slang/'
       'abbreviations ("u", "r", "plss").\n'
-      '11. SECTOR_KNOWLEDGE (Core Unit 2, ICT313366): correct terminology '
+      '13. SECTOR_KNOWLEDGE (Core Unit 2, ICT313366): correct terminology '
       'and process for the given sector. -5 for failing an identity/'
       'security check where one was clearly warranted; -3 for incorrect '
       'sector-specific terminology.\n'
-      '12. CLOSING_SPIEL (Core Unit 2, ICT313366  the same inbound '
+      '14. CLOSING_SPIEL (Core Unit 2, ICT313366  the same inbound '
       'procedure explicitly requires a closing spiel): confirmation the '
       'issue is resolved, offer of further help, sign-off. -3 if missing '
       'the offer of further help; -3 if missing a sign-off entirely.\n\n'
@@ -248,6 +256,14 @@ class GeminiEvaluationApiService {
         'ERROR_RATE_AND_ACCURACY_NOTE: <citation or "Full marks">\n'
         'ERROR_RATE_AND_ACCURACY_QUOTE: <verbatim agent line or "N/A">\n'
         'ERROR_RATE_AND_ACCURACY_SUGGEST: <N/A>\n'
+        'GRAMMAR: <0-10>\n'
+        'GRAMMAR_NOTE: <citation or "Full marks">\n'
+        'GRAMMAR_QUOTE: <verbatim agent line or "N/A">\n'
+        'GRAMMAR_SUGGEST: <better agent line or "N/A">\n'
+        'CORRECT_WORD_USE: <0-10>\n'
+        'CORRECT_WORD_USE_NOTE: <citation or "Full marks">\n'
+        'CORRECT_WORD_USE_QUOTE: <verbatim agent line or "N/A">\n'
+        'CORRECT_WORD_USE_SUGGEST: <better agent line or "N/A">\n'
         'RESPONSE_CONSISTENCY_AND_PACE: <0-10>\n'
         'RESPONSE_CONSISTENCY_AND_PACE_NOTE: <citation or "Full marks">\n'
         'RESPONSE_CONSISTENCY_AND_PACE_QUOTE: <verbatim agent line or "N/A">\n'
@@ -328,6 +344,14 @@ class GeminiEvaluationApiService {
       'ERROR_RATE_AND_ACCURACY_NOTE',
       'ERROR_RATE_AND_ACCURACY_QUOTE',
       'ERROR_RATE_AND_ACCURACY_SUGGEST',
+      'GRAMMAR',
+      'GRAMMAR_NOTE',
+      'GRAMMAR_QUOTE',
+      'GRAMMAR_SUGGEST',
+      'CORRECT_WORD_USE',
+      'CORRECT_WORD_USE_NOTE',
+      'CORRECT_WORD_USE_QUOTE',
+      'CORRECT_WORD_USE_SUGGEST',
       'RESPONSE_CONSISTENCY_AND_PACE',
       'RESPONSE_CONSISTENCY_AND_PACE_NOTE',
       'RESPONSE_CONSISTENCY_AND_PACE_QUOTE',
