@@ -148,6 +148,14 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
     );
   }
 
+  String? get _tipSourceLabel {
+    if (!AppSettings.coachTipsEnabled) return null;
+    if (widget.tip != null && widget.tip!.isNotEmpty) return 'Scenario tip';
+    final tip = _tip;
+    if (tip != null && tip.isNotEmpty) return 'AI coach tip';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final ahtWarning =
@@ -237,14 +245,33 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
                 ),
                 const Gap(6),
                 Expanded(
-                  child: Text(
-                    tip,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: const Color(0xFF93C5FD),
-                      height: 1.35,
-                      fontWeight: _tipPulse ? FontWeight.w700 : FontWeight.w400,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (_tipSourceLabel != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            _tipSourceLabel!,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF64748B),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        tip,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF93C5FD),
+                          height: 1.35,
+                          fontWeight:
+                              _tipPulse ? FontWeight.w700 : FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

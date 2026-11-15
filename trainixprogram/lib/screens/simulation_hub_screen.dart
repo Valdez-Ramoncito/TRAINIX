@@ -63,11 +63,16 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         : sim.selectSector(setup['sector'] as String);
     final quota = setup['quota'] as int;
     final resolved = quota == 0 ? null : quota;
+    final guidedMode = setup['guided'] as bool? ?? true;
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) =>
-            MockCallScreen(sector: sector, mode: mode, customerQuota: resolved),
+        builder: (_) => MockCallScreen(
+          sector: sector,
+          mode: mode,
+          customerQuota: resolved,
+          guidedMode: guidedMode,
+        ),
       ),
     );
   }
@@ -75,6 +80,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
   Future<Map<String, dynamic>?> _pickSessionSetup() async {
     String selectedSector = 'random';
     int selectedQuota = 0;
+    bool guidedMode = true;
 
     return showDialog<Map<String, dynamic>>(
       context: context,
@@ -134,9 +140,9 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          ...[3, 4, 5].map(
+                          ...[1, 3, 4, 5].map(
                             (n) => _setupChip(
-                              label: '$n customers',
+                              label: n == 1 ? '1 customer' : '$n customers',
                               selected: selectedQuota == n,
                               onTap: () => setLocal(() => selectedQuota = n),
                             ),
@@ -147,6 +153,42 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                             onTap: () => setLocal(() => selectedQuota = 0),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 18),
+                      const Text(
+                        'Guidance',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _setupChip(
+                            label: 'Guided',
+                            selected: guidedMode,
+                            onTap: () => setLocal(() => guidedMode = true),
+                          ),
+                          _setupChip(
+                            label: 'Unguided',
+                            selected: !guidedMode,
+                            onTap: () => setLocal(() => guidedMode = false),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        guidedMode
+                            ? 'Script Guide and tips available.'
+                            : 'No guides or scripts. Real call-center style.',
+                        style: const TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 12,
+                          height: 1.35,
+                        ),
                       ),
                     ],
                   ),
@@ -161,6 +203,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                   onPressed: () => Navigator.pop(ctx, {
                     'sector': selectedSector,
                     'quota': selectedQuota,
+                    'guided': guidedMode,
                   }),
                   child: const Text('Start session'),
                 ),
@@ -458,7 +501,7 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         ),
         const Gap(8),
         const Text(
-          'Pick a channel mode. Next you will choose sector and customer quota (3-5 or random). Locked modes clear after Scenario Practice.',
+          'Pick a channel mode. Next you will choose sector and customer quota (1, 3-5, or random). Locked modes clear after Scenario Practice.',
           style: TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
         ),
         const Gap(20),
@@ -680,6 +723,7 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                     evaluations: session.evaluations,
                                     multitaskingScore:
                                         session.multitaskingScore,
+                                    guidedMode: session.guidedMode,
                                   ),
                                 ),
                               );

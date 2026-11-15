@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
+import 'package:trainixprogram/models/scoring_transparency.dart';
 import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
@@ -23,12 +24,14 @@ class MockCallScreen extends StatefulWidget {
   final String sector;
   final SimulationMode mode;
   final int? customerQuota;
+  final bool guidedMode;
 
   const MockCallScreen({
     super.key,
     required this.sector,
     this.mode = SimulationMode.chat,
     this.customerQuota,
+    this.guidedMode = true,
   });
 
   @override
@@ -93,20 +96,14 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   // Session attentiveness: tools, notes, and follow-through.
   // Identity / Account Lookup only counts when the case needs an account.
-  double? get _multitaskingScore {
+  AttentivenessBreakdown? get _attentivenessBreakdown {
     if (_completedInteractions <= 0 &&
         !_chatInProgress &&
         !_voiceCallInProgress) {
       return null;
     }
-    var points = 0.0;
-    var maxPoints = 0.0;
 
-    void add(bool hit, [double weight = 1]) {
-      maxPoints += weight;
-      if (hit) points += weight;
-    }
-
+    final items = <AttentivenessItem>[];
     final chatNeedsAccount = _chatAccounts.needsAccount;
     final chatId = _chatAccounts.identityVerified;
     final chatTool = _chatAccounts.toolWorkDone;
@@ -119,27 +116,82 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
     if (widget.mode == SimulationMode.chat) {
       if (chatNeedsAccount) {
-        add(chatId, 1.5);
+        items.add(
+          AttentivenessItem(
+            label: 'Identity verification (chat)',
+            weight: 1.5,
+            earned: chatId,
+            detail: chatId
+                ? 'Identity verified for an account-required case.'
+                : 'Case needed an account; identity was not verified.',
+          ),
+        );
       }
-      add(chatTool, 2);
+      items.add(
+        AttentivenessItem(
+          label: 'Required tool work (chat)',
+          weight: 2,
+          earned: chatTool,
+          detail: chatTool
+              ? 'Required tool action completed.'
+              : 'Required tool action was not completed.',
+        ),
+      );
     }
     if (widget.mode == SimulationMode.voice) {
       if (voiceNeedsAccount) {
-        add(voiceId, 1.5);
+        items.add(
+          AttentivenessItem(
+            label: 'Identity verification (voice)',
+            weight: 1.5,
+            earned: voiceId,
+            detail: voiceId
+                ? 'Identity verified for an account-required case.'
+                : 'Case needed an account; identity was not verified.',
+          ),
+        );
       }
-      add(voiceTool, 2);
+      items.add(
+        AttentivenessItem(
+          label: 'Required tool work (voice)',
+          weight: 2,
+          earned: voiceTool,
+          detail: voiceTool
+              ? 'Required tool action completed.'
+              : 'Required tool action was not completed.',
+        ),
+      );
     }
     if (_completedInteractions > 0) {
-      add(true, 1);
+      items.add(
+        const AttentivenessItem(
+          label: 'Finished at least one customer',
+          weight: 1,
+          earned: true,
+          detail: 'Session completed at least one scored interaction.',
+        ),
+      );
     }
-    if (notesUsed) {
-      points += 0.5;
-      maxPoints += 0.5;
-    }
+    items.add(
+      AttentivenessItem(
+        label: 'Session notes (bonus)',
+        weight: 0.5,
+        earned: notesUsed,
+        detail: notesUsed
+            ? 'At least one note was saved.'
+            : 'No notes saved (optional bonus).',
+      ),
+    );
 
-    if (maxPoints <= 0) return null;
-    return ((points / maxPoints) * 100).clamp(0, 100);
+    if (items.isEmpty) return null;
+    final earned = items.fold<double>(0.0, (s, i) => s + (i.earned ? i.weight : 0.0));
+    final maxPts = items.fold<double>(0.0, (s, i) => s + i.weight);
+    if (maxPts <= 0) return null;
+    final percent = ((earned / maxPts) * 100).clamp(0.0, 100.0).toDouble();
+    return AttentivenessBreakdown(items: items, percent: percent);
   }
+
+  double? get _multitaskingScore => _attentivenessBreakdown?.percent;
 
   //at the start, set the required calls to a minimum of 3
   //with a set maximum of random
@@ -303,6 +355,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
         averageTypingWpm: avgTypingWpm,
         averageSpeakingWpm: avgVoiceWpm,
         fillerWordCount: _voiceFillerCount,
+        guidedMode: widget.guidedMode,
       );
     }
 
@@ -315,6 +368,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
           fillerWordCount: _voiceFillerCount,
           averageTypingWpm: avgTypingWpm,
           multitaskingScore: finalMultitaskingScore,
+          attentivenessBreakdown: _attentivenessBreakdown,
+          guidedMode: widget.guidedMode,
         ),
       ),
     );
@@ -448,6 +503,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
       averageTypingWpm: fakeAvgTypingWpm,
       averageSpeakingWpm: fakeAvgWpm,
       fillerWordCount: fakeFillerWords,
+      guidedMode: widget.guidedMode,
     );
     MiniTrainingProgress.markSimulationSessionCompleted();
 
@@ -460,6 +516,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
           fillerWordCount: fakeFillerWords,
           averageTypingWpm: fakeAvgTypingWpm,
           multitaskingScore: fakeMultitasking,
+          attentivenessBreakdown: _attentivenessBreakdown,
+          guidedMode: widget.guidedMode,
         ),
       ),
     );
@@ -621,8 +679,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
         phase: _phase,
         sector: widget.sector,
         remainingBreakSeconds: _remainingPostCallSeconds,
-        showScriptGuide: true,
-        scriptGuideExpanded: AppSettings.autoScriptGuideExpanded,
+        guidedMode: widget.guidedMode,
+        showScriptGuide: widget.guidedMode,
+        scriptGuideExpanded:
+            widget.guidedMode && AppSettings.autoScriptGuideExpanded,
         onAccept: () {
           _startCallTimer();
           setState(() {
@@ -651,7 +711,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
       child: ChatPanel(
         key: const ValueKey('sim-chat-panel'),
         sector: widget.sector,
-        scriptGuideExpanded: AppSettings.autoScriptGuideExpanded,
+        guidedMode: widget.guidedMode,
+        scriptGuideExpanded:
+            widget.guidedMode && AppSettings.autoScriptGuideExpanded,
         onEvaluation: (e) => _handleEvaluation('chat', e),
         onChatTurn: (wpm) => _chatWpmSamples.add(wpm),
         onResolutionSeconds: null,

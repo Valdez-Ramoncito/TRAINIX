@@ -10,7 +10,12 @@ import 'package:trainixprogram/widgets/onboarding_intro_banner.dart';
 
 class SessionLobby extends StatefulWidget {
   final SimulationMode mode;
-  final void Function(String? chosenSector, int? customerQuota) onStart;
+  final void Function(
+    String? chosenSector,
+    int? customerQuota,
+    bool guidedMode,
+  )
+  onStart;
   final VoidCallback? onDebugUnlock;
 
   const SessionLobby({
@@ -28,6 +33,7 @@ class _SessionLobbyState extends State<SessionLobby> {
   bool _useRandom = true;
   String? _selectedSector;
   int? _selectedQuota;
+  bool _guidedMode = true;
   bool _starting = false;
 
   @override
@@ -88,7 +94,7 @@ class _SessionLobbyState extends State<SessionLobby> {
     final sector = _useRandom ? null : _selectedSector;
     if (!_useRandom && sector == null) return;
     setState(() => _starting = true);
-    widget.onStart(sector, _selectedQuota);
+    widget.onStart(sector, _selectedQuota, _guidedMode);
   }
 
   Widget _sectorChip({
@@ -280,9 +286,9 @@ class _SessionLobbyState extends State<SessionLobby> {
                       selected: _selectedQuota == null,
                       onTap: () => setState(() => _selectedQuota = null),
                     ),
-                    ...[3, 4, 5].map(
+                    ...[1, 3, 4, 5].map(
                       (n) => _sectorChip(
-                        label: '$n customers',
+                        label: n == 1 ? '1 customer' : '$n customers',
                         selected: _selectedQuota == n,
                         onTap: () => setState(() => _selectedQuota = n),
                       ),
@@ -293,7 +299,46 @@ class _SessionLobbyState extends State<SessionLobby> {
                 Text(
                   _selectedQuota == null
                       ? 'This run will include a random number of customers between 3 and 5.'
+                      : _selectedQuota == 1
+                      ? 'This run will include exactly 1 customer.'
                       : 'This run will include exactly $_selectedQuota customers.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white54,
+                    height: 1.35,
+                  ),
+                ),
+                const Gap(22),
+                const Text(
+                  'Guidance',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF9CA3AF),
+                  ),
+                ),
+                const Gap(10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _sectorChip(
+                      label: 'Guided',
+                      selected: _guidedMode,
+                      onTap: () => setState(() => _guidedMode = true),
+                    ),
+                    _sectorChip(
+                      label: 'Unguided',
+                      selected: !_guidedMode,
+                      onTap: () => setState(() => _guidedMode = false),
+                    ),
+                  ],
+                ),
+                const Gap(8),
+                Text(
+                  _guidedMode
+                      ? 'Script Guide, tips, and step examples stay available. Best for practice and learning.'
+                      : 'No Script Guide, tips, or step examples. Real call-center style assessment with scoring still on.',
                   style: const TextStyle(
                     fontSize: 12,
                     color: Colors.white54,
@@ -313,7 +358,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                       ),
                     ),
                     child: const Text(
-                      'Pick a sector and how many customers, then start. After the run you will see a score report. Modes unlock from Scenario Practice in Mini Training.',
+                      'Pick a sector, customer quota, and guidance mode, then start. After the run you will see a score report. Modes unlock from Scenario Practice in Mini Training.',
                       style: TextStyle(
                         fontSize: 12,
                         color: Color(0xFF9CA3AF),

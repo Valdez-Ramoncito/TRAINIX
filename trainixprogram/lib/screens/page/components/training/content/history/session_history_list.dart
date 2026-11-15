@@ -101,30 +101,36 @@ class SessionHistoryList extends StatelessWidget {
                         .toSet()
                         .take(3)
                         .join(', ');
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => SessionReportScreen(
-                              evaluations: session.evaluations,
-                              multitaskingScore: session.multitaskingScore,
-                              averageTypingWpm: session.averageTypingWpm,
-                              averageWpm: session.averageSpeakingWpm,
-                              fillerWordCount: session.fillerWordCount,
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          mouseCursor: SystemMouseCursors.click,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => SessionReportScreen(
+                                  evaluations: session.evaluations,
+                                  multitaskingScore: session.multitaskingScore,
+                                  averageTypingWpm: session.averageTypingWpm,
+                                  averageWpm: session.averageSpeakingWpm,
+                                  fillerWordCount: session.fillerWordCount,
+                                  guidedMode: session.guidedMode,
+                                ),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
                             ),
-                          ),
-                        );
-                      },
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 14,
-                        ),
-                        decoration: boxDecoration(false, true),
-                        child: Row(
+                            decoration: boxDecoration(false, true),
+                            child: Row(
                           children: [
                             Text(
                               '#$number',
@@ -155,18 +161,53 @@ class SessionHistoryList extends StatelessWidget {
                                       color: Colors.white54,
                                     ),
                                   ),
-                                  if (names.isNotEmpty) ...[
-                                    const Gap(4),
-                                    Text(
-                                      names,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF9CA3AF),
+                                  const Gap(6),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        session.guidedMode
+                                            ? Icons.menu_book_outlined
+                                            : Icons.school_outlined,
+                                        size: 12,
+                                        color: session.guidedMode
+                                            ? const Color(0xFF3B82F6)
+                                            : const Color(0xFFA78BFA),
                                       ),
-                                    ),
-                                  ],
+                                      const Gap(4),
+                                      Text(
+                                        session.guidedMode
+                                            ? 'Guided'
+                                            : 'Unguided',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: session.guidedMode
+                                              ? const Color(0xFF3B82F6)
+                                              : const Color(0xFFA78BFA),
+                                        ),
+                                      ),
+                                      if (names.isNotEmpty) ...[
+                                        const Text(
+                                          '  ·  ',
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF64748B),
+                                          ),
+                                        ),
+                                        Flexible(
+                                          child: Text(
+                                            names,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Color(0xFF9CA3AF),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -198,6 +239,8 @@ class SessionHistoryList extends StatelessWidget {
                               color: Color(0xFF9CA3AF),
                             ),
                           ],
+                        ),
+                          ),
                         ),
                       ),
                     );

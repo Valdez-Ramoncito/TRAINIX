@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/models/scoring_transparency.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/screens/report_ui/report_ui.dart';
 
-//this shows a complete performance summary for the session
-//that had just ended, using ReportUI for rendering
 class SessionReportScreen extends StatelessWidget {
   final List<SessionEvaluation> evaluations;
-
-  //voice speaking pace
   final double? averageWpm;
-
-  //total fillers in voice call
   final int? fillerWordCount;
-
-  //chat typing pace
   final double? averageTypingWpm;
-
-  //how balanced was the trainee between two channels
   final double? multitaskingScore;
+  final AttentivenessBreakdown? attentivenessBreakdown;
+  final bool guidedMode;
 
-  //constructor
   const SessionReportScreen({
     super.key,
     this.evaluations = const [],
@@ -27,6 +19,8 @@ class SessionReportScreen extends StatelessWidget {
     this.fillerWordCount,
     this.averageTypingWpm,
     this.multitaskingScore,
+    this.attentivenessBreakdown,
+    this.guidedMode = true,
   });
 
   @override
@@ -37,6 +31,8 @@ class SessionReportScreen extends StatelessWidget {
       fillerWordCount: fillerWordCount,
       averageTypingWpm: averageTypingWpm,
       multitaskingScore: multitaskingScore,
+      attentivenessBreakdown: attentivenessBreakdown,
+      guidedMode: guidedMode,
     );
   }
 }

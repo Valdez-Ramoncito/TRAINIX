@@ -37,6 +37,7 @@ class _TrainingSessionState extends State<TrainingSession> {
     SimulationMode mode, {
     String? chosenSector,
     int? customerQuota,
+    bool guidedMode = true,
   }) async {
     if (!_isUnlocked(mode)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,6 +58,7 @@ class _TrainingSessionState extends State<TrainingSession> {
           sector: sector,
           mode: mode,
           customerQuota: customerQuota,
+          guidedMode: guidedMode,
         ),
       ),
     );
@@ -89,10 +91,11 @@ class _TrainingSessionState extends State<TrainingSession> {
         return SessionLobby(
           key: ValueKey('lobby_chat_$_lobbyEpoch'),
           mode: SimulationMode.chat,
-          onStart: (sector, quota) => _startSession(
+          onStart: (sector, quota, guided) => _startSession(
             SimulationMode.chat,
             chosenSector: sector,
             customerQuota: quota,
+            guidedMode: guided,
           ),
           onDebugUnlock: () => _debugUnlock(SimulationMode.chat),
         );
@@ -100,10 +103,11 @@ class _TrainingSessionState extends State<TrainingSession> {
         return SessionLobby(
           key: ValueKey('lobby_voice_$_lobbyEpoch'),
           mode: SimulationMode.voice,
-          onStart: (sector, quota) => _startSession(
+          onStart: (sector, quota, guided) => _startSession(
             SimulationMode.voice,
             chosenSector: sector,
             customerQuota: quota,
+            guidedMode: guided,
           ),
           onDebugUnlock: () => _debugUnlock(SimulationMode.voice),
         );
@@ -119,10 +123,11 @@ class _TrainingSessionState extends State<TrainingSession> {
         return SessionLobby(
           key: ValueKey('lobby_default_$_lobbyEpoch'),
           mode: SimulationMode.chat,
-          onStart: (sector, quota) => _startSession(
+          onStart: (sector, quota, guided) => _startSession(
             SimulationMode.chat,
             chosenSector: sector,
             customerQuota: quota,
+            guidedMode: guided,
           ),
         );
     }

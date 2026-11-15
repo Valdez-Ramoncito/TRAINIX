@@ -44,7 +44,22 @@ class SimulationSessionRepository {
       'conversation': e.conversation,
       'customerRating': e.customerRating,
       'customerComment': e.customerComment,
+      'categoryNotes': e.categoryNotes,
+      'categoryQuotes': e.categoryQuotes,
+      'categorySuggestions': e.categorySuggestions,
     };
+  }
+
+  Map<String, String>? _stringMap(dynamic raw) {
+    if (raw is! Map) return null;
+    final out = <String, String>{};
+    raw.forEach((k, v) {
+      if (v == null) return;
+      final s = '$v'.trim();
+      if (s.isEmpty) return;
+      out['$k'] = s;
+    });
+    return out.isEmpty ? null : out;
   }
 
   SessionEvaluation _evalFromMap(Map<String, dynamic> m) {
@@ -69,6 +84,9 @@ class SimulationSessionRepository {
       paceAndSpeedScore: dn('paceAndSpeedScore'),
       pronunciationClarityScore: dn('pronunciationClarityScore'),
       fillerWordUsageScore: dn('fillerWordUsageScore'),
+      categoryNotes: _stringMap(m['categoryNotes']),
+      categoryQuotes: _stringMap(m['categoryQuotes']),
+      categorySuggestions: _stringMap(m['categorySuggestions']),
       strengths: (m['strengths'] as List?)?.map((e) => '$e').toList() ?? [],
       areasForImprovement:
           (m['areasForImprovement'] as List?)?.map((e) => '$e').toList() ?? [],
@@ -114,6 +132,7 @@ class SimulationSessionRepository {
         'typing_wpm': session.averageTypingWpm,
         'speaking_wpm': session.averageSpeakingWpm,
         'filler_count': session.fillerWordCount,
+        'guided_mode': session.guidedMode,
         'completed_at': session.completedAt.toUtc().toIso8601String(),
         'evaluations': evals,
       };
@@ -127,6 +146,7 @@ class SimulationSessionRepository {
       if (lastError!.contains('typing_wpm') ||
           lastError!.contains('speaking_wpm') ||
           lastError!.contains('filler_count') ||
+          lastError!.contains('guided_mode') ||
           lastError!.contains('user_id')) {
         try {
           final fallback = <String, dynamic>{
@@ -139,6 +159,18 @@ class SimulationSessionRepository {
           };
           if (uid != null && !lastError!.contains('user_id')) {
             fallback['user_id'] = uid;
+          }
+          if (!lastError!.contains('guided_mode')) {
+            fallback['guided_mode'] = session.guidedMode;
+          }
+          if (!lastError!.contains('typing_wpm')) {
+            fallback['typing_wpm'] = session.averageTypingWpm;
+          }
+          if (!lastError!.contains('speaking_wpm')) {
+            fallback['speaking_wpm'] = session.averageSpeakingWpm;
+          }
+          if (!lastError!.contains('filler_count')) {
+            fallback['filler_count'] = session.fillerWordCount;
           }
           await SupabaseService.client.from(_table).insert(fallback);
           debugPrint('simulation_sessions insert ok (legacy columns)');
@@ -193,6 +225,7 @@ class SimulationSessionRepository {
             averageTypingWpm: (map['typing_wpm'] as num?)?.toDouble(),
             averageSpeakingWpm: (map['speaking_wpm'] as num?)?.toDouble(),
             fillerWordCount: (map['filler_count'] as num?)?.toInt(),
+            guidedMode: map['guided_mode'] as bool? ?? true,
           ),
         );
       }

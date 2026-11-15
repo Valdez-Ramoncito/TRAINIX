@@ -75,7 +75,14 @@ class AgentNotepad extends StatefulWidget {
   /// Non-Voice has no call footer, so it needs more than Voice.
   final double bottomInset;
 
-  const AgentNotepad({super.key, this.bottomInset = 12});
+  /// When true, expand to fill available vertical space (Unguided rail).
+  final bool fillHeight;
+
+  const AgentNotepad({
+    super.key,
+    this.bottomInset = 12,
+    this.fillHeight = false,
+  });
 
   @override
   State<AgentNotepad> createState() => _AgentNotepadState();
@@ -170,6 +177,286 @@ class _AgentNotepadState extends State<AgentNotepad> {
     final items = SessionNotesStore.notes;
     final selectedId = SessionNotesStore.selectedId ?? items.first.id;
 
+    final header = InkWell(
+      mouseCursor: SystemMouseCursors.click,
+      onTap: () {
+        if (_expanded) _saveCurrent();
+        setState(() => _expanded = !_expanded);
+      },
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.sticky_note_2_outlined,
+              size: 16,
+              color: Color(0xFFFBBF24),
+            ),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'Notepad',
+                style: TextStyle(
+                  color: Color(0xFFFDE68A),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            IconButton(
+              tooltip: 'New note',
+              mouseCursor: SystemMouseCursors.click,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(
+                minWidth: 28,
+                minHeight: 28,
+              ),
+              onPressed: () {
+                _saveCurrent();
+                SessionNotesStore.addNote();
+                _bindSelected();
+                setState(() => _expanded = true);
+              },
+              icon: const Icon(
+                Icons.add,
+                size: 16,
+                color: Color(0xFFFBBF24),
+              ),
+            ),
+            Icon(
+              _expanded
+                  ? Icons.keyboard_arrow_down_rounded
+                  : Icons.keyboard_arrow_right_rounded,
+              size: 18,
+              color: const Color(0xFFFBBF24),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final bodyContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 34,
+          child: Row(
+            children: [
+              IconButton(
+                tooltip: 'Previous notes',
+                mouseCursor: SystemMouseCursors.click,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 28,
+                  minHeight: 28,
+                ),
+                onPressed: () {
+                  if (!_chipScroll.hasClients) return;
+                  _chipScroll.animateTo(
+                    (_chipScroll.offset - 120).clamp(
+                      0.0,
+                      _chipScroll.position.maxScrollExtent,
+                    ),
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                  );
+                },
+                icon: const Icon(
+                  Icons.chevron_left,
+                  size: 18,
+                  color: Color(0xFFFBBF24),
+                ),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  controller: _chipScroll,
+                  scrollDirection: Axis.horizontal,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 6),
+                  itemBuilder: (_, i) {
+                    final n = items[i];
+                    final on = n.id == selectedId;
+                    return InkWell(
+                      mouseCursor: SystemMouseCursors.click,
+                      onTap: () {
+                        _saveCurrent();
+                        SessionNotesStore.select(n.id);
+                        _bindSelected();
+                        setState(() {});
+                      },
+                      onLongPress: () => _renameNoteDialog(n),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: on
+                              ? const Color(0xFF3D3428)
+                              : const Color(0xFF252018),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: on
+                                ? const Color(0xFFFBBF24)
+                                : const Color(0xFF3D3428),
+                          ),
+                        ),
+                        child: Text(
+                          n.title,
+                          style: TextStyle(
+                            color: on
+                                ? const Color(0xFFFDE68A)
+                                : Colors.white70,
+                            fontSize: 11,
+                            fontWeight:
+                                on ? FontWeight.w700 : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              IconButton(
+                tooltip: 'More notes',
+                mouseCursor: SystemMouseCursors.click,
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: 28,
+                  minHeight: 28,
+                ),
+                onPressed: () {
+                  if (!_chipScroll.hasClients) return;
+                  _chipScroll.animateTo(
+                    (_chipScroll.offset + 120).clamp(
+                      0.0,
+                      _chipScroll.position.maxScrollExtent,
+                    ),
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeOut,
+                  );
+                },
+                icon: const Icon(
+                  Icons.chevron_right,
+                  size: 18,
+                  color: Color(0xFFFBBF24),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: TextField(
+            controller: _titleController,
+            onChanged: (_) {
+              _saveCurrent();
+              setState(() {});
+            },
+            style: const TextStyle(
+              color: Color(0xFFFDE68A),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            decoration: const InputDecoration(
+              isDense: true,
+              border: InputBorder.none,
+              hintText: 'Rename this note',
+              hintStyle: TextStyle(
+                color: Color(0xFF78716C),
+                fontSize: 12,
+              ),
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 4,
+                vertical: 4,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
+            child: TextField(
+              controller: _bodyController,
+              onChanged: (_) => _saveCurrent(),
+              maxLines: null,
+              expands: true,
+              textAlignVertical: TextAlignVertical.top,
+              style: const TextStyle(
+                color: Color(0xFFE7E5E4),
+                fontSize: 12,
+                height: 1.45,
+              ),
+              decoration: const InputDecoration(
+                filled: true,
+                fillColor: Color(0xFF12100E),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF3D3428)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFF3D3428)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Color(0xFFFBBF24)),
+                ),
+                hintText:
+                    'Account digits, issue, promises, next steps...',
+                hintStyle: TextStyle(
+                  color: Color(0xFF57534E),
+                  fontSize: 11,
+                ),
+                contentPadding: EdgeInsets.all(8),
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: Row(
+            children: [
+              Text(
+                '${items.length} note${items.length == 1 ? '' : 's'}',
+                style: const TextStyle(
+                  color: Color(0xFF78716C),
+                  fontSize: 10,
+                ),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: items.length <= 1
+                    ? null
+                    : () {
+                        SessionNotesStore.deleteSelected();
+                        _bindSelected();
+                        setState(() {});
+                      },
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFFF87171),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: const Size(0, 28),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text(
+                  'Delete',
+                  style: TextStyle(fontSize: 11),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    final body = !_expanded
+        ? null
+        : widget.fillHeight
+            ? Expanded(child: bodyContent)
+            : SizedBox(height: 200, child: bodyContent);
+
     return Container(
       margin: EdgeInsets.fromLTRB(8, 4, 8, widget.bottomInset),
       decoration: BoxDecoration(
@@ -178,282 +465,13 @@ class _AgentNotepadState extends State<AgentNotepad> {
         border: Border.all(color: const Color(0xFF3D3428)),
       ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize:
+            widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          InkWell(
-            onTap: () {
-              if (_expanded) _saveCurrent();
-              setState(() => _expanded = !_expanded);
-            },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.sticky_note_2_outlined,
-                    size: 16,
-                    color: Color(0xFFFBBF24),
-                  ),
-                  const SizedBox(width: 6),
-                  const Expanded(
-                    child: Text(
-                      'Notepad',
-                      style: TextStyle(
-                        color: Color(0xFFFDE68A),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'New note',
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 28,
-                      minHeight: 28,
-                    ),
-                    onPressed: () {
-                      _saveCurrent();
-                      SessionNotesStore.addNote();
-                      _bindSelected();
-                      setState(() => _expanded = true);
-                    },
-                    icon: const Icon(
-                      Icons.add,
-                      size: 16,
-                      color: Color(0xFFFBBF24),
-                    ),
-                  ),
-                  Icon(
-                    _expanded
-                        ? Icons.keyboard_arrow_down_rounded
-                        : Icons.keyboard_arrow_right_rounded,
-                    size: 18,
-                    color: const Color(0xFFFBBF24),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          if (_expanded)
-            SizedBox(
-              height: 200,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    height: 34,
-                    child: Row(
-                      children: [
-                        IconButton(
-                          tooltip: 'Previous notes',
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          onPressed: () {
-                            if (!_chipScroll.hasClients) return;
-                            _chipScroll.animateTo(
-                              (_chipScroll.offset - 120).clamp(
-                                0.0,
-                                _chipScroll.position.maxScrollExtent,
-                              ),
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOut,
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.chevron_left,
-                            size: 18,
-                            color: Color(0xFFFBBF24),
-                          ),
-                        ),
-                        Expanded(
-                          child: ListView.separated(
-                            controller: _chipScroll,
-                            scrollDirection: Axis.horizontal,
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            itemCount: items.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 6),
-                            itemBuilder: (_, i) {
-                              final n = items[i];
-                              final on = n.id == selectedId;
-                              return InkWell(
-                                onTap: () {
-                                  _saveCurrent();
-                                  SessionNotesStore.select(n.id);
-                                  _bindSelected();
-                                  setState(() {});
-                                },
-                                onLongPress: () => _renameNoteDialog(n),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: on
-                                        ? const Color(0xFF3D3428)
-                                        : const Color(0xFF252018),
-                                    borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(
-                                      color: on
-                                          ? const Color(0xFFFBBF24)
-                                          : const Color(0xFF3D3428),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    n.title,
-                                    style: TextStyle(
-                                      color: on
-                                          ? const Color(0xFFFDE68A)
-                                          : Colors.white70,
-                                      fontSize: 11,
-                                      fontWeight: on
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'More notes',
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 28,
-                            minHeight: 28,
-                          ),
-                          onPressed: () {
-                            if (!_chipScroll.hasClients) return;
-                            _chipScroll.animateTo(
-                              (_chipScroll.offset + 120).clamp(
-                                0.0,
-                                _chipScroll.position.maxScrollExtent,
-                              ),
-                              duration: const Duration(milliseconds: 200),
-                              curve: Curves.easeOut,
-                            );
-                          },
-                          icon: const Icon(
-                            Icons.chevron_right,
-                            size: 18,
-                            color: Color(0xFFFBBF24),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: TextField(
-                      controller: _titleController,
-                      onChanged: (_) {
-                        _saveCurrent();
-                        setState(() {});
-                      },
-                      style: const TextStyle(
-                        color: Color(0xFFFDE68A),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: const InputDecoration(
-                        isDense: true,
-                        border: InputBorder.none,
-                        hintText: 'Rename this note',
-                        hintStyle: TextStyle(
-                          color: Color(0xFF78716C),
-                          fontSize: 12,
-                        ),
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 4),
-                      child: TextField(
-                        controller: _bodyController,
-                        onChanged: (_) => _saveCurrent(),
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        style: const TextStyle(
-                          color: Color(0xFFE7E5E4),
-                          fontSize: 12,
-                          height: 1.45,
-                        ),
-                        decoration: const InputDecoration(
-                          filled: true,
-                          fillColor: Color(0xFF12100E),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF3D3428)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFF3D3428)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderSide: BorderSide(color: Color(0xFFFBBF24)),
-                          ),
-                          hintText:
-                              'Account digits, issue, promises, next steps...',
-                          hintStyle: TextStyle(
-                            color: Color(0xFF57534E),
-                            fontSize: 11,
-                          ),
-                          contentPadding: EdgeInsets.all(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          '${items.length} note${items.length == 1 ? '' : 's'}',
-                          style: const TextStyle(
-                            color: Color(0xFF78716C),
-                            fontSize: 10,
-                          ),
-                        ),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: items.length <= 1
-                              ? null
-                              : () {
-                                  SessionNotesStore.deleteSelected();
-                                  _bindSelected();
-                                  setState(() {});
-                                },
-                          style: TextButton.styleFrom(
-                            foregroundColor: const Color(0xFFF87171),
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: const Size(0, 28),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          ),
-                          child: const Text(
-                            'Delete',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          header,
+          if (body != null) body,
+          if (widget.fillHeight && body == null) const Spacer(),
         ],
       ),
     );

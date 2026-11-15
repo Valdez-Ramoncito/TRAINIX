@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -75,6 +76,7 @@ class VoicePanel extends StatefulWidget {
   final VoidCallback? onSendReport;
   final bool showScriptGuide;
   final bool scriptGuideExpanded;
+  final bool guidedMode;
 
   //constructor
   const VoicePanel({
@@ -89,6 +91,7 @@ class VoicePanel extends StatefulWidget {
     this.onSendReport,
     this.showScriptGuide = true,
     this.scriptGuideExpanded = true,
+    this.guidedMode = true,
   });
   @override
   State<VoicePanel> createState() => _VoicePanelState();
@@ -115,6 +118,10 @@ class _VoicePanelState extends State<VoicePanel> {
 
   //the start time of the call
   DateTime? _callStartTime;
+  DateTime? _holdStartedAt;
+  Timer? _holdTicker;
+  int _holdSeconds = 0;
+  bool _holdLongWarned = false;
   final StageTracker _stageTracker = StageTracker();
   ProblemFamily? _problemFamily;
   String _familyCustomerKey = '';
@@ -189,16 +196,110 @@ class _VoicePanelState extends State<VoicePanel> {
 
   @override
   void dispose() {
+    _holdTicker?.cancel();
     _sttService.dispose();
     _typeCastService.stop();
     _reportController.dispose();
-    //release this customer's name/problem back to the shared pool so
-    //the other channel isn't blocked from ever picking it again
     _typeCastService.openRouterAPI.releaseHeldScenario();
-
-    //attempts cleanup rather than leaking retained recordings
     _clearRetainedAudio();
     super.dispose();
+  }
+
+  void _startHoldTimer() {
+    _holdStartedAt = DateTime.now();
+    _holdSeconds = 0;
+    _holdLongWarned = false;
+    _holdTicker?.cancel();
+    _holdTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (widget.phase != SimulationPhase.onHold) {
+        _stopHoldTimer();
+        return;
+      }
+      final started = _holdStartedAt;
+      if (started == null) return;
+      final next = DateTime.now().difference(started).inSeconds;
+      final crossed = next >= 60 && !_holdLongWarned;
+      setState(() {
+        _holdSeconds = next;
+        if (crossed) _holdLongWarned = true;
+      });
+    });
+  }
+
+  void _stopHoldTimer() {
+    _holdTicker?.cancel();
+    _holdTicker = null;
+    _holdStartedAt = null;
+    _holdSeconds = 0;
+    _holdLongWarned = false;
+  }
+
+  Widget _buildHoldStatusStrip() {
+    final waitMin = _holdSeconds ~/ 60;
+    final waitSec = _holdSeconds % 60;
+    final waitLabel =
+        '${waitMin.toString().padLeft(1, '0')}:${waitSec.toString().padLeft(2, '0')}';
+    final waitWarm = _holdSeconds >= 60;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: waitWarm ? const Color(0x33F59E0B) : const Color(0xFF1F2937),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: waitWarm
+              ? const Color(0xFFF59E0B)
+              : const Color(0xFF374151),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            waitWarm ? Icons.warning_amber_rounded : Icons.pause_circle_outline,
+            size: 18,
+            color: waitWarm
+                ? const Color(0xFFFBBF24)
+                : const Color(0xFF9CA3AF),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  waitWarm
+                      ? 'Long hold · $waitLabel'
+                      : 'Customer on hold · $waitLabel',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: waitWarm
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFFE5E7EB),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  waitWarm
+                      ? 'Hold is running long. Finish Account Lookup or the sector guide and resume the call.'
+                      : 'Use Account Lookup or the sector guide, then resume the call.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: waitWarm
+                        ? const Color(0xFFFDE68A)
+                        : const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   //override the did update widget
@@ -239,17 +340,15 @@ class _VoicePanelState extends State<VoicePanel> {
         }
       }
 
-      //if the current phase is on hold
-      //stop the typecast and cancel the speech to text
       if (widget.phase == SimulationPhase.onHold) {
         _typeCastService.stop();
         _sttService.cancel();
+        _startHoldTimer();
       }
 
-      // Leaving hold: resume listening. Keep Account Lookup open if the
-      // current mission step still needs a tool action.
       if (oldWidget.phase == SimulationPhase.onHold &&
           widget.phase == SimulationPhase.active) {
+        _stopHoldTimer();
         setState(() {
           _voicePhase = _VoicePhase.customerSpeaking;
         });
@@ -260,6 +359,7 @@ class _VoicePanelState extends State<VoicePanel> {
       //as well as the call start time to null
       if (widget.phase == SimulationPhase.incoming) {
         _callStartTime = null;
+        _stopHoldTimer();
 
         //covers the case where a call ends WITHOUT ever hitting a
         //resolved/ended status
@@ -965,6 +1065,7 @@ class _VoicePanelState extends State<VoicePanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildTabBar(onHold: onHold),
+        if (onHold) _buildHoldStatusStrip(),
         const Divider(height: 1),
         Expanded(
           child: effectiveTab == 1 && showAccountLookup && onHold
@@ -1162,7 +1263,9 @@ class _VoicePanelState extends State<VoicePanel> {
           _sessionController.mission.pack?.emotion,
       problem: guideProblem,
       customerName: guideName,
-      coachTip: AppSettings.coachTipsEnabled ? coachVm.tip : null,
+      coachTip: widget.guidedMode && AppSettings.coachTipsEnabled
+          ? coachVm.tip
+          : null,
       customerConfirmed: _customerConfirmed,
       awaitingClosing: _voicePhase == _VoicePhase.awaitingClosing,
       hasTraineeSpoken: _traineeHasSpoken,
@@ -1205,7 +1308,19 @@ class _VoicePanelState extends State<VoicePanel> {
       },
     );
 
-    if (!widget.showScriptGuide) return mainColumn;
+    if (!widget.showScriptGuide) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: mainColumn),
+          const VerticalDivider(width: 1, thickness: 0.5),
+          const SizedBox(
+            width: 300,
+            child: AgentNotepad(fillHeight: true),
+          ),
+        ],
+      );
+    }
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1243,7 +1358,8 @@ class _VoicePanelState extends State<VoicePanel> {
     if (safeTab == 2 && !showSectorGuide) safeTab = 0;
     if (safeTab > 2) safeTab = 0;
 
-    final highlight = _sessionController.mission.highlightToolTab;
+    final highlight =
+        widget.guidedMode ? _sessionController.mission.highlightToolTab : null;
     final items = <Map<String, Object>>[
       {'id': 0, 'label': 'Call'},
       if (showAccountLookup) {'id': 1, 'label': 'Account Lookup'},
@@ -1251,79 +1367,114 @@ class _VoicePanelState extends State<VoicePanel> {
         {'id': 2, 'label': SimulationCoach.sectorGuideTabLabel(sectorForTabs)},
     ];
 
+    final holdMin = _holdSeconds ~/ 60;
+    final holdSec = _holdSeconds % 60;
+    final holdLabel =
+        '${holdMin.toString().padLeft(1, '0')}:${holdSec.toString().padLeft(2, '0')}';
+    final holdWarm = onHold && _holdSeconds >= 60;
+
     return Container(
       padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
       child: Row(
-        children: items.map((item) {
-          final id = item['id'] as int;
-          final label = item['label'] as String;
-          final isSelected = safeTab == id;
-          final needsAttention =
-              highlight != null && highlight == id && !isSelected;
-          final accountLocked = id == 1 && !onHold;
-          return MouseRegion(
-            cursor: accountLocked
-                ? SystemMouseCursors.basic
-                : SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: accountLocked
-                  ? null
-                  : () {
-                      setState(() => _selectedTab = id);
-                      if (id == 1) {
-                        _sessionController.markToolAreaVisited();
-                      }
-                    },
-              child: Container(
-                margin: const EdgeInsets.only(right: 20),
-                padding: needsAttention
-                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
-                    : EdgeInsets.zero,
-                decoration: needsAttention
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFF59E0B),
-                          width: 1.5,
+        children: [
+          ...items.map((item) {
+            final id = item['id'] as int;
+            final label = item['label'] as String;
+            final isSelected = safeTab == id;
+            final needsAttention =
+                highlight != null && highlight == id && !isSelected;
+            final accountLocked = id == 1 && !onHold;
+            return MouseRegion(
+              cursor: accountLocked
+                  ? SystemMouseCursors.basic
+                  : SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: accountLocked
+                    ? null
+                    : () {
+                        setState(() => _selectedTab = id);
+                        if (id == 1) {
+                          _sessionController.markToolAreaVisited();
+                        }
+                      },
+                child: Container(
+                  margin: const EdgeInsets.only(right: 20),
+                  padding: needsAttention
+                      ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                      : EdgeInsets.zero,
+                  decoration: needsAttention
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B),
+                            width: 1.5,
+                          ),
+                          color: const Color(0x33F59E0B),
+                        )
+                      : null,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isSelected || needsAttention
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: accountLocked
+                              ? const Color(0xFF6B7280)
+                              : isSelected
+                              ? Colors.white
+                              : needsAttention
+                              ? const Color(0xFFFBBF24)
+                              : const Color(0xFFB0B8C4),
                         ),
-                        color: const Color(0x33F59E0B),
-                      )
-                    : null,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isSelected || needsAttention
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: accountLocked
-                            ? const Color(0xFF6B7280)
-                            : isSelected
-                            ? Colors.white
-                            : needsAttention
-                            ? const Color(0xFFFBBF24)
-                            : const Color(0xFFB0B8C4),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      height: 2,
-                      width: isSelected || needsAttention ? 36 : 0,
-                      color: isSelected
-                          ? const Color(0xFF3B82F6)
-                          : needsAttention
-                          ? const Color(0xFFF59E0B)
-                          : Colors.transparent,
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 2,
+                        width: isSelected || needsAttention ? 36 : 0,
+                        color: isSelected
+                            ? const Color(0xFF3B82F6)
+                            : needsAttention
+                            ? const Color(0xFFF59E0B)
+                            : Colors.transparent,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+          const Spacer(),
+          if (onHold)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: holdWarm
+                    ? const Color(0x33F59E0B)
+                    : const Color(0xFF1F2937),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: holdWarm
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFF374151),
+                ),
+              ),
+              child: Text(
+                'On hold · $holdLabel',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: holdWarm
+                      ? const Color(0xFFFBBF24)
+                      : const Color(0xFFD1D5DB),
                 ),
               ),
             ),
-          );
-        }).toList(),
+        ],
       ),
     );
   }
@@ -1473,52 +1624,36 @@ class _VoicePanelState extends State<VoicePanel> {
             ],
           ),
         ),
-        SessionGuidanceBanner(
-          objective: SimulationCoach.objectiveForProblem(
-            _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '',
+        if (widget.guidedMode)
+          SessionGuidanceBanner(
+            objective: SimulationCoach.objectiveForProblem(
+              _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '',
+              sector:
+                  _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
+                  widget.sector,
+            ),
+            startedAt: _callStartTime,
+            ahtLimitSeconds: SimulationCoach.ahtLimitSeconds,
+            customerConfirmed: _customerConfirmed,
+            awaitingClosing: isAwaitingClosing,
+            hasTraineeSpoken: _traineeHasSpoken,
+            hasCustomerSpoken: _customerTranscript.isNotEmpty,
+            problem: _customerTranscript.isNotEmpty
+                ? (_typeCastService.openRouterAPI.chosenSimulation['problem'] ??
+                      '')
+                : '',
             sector:
                 _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
                 widget.sector,
+            traineeTurnCount: _retainedAudioPaths.length,
+            isChatChannel: false,
           ),
-          startedAt: _callStartTime,
-          ahtLimitSeconds: SimulationCoach.ahtLimitSeconds,
-          customerConfirmed: _customerConfirmed,
-          awaitingClosing: isAwaitingClosing,
-          hasTraineeSpoken: _traineeHasSpoken,
-          // Banner tip uses real speech only so it does not say the
-          // customer already stated the issue before they talk.
-          hasCustomerSpoken: _customerTranscript.isNotEmpty,
-          problem: _customerTranscript.isNotEmpty
-              ? (_typeCastService.openRouterAPI.chosenSimulation['problem'] ??
-                    '')
-              : '',
-          sector:
-              _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
-              widget.sector,
-          traineeTurnCount: _retainedAudioPaths.length,
-          isChatChannel: false,
-        ),
         const Divider(height: 1, color: Color(0xFF2A313A)),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
             child: Column(
               children: [
-                Expanded(
-                  child: _voiceTranscriptCard(
-                    label: 'Customer',
-                    text: _customerTranscript.isEmpty
-                        ? 'Waiting for customer...'
-                        : SimulationCoach.stripInternalFields(
-                            _customerTranscript,
-                          ),
-                    empty: _customerTranscript.isEmpty,
-                    accent: const Color(0xFF4ADE80),
-                    active:
-                        isCustomerSpeaking && _customerTranscript.isNotEmpty,
-                  ),
-                ),
-                const SizedBox(height: 10),
                 Expanded(
                   child: _voiceTranscriptCard(
                     label: 'You',
@@ -1540,6 +1675,21 @@ class _VoicePanelState extends State<VoicePanel> {
                             !isResolved),
                   ),
                 ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: _voiceTranscriptCard(
+                    label: 'Customer',
+                    text: _customerTranscript.isEmpty
+                        ? 'Waiting for customer...'
+                        : SimulationCoach.stripInternalFields(
+                            _customerTranscript,
+                          ),
+                    empty: _customerTranscript.isEmpty,
+                    accent: const Color(0xFF4ADE80),
+                    active:
+                        isCustomerSpeaking && _customerTranscript.isNotEmpty,
+                  ),
+                ),
               ],
             ),
           ),
@@ -1551,6 +1701,9 @@ class _VoicePanelState extends State<VoicePanel> {
               Material(
                 color: Colors.transparent,
                 child: InkWell(
+                  mouseCursor: micEnabled
+                      ? SystemMouseCursors.click
+                      : SystemMouseCursors.basic,
                   onTap: micEnabled ? _onMicPressed : null,
                   customBorder: const CircleBorder(),
                   child: Container(
@@ -1648,12 +1801,21 @@ class _VoicePanelState extends State<VoicePanel> {
   }
 
   Widget _buildOnHold() {
-    return const Column(
+    final waitMin = _holdSeconds ~/ 60;
+    final waitSec = _holdSeconds % 60;
+    final waitLabel =
+        '${waitMin.toString().padLeft(1, '0')}:${waitSec.toString().padLeft(2, '0')}';
+    final waitWarm = _holdSeconds >= 60;
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.pause_circle_outline, size: 56, color: Color(0xFFF59E0B)),
-        SizedBox(height: 16),
-        Text(
+        const Icon(
+          Icons.pause_circle_outline,
+          size: 56,
+          color: Color(0xFFF59E0B),
+        ),
+        const SizedBox(height: 16),
+        const Text(
           'Call On Hold',
           style: TextStyle(
             fontWeight: FontWeight.w700,
@@ -1661,8 +1823,33 @@ class _VoicePanelState extends State<VoicePanel> {
             fontSize: 16,
           ),
         ),
-        SizedBox(height: 8),
-        Padding(
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: waitWarm
+                ? const Color(0x33F59E0B)
+                : const Color(0xFF1F2937),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: waitWarm
+                  ? const Color(0xFFF59E0B)
+                  : const Color(0xFF374151),
+            ),
+          ),
+          child: Text(
+            'Customer waiting · $waitLabel',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: waitWarm
+                  ? const Color(0xFFFBBF24)
+                  : const Color(0xFFD1D5DB),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'Use Account Lookup or the sector guide, then resume the call.',
@@ -1670,6 +1857,15 @@ class _VoicePanelState extends State<VoicePanel> {
             style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
           ),
         ),
+        if (waitWarm)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
+            child: Text(
+              'Hold is running long. Finish the tool work and resume soon.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Color(0xFFFBBF24), fontSize: 12),
+            ),
+          ),
       ],
     );
   }

@@ -16,6 +16,7 @@ class PlayedSession {
   final double? averageTypingWpm;
   final double? averageSpeakingWpm;
   final int? fillerWordCount;
+  final bool guidedMode;
 
   const PlayedSession({
     required this.evaluations,
@@ -25,7 +26,9 @@ class PlayedSession {
     this.averageTypingWpm,
     this.averageSpeakingWpm,
     this.fillerWordCount,
+    this.guidedMode = true,
   });
+
 
   //every evaluation in a session shares the same sector
   String get sector => evaluations.isNotEmpty ? evaluations.first.sector : '';
@@ -241,6 +244,7 @@ class SimulationHistoryProvider with ChangeNotifier {
     double? averageTypingWpm,
     double? averageSpeakingWpm,
     int? fillerWordCount,
+    bool guidedMode = true,
   }) {
     if (evaluations.isEmpty) return;
     final rated = evaluations
@@ -254,6 +258,7 @@ class SimulationHistoryProvider with ChangeNotifier {
       averageTypingWpm: averageTypingWpm,
       averageSpeakingWpm: averageSpeakingWpm,
       fillerWordCount: fillerWordCount,
+      guidedMode: guidedMode,
     );
     _sessions.add(played);
     for (final e in rated) {
@@ -287,6 +292,7 @@ class SimulationHistoryProvider with ChangeNotifier {
         : mode == SimulationMode.chat
         ? 'Non-Voice'
         : mode.name;
+    final guidanceLabel = guidedMode ? 'Guided' : 'Unguided';
     final sector = played.sector.isEmpty ? 'General' : played.sector;
     TraineeActivityLogStore.instance.log(
       actorName: ProfileData.displayName.isNotEmpty
@@ -296,7 +302,7 @@ class SimulationHistoryProvider with ChangeNotifier {
       category: TraineeLogCategory.simulation,
       action: 'Completed $modeLabel session',
       detail:
-          '$sector · ${evaluations.length} customer(s) · score ${played.overallScore.toStringAsFixed(1)}',
+          '$sector · $guidanceLabel · ${evaluations.length} customer(s) · score ${played.overallScore.toStringAsFixed(1)}',
       sessionRef: '${modeLabel}_${played.completedAt.millisecondsSinceEpoch}',
     );
   }

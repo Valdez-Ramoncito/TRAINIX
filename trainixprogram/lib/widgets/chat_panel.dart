@@ -45,6 +45,7 @@ class ChatPanel extends StatefulWidget {
   //adds the evaluation and increments interaction
   final ValueChanged<SessionEvaluation>? onEvaluation;
   final bool scriptGuideExpanded;
+  final bool guidedMode;
 
   //records words per minute typed
   final ValueChanged<double>? onChatTurn;
@@ -69,6 +70,7 @@ class ChatPanel extends StatefulWidget {
     required this.sector,
     this.onEvaluation,
     this.scriptGuideExpanded = true,
+    this.guidedMode = true,
     this.onChatTurn,
     this.onResolutionSeconds,
     this.canStartNewCustomer,
@@ -106,6 +108,10 @@ class _ChatPanelState extends State<ChatPanel> {
   //one WPM sample per message sent this interaction, averaged at
   //evaluation time
   final List<double> _interactionWpmSamples = [];
+
+  // true when a large single insert was detected (paste / autofill)
+  bool _pasteSuspectedThisMessage = false;
+  int _pasteEventsThisInteraction = 0;
 
   //whether a send is currently in progress
   //blocks a second send from starting before the first one
@@ -161,6 +167,12 @@ class _ChatPanelState extends State<ChatPanel> {
   Timer? _customerCheckTimer;
   Timer? _idleNudgeTimer;
   final List<String> _reminders = [];
+  DateTime? _toolWaitStartedAt;
+  bool _agentAdvisedWait = false;
+  bool _toolWaitCoachNudged = false;
+  bool _toolWaitCustomerNudged = false;
+  Timer? _toolWaitTicker;
+  int _customerWaitSeconds = 0;
 
   @override
   void initState() {
@@ -225,11 +237,152 @@ class _ChatPanelState extends State<ChatPanel> {
     _graceTimer?.cancel();
     _customerCheckTimer?.cancel();
     _idleNudgeTimer?.cancel();
+    _toolWaitTicker?.cancel();
     _inputController.dispose();
     _inputFocusNode.dispose();
     _reportController.dispose();
     openRouterAPI.releaseHeldScenario();
     super.dispose();
+  }
+
+  static bool _looksLikeWaitAdvise(String text) {
+    final t = text.toLowerCase();
+    return t.contains('hold') ||
+        t.contains('one moment') ||
+        t.contains('one second') ||
+        t.contains('please wait') ||
+        t.contains('bear with') ||
+        t.contains('give me a moment') ||
+        t.contains('give me a second') ||
+        t.contains('check on that') ||
+        t.contains('look that up') ||
+        t.contains('look into') ||
+        t.contains('pull up') ||
+        t.contains('check your account') ||
+        t.contains('verify') && t.contains('account');
+  }
+
+  void _refreshAgentWaitAdvise() {
+    try {
+      final messages =
+          Provider.of<MessageProvider>(context, listen: false).messages;
+      String lastUser = '';
+      for (final m in messages.reversed) {
+        if (m.role == 'user') {
+          lastUser = m.message;
+          break;
+        }
+      }
+      if (lastUser.trim().isNotEmpty && _looksLikeWaitAdvise(lastUser)) {
+        _agentAdvisedWait = true;
+      }
+    } catch (_) {}
+  }
+
+  void _startToolWaitIfNeeded() {
+    if (_chatPhase != _ChatPhase.active) return;
+    if (_customerConfirmed) return;
+    if (_selectedTab != 1 && _selectedTab != 2) return;
+    if (_toolWaitStartedAt != null) return;
+    _refreshAgentWaitAdvise();
+    _toolWaitStartedAt = DateTime.now();
+    _toolWaitCoachNudged = false;
+    _toolWaitCustomerNudged = false;
+    _customerWaitSeconds = 0;
+    _toolWaitTicker?.cancel();
+    _toolWaitTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      _onToolWaitTick();
+    });
+    if (mounted) setState(() {});
+  }
+
+  void _stopToolWait({bool resetFlags = false}) {
+    _toolWaitTicker?.cancel();
+    _toolWaitTicker = null;
+    _toolWaitStartedAt = null;
+    _customerWaitSeconds = 0;
+    if (resetFlags) {
+      _toolWaitCoachNudged = false;
+      _toolWaitCustomerNudged = false;
+    }
+  }
+
+  void _onToolWaitTick() {
+    if (!mounted) return;
+    if (_chatPhase != _ChatPhase.active ||
+        _customerConfirmed ||
+        (_selectedTab != 1 && _selectedTab != 2)) {
+      _stopToolWait();
+      if (mounted) setState(() {});
+      return;
+    }
+    final started = _toolWaitStartedAt;
+    if (started == null) return;
+    final seconds = DateTime.now().difference(started).inSeconds;
+    _customerWaitSeconds = seconds;
+
+    final softCoachAt = _agentAdvisedWait ? 70 : 40;
+    final customerNudgeAt = _agentAdvisedWait ? 120 : 75;
+
+    if (!_toolWaitCoachNudged &&
+        seconds >= softCoachAt &&
+        widget.guidedMode) {
+      _toolWaitCoachNudged = true;
+      final tip = _agentAdvisedWait
+          ? 'Customer has been waiting while you use tools. Finish the lookup and return to the chat soon.'
+          : 'Customer is waiting with no hold or wait notice. Tell them you need a moment, then finish the tool step.';
+      if (!_reminders.contains(tip)) {
+        _reminders.add(tip);
+      }
+    }
+
+    if (!_toolWaitCustomerNudged &&
+        seconds >= customerNudgeAt &&
+        !_waitingForCustomer &&
+        !_postingScripted) {
+      _toolWaitCustomerNudged = true;
+      _postToolWaitCustomerNudge(seconds);
+    }
+
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _postToolWaitCustomerNudge(int seconds) async {
+    if (!mounted) return;
+    if (_waitingForCustomer || _postingScripted) return;
+    final messageProvider = Provider.of<MessageProvider>(
+      context,
+      listen: false,
+    );
+    const lines = [
+      'Is everything okay on your side? It has been a little while.',
+      'Just checking in. Are you still working on my request?',
+      'I am still here whenever you have an update for me.',
+    ];
+    final line = lines[Random().nextInt(lines.length)];
+    setState(() => _waitingForCustomer = true);
+    await Future<void>.delayed(
+      Duration(milliseconds: 900 + Random().nextInt(700)),
+    );
+    if (!mounted) return;
+    messageProvider.addMessage('assistant', line);
+    _syncMissionMessages();
+    if (mounted) {
+      setState(() => _waitingForCustomer = false);
+    }
+  }
+
+  void _onToolsTabSelected(int index) {
+    setState(() => _selectedTab = index);
+    if (index == 1) {
+      _sessionController.markToolAreaVisited();
+    }
+    if (index == 1 || index == 2) {
+      _startToolWaitIfNeeded();
+    } else {
+      _stopToolWait();
+    }
   }
 
   //make the customer in the chat channel to chat first
@@ -772,22 +925,19 @@ class _ChatPanelState extends State<ChatPanel> {
           ? openRouterAPI.chosenSimulation['emotion']
           : null,
       selectedTab: _selectedTab,
-      highlightToolTab: SimulationSessionController.useBlueprintGuide
+      highlightToolTab: widget.guidedMode &&
+              SimulationSessionController.useBlueprintGuide
           ? _sessionController.highlightToolTab
           : null,
-      onTabChanged: (index) {
-        setState(() => _selectedTab = index);
-        if (index == 1) {
-          _sessionController.markToolAreaVisited();
-        }
-        if (index == 1 || index == 2) {
-          setState(() {});
-        }
-      },
+      onTabChanged: _onToolsTabSelected,
       onSectorGuideIssueOpened: () {
         _sessionController.markSectorGuideIssueOpened();
         if (mounted) setState(() {});
       },
+      customerWaitSeconds: (_selectedTab == 1 || _selectedTab == 2)
+          ? _customerWaitSeconds
+          : 0,
+      agentAdvisedWait: _agentAdvisedWait,
       inputController: _inputController,
       inputFocusNode: _inputFocusNode,
       onSendMessage: sendChatmessage,
@@ -798,12 +948,15 @@ class _ChatPanelState extends State<ChatPanel> {
           ? openRouterAPI.chosenSimulation['name']
           : null,
       accountId: openRouterAPI.chosenSimulation['accountId'],
-      coachTip: AppSettings.coachTipsEnabled ? coachVm.tip : null,
+      coachTip: widget.guidedMode && AppSettings.coachTipsEnabled
+          ? coachVm.tip
+          : null,
       customerConfirmed: _customerConfirmed,
       awaitingClosing: awaitingClosing,
       hasTraineeSpoken: _traineeHasSpoken,
-      reminders: List<String>.from(_reminders),
-      scriptGuideExpanded: widget.scriptGuideExpanded,
+      reminders: widget.guidedMode ? List<String>.from(_reminders) : const [],
+      showScriptGuide: widget.guidedMode,
+      scriptGuideExpanded: widget.scriptGuideExpanded && widget.guidedMode,
       toolWorkDone: toolWorkDone,
       showEscalationTab: showEscalation,
       coachVm: coachVm,
@@ -831,36 +984,46 @@ class _ChatPanelState extends State<ChatPanel> {
                 : 'Type your closing spiel...')
           : null,
       onInputChanged: (value) {
-        if (value.length < _previousInputLength) {
-          _interactionBackspaceCount += (_previousInputLength - value.length);
+        final delta = value.length - _previousInputLength;
+        if (delta < 0) {
+          _interactionBackspaceCount += -delta;
+        } else if (delta >= 12) {
+          // Large single insert is almost always paste or autofill, not keystrokes.
+          _pasteSuspectedThisMessage = true;
+          _pasteEventsThisInteraction += 1;
         }
         _previousInputLength = value.length;
         if (value.isNotEmpty && _typingStartTime == null) {
           _typingStartTime = DateTime.now();
         } else if (value.isEmpty) {
           _typingStartTime = null;
+          _pasteSuspectedThisMessage = false;
         }
       },
-      chatHeader: SessionGuidanceBanner(
-        objective: SimulationCoach.objectiveForProblem(
-          problem,
-          sector: openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
-        ),
-        startedAt: _customerStartTime,
-        ahtLimitSeconds: SimulationCoach.ahtLimitSeconds,
-        customerConfirmed: _customerConfirmed,
-        awaitingClosing: awaitingClosing,
-        hasTraineeSpoken: _traineeHasSpoken,
-        hasCustomerSpoken: hasCustomerMessage,
-        problem: problem,
-        sector: openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
-        traineeTurnCount: _interactionWpmSamples.length,
-        toolWorkDone: toolWorkDone,
-        isEscalating: _sessionEscalated,
-        lastCustomerMessage: lastCustomerText,
-        lastTraineeMessage: lastTraineeText,
-        isChatChannel: true,
-      ),
+      chatHeader: widget.guidedMode
+          ? SessionGuidanceBanner(
+              objective: SimulationCoach.objectiveForProblem(
+                problem,
+                sector:
+                    openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
+              ),
+              startedAt: _customerStartTime,
+              ahtLimitSeconds: SimulationCoach.ahtLimitSeconds,
+              customerConfirmed: _customerConfirmed,
+              awaitingClosing: awaitingClosing,
+              hasTraineeSpoken: _traineeHasSpoken,
+              hasCustomerSpoken: hasCustomerMessage,
+              problem: problem,
+              sector:
+                  openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
+              traineeTurnCount: _interactionWpmSamples.length,
+              toolWorkDone: toolWorkDone,
+              isEscalating: _sessionEscalated,
+              lastCustomerMessage: lastCustomerText,
+              lastTraineeMessage: lastTraineeText,
+              isChatChannel: true,
+            )
+          : null,
     );
     return panel;
   }
@@ -1286,6 +1449,8 @@ class _ChatPanelState extends State<ChatPanel> {
     _lastSyncedToolAction = '';
     _customerCheckTimer?.cancel();
     _idleNudgeTimer?.cancel();
+    _stopToolWait(resetFlags: true);
+    _agentAdvisedWait = false;
     _reminders.clear();
     _acwSubmitted = false;
     _acwDisposition = 'Resolved';
@@ -1561,59 +1726,60 @@ class _ChatPanelState extends State<ChatPanel> {
       _inputController.text = text;
       return;
     }
+    if (_looksLikeWaitAdvise(text)) {
+      _agentAdvisedWait = true;
+    }
     setState(() {
       _isSending = true;
-      // Stay on chat so the customer reply is visible.
       _selectedTab = 0;
     });
+    _stopToolWait();
     _traineeHasSpoken = true;
     final accountProvider = Provider.of<AccountProvider>(
       context,
       listen: false,
     );
-    if (SimulationCoach.isNegativeAgentReply(text)) {
+    if (widget.guidedMode && SimulationCoach.isNegativeAgentReply(text)) {
       setState(() {
         _reminders.add(
-          'Tone issue in: "$text" ${SimulationCoach.suggestionForNegative(text)}',
+          'AI coach tip: Tone issue in "$text". ${SimulationCoach.suggestionForNegative(text)}',
         );
       });
-    } else if (SimulationCoach.isOffTopicReply(
-      text,
-      openRouterAPI.chosenSimulation['problem'] ?? '',
-    )) {
+    } else if (widget.guidedMode &&
+        SimulationCoach.isOffTopicReply(
+          text,
+          openRouterAPI.chosenSimulation['problem'] ?? '',
+        )) {
       setState(() {
         _reminders.add(
-          'Off-track reply: "$text" ${SimulationCoach.suggestionForOffTopic()}',
+          'AI coach tip: Off-track reply "$text". ${SimulationCoach.suggestionForOffTopic()}',
         );
       });
     }
 
     try {
-      //get the seconds passed
       final elapsedSeconds = _typingStartTime == null
           ? 0.0
           : DateTime.now().difference(_typingStartTime!).inMilliseconds / 1000;
 
-      //get the word count
       final wordCount = text
           .trim()
           .split(RegExp(r'\s+'))
           .where((w) => w.isNotEmpty)
           .length;
 
-      //and get the words per minute based on the seconds had passed
-      //and the word count
-      final wpm = elapsedSeconds > 0 ? (wordCount / elapsedSeconds) * 60 : 0.0;
-
-      //then save that to a list of words per minute
-      widget.onChatTurn?.call(wpm);
-
-      //also feed this interaction's own TESDA telemetry
-      _interactionWpmSamples.add(wpm);
+      var wpm = elapsedSeconds > 0 ? (wordCount / elapsedSeconds) * 60 : 0.0;
+      // Cap and exclude paste-inflated samples from the typing-pace average.
+      final pasteLike = _pasteSuspectedThisMessage || wpm > 120;
+      if (!pasteLike && wpm > 0) {
+        widget.onChatTurn?.call(wpm);
+        _interactionWpmSamples.add(wpm);
+      }
       _interactionCharsTyped += text.trim().length;
 
-      //then set the date to null
       _typingStartTime = null;
+      _pasteSuspectedThisMessage = false;
+      _previousInputLength = 0;
 
       if (SimulationSessionController.useMissionGuide &&
           _sessionController.mission.pack != null) {

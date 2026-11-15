@@ -674,7 +674,9 @@ class _HelpPanelState extends State<_HelpPanel> {
                         separatorBuilder: (_, __) => const Gap(8),
                         itemBuilder: (_, i) {
                           final active = i == index;
-                          return GestureDetector(
+                          return MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
                             onTap: () {
                               setLocal(() => index = i);
                               pageController.animateToPage(
@@ -725,6 +727,7 @@ class _HelpPanelState extends State<_HelpPanel> {
                                   ),
                                 ],
                               ),
+                            ),
                             ),
                           );
                         },
@@ -888,13 +891,16 @@ class _HelpPanelState extends State<_HelpPanel> {
     required String subtitle,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: const Color(0xFF1A1F26),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Material(
+        color: const Color(0xFF1A1F26),
         borderRadius: BorderRadius.circular(10),
-        child: Padding(
+        child: InkWell(
+          mouseCursor: SystemMouseCursors.click,
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -917,6 +923,7 @@ class _HelpPanelState extends State<_HelpPanel> {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),

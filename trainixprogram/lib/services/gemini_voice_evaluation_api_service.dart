@@ -123,17 +123,34 @@ class GeminiVoiceEvaluationApiService {
       'explicitly requires a closing spiel): confirmation of resolution, '
       'offer of further help, sign-off. -3 if missing the offer of '
       'further help; -3 if missing a sign-off entirely.\n\n'
+      'SCORING BANDS (map the final 0-10 into these bands; do not invent '
+      'other labels): 9.0-10.0 Excellent, 7.0-8.9 Proficient, 5.0-6.9 '
+      'Developing, 0.0-4.9 Needs work.\n'
+      'PARTIAL DEDUCTIONS: the listed cut amounts are anchors for clear, '
+      'full violations. Milder versions of the same gap must use a smaller '
+      'continuous cut (for example soft or delayed agent ID might be -0.5 '
+      'to -1.5, not a forced -3). Stack observed gaps; floor at 0; round '
+      'each category to one decimal place.\n'
+      'EVIDENCE RULE (mandatory): Deduct only when you can point to concrete '
+      'evidence in the transcript, audio, or telemetry. If you cannot cite a '
+      'specific agent line, a missing required line, an audio moment, or a '
+      'numeric telemetry value, leave that category at 10 and set _NOTE to '
+      'Full marks. No impression-only cuts.\n'
       'CRITICAL: for every category scoring below 10, the paired _NOTE '
-      'field MUST cite the exact transcript quote or an approximate '
-      'audio timestamp/description justifying the deduction  no vague '
-      'reasoning. For a category scoring a full 10, its _NOTE field must '
-      'say exactly: Full marks.\n'
-      'USER-FACING LANGUAGE: strength lists, improvement lists, notes, and '
-      'FEEDBACK must be plain coaching language. Never mention Core Unit, '
-      'Common Unit, ICT codes, Basic Competency numbers, TESDA, or NC II '
-      'in those fields. Name the skill in everyday words (greeting, empathy, '
-      'problem solving, closing).';
-
+      'field MUST (1) state the points deducted in the form "-X.X: ..." '
+      'and (2) cite the exact transcript quote or an approximate audio '
+      'timestamp/description that justified that cut  no vague reasoning. '
+      'Example: "-1.5: greeting present but agent name delayed until '
+      'second turn". _QUOTE must be the verbatim agent line when one exists, '
+      'or N/A only for a missing required line. Also provide a paired '
+      '_SUGGEST field with one better agent line for that same moment. For '
+      'a category scoring a full 10, _NOTE must say exactly: Full marks, '
+      'and _SUGGEST must be N/A.\n'
+      'USER-FACING LANGUAGE: strength lists, improvement lists, notes, '
+      'suggestions, and FEEDBACK must be plain coaching language. Never '
+      'mention Core Unit, Common Unit, ICT codes, Basic Competency numbers, '
+      'TESDA, or NC II in those fields. Name the skill in everyday words '
+      '(greeting, empathy, problem solving, closing).';
   //build the transcript
   String _buildTranscript(List<Message> messages) {
     final buffer = StringBuffer();
@@ -222,39 +239,51 @@ class GeminiVoiceEvaluationApiService {
         'OPENING_SPIEL: <0-10>\n'
         'OPENING_SPIEL_NOTE: <citation or "Full marks">\n'
         'OPENING_SPIEL_QUOTE: <verbatim agent line or "N/A">\n'
+        'OPENING_SPIEL_SUGGEST: <better agent line or "N/A">\n'
         'POSITIVE_SCRIPTING: <0-10>\n'
         'POSITIVE_SCRIPTING_NOTE: <citation or "Full marks">\n'
         'POSITIVE_SCRIPTING_QUOTE: <verbatim agent line or "N/A">\n'
+        'POSITIVE_SCRIPTING_SUGGEST: <better agent line or "N/A">\n'
         'EMPATHY: <0-10>\n'
         'EMPATHY_NOTE: <citation or "Full marks">\n'
         'EMPATHY_QUOTE: <verbatim agent line or "N/A">\n'
+        'EMPATHY_SUGGEST: <better agent line or "N/A">\n'
         'ACTIVE_LISTENING: <0-10>\n'
         'ACTIVE_LISTENING_NOTE: <citation or "Full marks">\n'
         'ACTIVE_LISTENING_QUOTE: <verbatim agent line or "N/A">\n'
+        'ACTIVE_LISTENING_SUGGEST: <better agent line or "N/A">\n'
         'PROBLEM_IDENTIFICATION: <0-10>\n'
         'PROBLEM_IDENTIFICATION_NOTE: <citation or "Full marks">\n'
         'PROBLEM_IDENTIFICATION_QUOTE: <verbatim agent line or "N/A">\n'
+        'PROBLEM_IDENTIFICATION_SUGGEST: <better agent line or "N/A">\n'
         'SOLUTION_DELIVERY: <0-10>\n'
         'SOLUTION_DELIVERY_NOTE: <citation or "Full marks">\n'
         'SOLUTION_DELIVERY_QUOTE: <verbatim agent line or "N/A">\n'
+        'SOLUTION_DELIVERY_SUGGEST: <better agent line or "N/A">\n'
         'PACE_AND_SPEED: <0-10>\n'
         'PACE_AND_SPEED_NOTE: <citation or "Full marks">\n'
         'PACE_AND_SPEED_QUOTE: <verbatim agent line or "N/A">\n'
+        'PACE_AND_SPEED_SUGGEST: <N/A>\n'
         'PRONUNCIATION_AND_CLARITY: <0-10>\n'
         'PRONUNCIATION_AND_CLARITY_NOTE: <citation or "Full marks">\n'
         'PRONUNCIATION_AND_CLARITY_QUOTE: <verbatim agent line or "N/A">\n'
+        'PRONUNCIATION_AND_CLARITY_SUGGEST: <N/A>\n'
         'FILLER_WORD_USAGE: <0-10>\n'
         'FILLER_WORD_USAGE_NOTE: <citation or "Full marks">\n'
         'FILLER_WORD_USAGE_QUOTE: <verbatim agent line or "N/A">\n'
+        'FILLER_WORD_USAGE_SUGGEST: <N/A>\n'
         'TONE_AND_INFLECTION: <0-10>\n'
         'TONE_AND_INFLECTION_NOTE: <citation or "Full marks">\n'
         'TONE_AND_INFLECTION_QUOTE: <verbatim agent line or "N/A">\n'
+        'TONE_AND_INFLECTION_SUGGEST: <better agent line or "N/A">\n'
         'SECTOR_KNOWLEDGE: <0-10>\n'
         'SECTOR_KNOWLEDGE_NOTE: <citation or "Full marks">\n'
         'SECTOR_KNOWLEDGE_QUOTE: <verbatim agent line or "N/A">\n'
+        'SECTOR_KNOWLEDGE_SUGGEST: <better agent line or "N/A">\n'
         'CLOSING_SPIEL: <0-10>\n'
         'CLOSING_SPIEL_NOTE: <citation or "Full marks">\n'
         'CLOSING_SPIEL_QUOTE: <verbatim agent line or "N/A">\n'
+        'CLOSING_SPIEL_SUGGEST: <better agent line or "N/A">\n'
         'STRENGTH_1: <demonstrated competency with evidence>\n'
         'STRENGTH_2: <demonstrated competency with evidence>\n'
         'STRENGTH_3: <demonstrated competency with evidence>\n'
@@ -291,39 +320,51 @@ class GeminiVoiceEvaluationApiService {
       'OPENING_SPIEL',
       'OPENING_SPIEL_NOTE',
       'OPENING_SPIEL_QUOTE',
+      'OPENING_SPIEL_SUGGEST',
       'POSITIVE_SCRIPTING',
       'POSITIVE_SCRIPTING_NOTE',
       'POSITIVE_SCRIPTING_QUOTE',
+      'POSITIVE_SCRIPTING_SUGGEST',
       'EMPATHY',
       'EMPATHY_NOTE',
       'EMPATHY_QUOTE',
+      'EMPATHY_SUGGEST',
       'ACTIVE_LISTENING',
       'ACTIVE_LISTENING_NOTE',
       'ACTIVE_LISTENING_QUOTE',
+      'ACTIVE_LISTENING_SUGGEST',
       'PROBLEM_IDENTIFICATION',
       'PROBLEM_IDENTIFICATION_NOTE',
       'PROBLEM_IDENTIFICATION_QUOTE',
+      'PROBLEM_IDENTIFICATION_SUGGEST',
       'SOLUTION_DELIVERY',
       'SOLUTION_DELIVERY_NOTE',
       'SOLUTION_DELIVERY_QUOTE',
+      'SOLUTION_DELIVERY_SUGGEST',
       'PACE_AND_SPEED',
       'PACE_AND_SPEED_NOTE',
       'PACE_AND_SPEED_QUOTE',
+      'PACE_AND_SPEED_SUGGEST',
       'PRONUNCIATION_AND_CLARITY',
       'PRONUNCIATION_AND_CLARITY_NOTE',
       'PRONUNCIATION_AND_CLARITY_QUOTE',
+      'PRONUNCIATION_AND_CLARITY_SUGGEST',
       'FILLER_WORD_USAGE',
       'FILLER_WORD_USAGE_NOTE',
       'FILLER_WORD_USAGE_QUOTE',
+      'FILLER_WORD_USAGE_SUGGEST',
       'TONE_AND_INFLECTION',
       'TONE_AND_INFLECTION_NOTE',
       'TONE_AND_INFLECTION_QUOTE',
+      'TONE_AND_INFLECTION_SUGGEST',
       'SECTOR_KNOWLEDGE',
       'SECTOR_KNOWLEDGE_NOTE',
       'SECTOR_KNOWLEDGE_QUOTE',
+      'SECTOR_KNOWLEDGE_SUGGEST',
       'CLOSING_SPIEL',
       'CLOSING_SPIEL_NOTE',
       'CLOSING_SPIEL_QUOTE',
+      'CLOSING_SPIEL_SUGGEST',
       'STRENGTH_1',
       'STRENGTH_2',
       'STRENGTH_3',

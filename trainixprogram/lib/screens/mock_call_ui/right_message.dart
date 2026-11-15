@@ -6,6 +6,7 @@ import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/widgets/account_lookup_view.dart';
+import 'package:trainixprogram/widgets/agent_notepad.dart';
 import 'package:trainixprogram/widgets/scenario_guide_view.dart';
 import 'package:trainixprogram/widgets/sector_issue_guide_view.dart';
 
@@ -46,6 +47,8 @@ class RightMessage extends StatelessWidget {
   final ValueChanged<String>? onEscalationSubmit;
   final CoachViewModel? coachVm;
   final VoidCallback? onSectorGuideIssueOpened;
+  final int customerWaitSeconds;
+  final bool agentAdvisedWait;
 
   const RightMessage({
     super.key,
@@ -84,6 +87,8 @@ class RightMessage extends StatelessWidget {
     this.lastTraineeMessage = '',
     this.onEscalationSubmit,
     this.coachVm,
+    this.customerWaitSeconds = 0,
+    this.agentAdvisedWait = false,
   });
 
   @override
@@ -143,7 +148,24 @@ class RightMessage extends StatelessWidget {
                 ),
               ],
             )
-          : mainColumn,
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: mainColumn),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 0.5,
+                  color: Color(0xFF1E293B),
+                ),
+                const SizedBox(
+                  width: 300,
+                  child: AgentNotepad(
+                    bottomInset: 56,
+                    fillHeight: true,
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
@@ -228,69 +250,121 @@ class RightMessage extends StatelessWidget {
         {'id': 2, 'label': SimulationCoach.sectorGuideTabLabel(sector)},
     ];
     final current = _effectiveTab;
+    final showWait = customerWaitSeconds > 0 && (current == 1 || current == 2);
+    final waitMin = customerWaitSeconds ~/ 60;
+    final waitSec = customerWaitSeconds % 60;
+    final waitLabel =
+        '${waitMin.toString().padLeft(1, '0')}:${waitSec.toString().padLeft(2, '0')}';
+    final waitWarm = customerWaitSeconds >= (agentAdvisedWait ? 90 : 45);
 
     return Container(
       padding: const EdgeInsets.only(left: 20, right: 20, top: 14),
       child: Row(
-        children: items.map((item) {
-          final id = item['id'] as int;
-          final label = item['label'] as String;
-          final isSelected = current == id;
-          final needsAttention =
-              highlightToolTab != null && highlightToolTab == id && !isSelected;
-          return MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => onTabChanged?.call(id),
-              child: Container(
-                margin: const EdgeInsets.only(right: 24),
-                padding: needsAttention
-                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
-                    : EdgeInsets.zero,
-                decoration: needsAttention
-                    ? BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFFF59E0B),
-                          width: 1.5,
+        children: [
+          ...items.map((item) {
+            final id = item['id'] as int;
+            final label = item['label'] as String;
+            final isSelected = current == id;
+            final needsAttention =
+                highlightToolTab != null &&
+                highlightToolTab == id &&
+                !isSelected;
+            return MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => onTabChanged?.call(id),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 24),
+                  padding: needsAttention
+                      ? const EdgeInsets.symmetric(horizontal: 8, vertical: 2)
+                      : EdgeInsets.zero,
+                  decoration: needsAttention
+                      ? BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFFF59E0B),
+                            width: 1.5,
+                          ),
+                          color: const Color(0x33F59E0B),
+                        )
+                      : null,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: isSelected || needsAttention
+                              ? FontWeight.w600
+                              : FontWeight.w400,
+                          color: isSelected
+                              ? Colors.white
+                              : needsAttention
+                              ? const Color(0xFFFBBF24)
+                              : const Color(0xFFB0B8C4),
                         ),
-                        color: const Color(0x33F59E0B),
-                      )
-                    : null,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: isSelected || needsAttention
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: isSelected
-                            ? Colors.white
-                            : needsAttention
-                            ? const Color(0xFFFBBF24)
-                            : const Color(0xFFB0B8C4),
                       ),
-                    ),
-                    const Gap(10),
-                    Container(
-                      height: 2,
-                      width: isSelected || needsAttention ? 36 : 0,
-                      color: isSelected
-                          ? const Color(0xFF3B82F6)
-                          : needsAttention
-                          ? const Color(0xFFF59E0B)
-                          : Colors.transparent,
-                    ),
-                  ],
+                      const Gap(10),
+                      Container(
+                        height: 2,
+                        width: isSelected || needsAttention ? 36 : 0,
+                        color: isSelected
+                            ? const Color(0xFF3B82F6)
+                            : needsAttention
+                            ? const Color(0xFFF59E0B)
+                            : Colors.transparent,
+                      ),
+                    ],
+                  ),
                 ),
               ),
+            );
+          }),
+          const Spacer(),
+          if (showWait)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: waitWarm
+                    ? const Color(0x33F59E0B)
+                    : const Color(0xFF1F2937),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: waitWarm
+                      ? const Color(0xFFF59E0B)
+                      : const Color(0xFF374151),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.hourglass_top,
+                    size: 14,
+                    color: waitWarm
+                        ? const Color(0xFFFBBF24)
+                        : const Color(0xFF9CA3AF),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    agentAdvisedWait
+                        ? 'Customer waiting · $waitLabel'
+                        : 'Customer waiting (no notice) · $waitLabel',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: waitWarm
+                          ? const Color(0xFFFBBF24)
+                          : const Color(0xFFD1D5DB),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          );
-        }).toList(),
+        ],
       ),
     );
   }

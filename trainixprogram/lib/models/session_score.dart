@@ -28,15 +28,9 @@ class SessionEvaluation {
   final double? pronunciationClarityScore;
   final double? fillerWordUsageScore;
 
-  //per-category citation/justification text from the evaluator. Only
-  //populated by the Gemini/TESDA chat and voice paths.
   final Map<String, String>? categoryNotes;
-
-  //per-category verbatim excerpt from the trainee's own transcript that
-  //the evaluator is citing as evidence
-  //but this is the raw quoted line itself rather than the evaluator's
-  //explanation of it.
   final Map<String, String>? categoryQuotes;
+  final Map<String, String>? categorySuggestions;
 
   final List<String> strengths;
   final List<String> areasForImprovement;
@@ -49,10 +43,7 @@ class SessionEvaluation {
   final String problem;
   final List<Map<String, String>> conversation;
 
-  /// Customer CSAT stars 1-5, derived from soft skills + overall score.
   final int? customerRating;
-
-  /// Short customer-perspective comment paired with [customerRating].
   final String? customerComment;
 
   const SessionEvaluation({
@@ -76,6 +67,7 @@ class SessionEvaluation {
     this.fillerWordUsageScore,
     this.categoryNotes,
     this.categoryQuotes,
+    this.categorySuggestions,
     required this.strengths,
     required this.areasForImprovement,
     required this.feedback,
@@ -147,6 +139,7 @@ class SessionEvaluation {
       fillerWordUsageScore: fillerWordUsageScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
+      categorySuggestions: categorySuggestions,
       strengths: strengths,
       areasForImprovement: areasForImprovement,
       feedback: feedback,
@@ -251,6 +244,7 @@ class SessionEvaluation {
       fillerWordUsageScore: fillerWordUsageScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
+      categorySuggestions: categorySuggestions,
       strengths: strengths,
       areasForImprovement: areasForImprovement,
       feedback: feedback,
@@ -297,6 +291,7 @@ class SessionEvaluation {
       fillerWordUsageScore: fillerWordUsageScore,
       categoryNotes: categoryNotes,
       categoryQuotes: categoryQuotes,
+      categorySuggestions: categorySuggestions,
       strengths: strengths,
       areasForImprovement: improvements,
       feedback: over
@@ -334,10 +329,10 @@ class SessionEvaluation {
     final sectorKnowledge = parse('SECTOR_KNOWLEDGE');
     final closing = parse('CLOSING_SPIEL');
 
-    //chat has no vocal tone to score. Proxied from empathy + clarity,
-    final toneProxy = (empathy + clarity) / 2;
+    // Chat has no vocal tone field. Tone is the average of empathy + clarity.
+    final toneProxy =
+        double.parse(((empathy + clarity) / 2).toStringAsFixed(1));
 
-    //overallScore
     final overall =
         [
           opening,
@@ -353,8 +348,6 @@ class SessionEvaluation {
         ].reduce((a, b) => a + b) /
         10;
 
-    //human-readable labels for the note map. Matches what Session
-    //Report will display
     const noteKeys = {
       'OPENING_SPIEL': 'Opening Spiel',
       'POSITIVE_SCRIPTING': 'Positive Scripting',
@@ -371,44 +364,119 @@ class SessionEvaluation {
     };
     final notes = <String, String>{};
     final quotes = <String, String>{};
+    final suggestions = <String, String>{};
     noteKeys.forEach((key, label) {
       final note = fields['${key}_NOTE'];
-      //skip empty notes and the "full marks" case. Only store notes
-      //that actually explain a deduction
       if (note != null &&
           note.trim().isNotEmpty &&
           !note.toLowerCase().contains('full marks') &&
           note.trim() != 'N/A') {
         notes[label] = note.trim();
       }
-      //verbatim transcript excerpt supporting the note above. Omitted
-      //if the evaluator said "N/A" which means no specific line exists
       final quote = fields['${key}_QUOTE'];
       if (quote != null &&
           quote.trim().isNotEmpty &&
           quote.trim().toUpperCase() != 'N/A') {
         quotes[label] = quote.trim();
       }
+      final suggest = fields['${key}_SUGGEST'];
+      if (suggest != null &&
+          suggest.trim().isNotEmpty &&
+          suggest.trim().toUpperCase() != 'N/A' &&
+          !suggest.toLowerCase().contains('full marks')) {
+        suggestions[label] = suggest.trim();
+      }
     });
+
+    if (toneProxy < 9.95) {
+      final parts = <String>[
+        'Chat tone is derived as (Empathy ${empathy.toStringAsFixed(1)} + Communication Clarity ${clarity.toStringAsFixed(1)}) / 2 = ${toneProxy.toStringAsFixed(1)}.',
+      ];
+      final empNote = notes['Empathy'];
+      final clrNote = notes['Communication Clarity'];
+      if (empNote != null && empNote.isNotEmpty) {
+        parts.add('Empathy gap: $empNote');
+      }
+      if (clrNote != null && clrNote.isNotEmpty) {
+        parts.add('Clarity gap: $clrNote');
+      }
+      if (empNote == null && clrNote == null) {
+        if (empathy < clarity) {
+          parts.add(
+            'Empathy pulled tone down. Acknowledge the customer emotion more specifically before process talk.',
+          );
+        } else if (clarity < empathy) {
+          parts.add(
+            'Clarity pulled tone down. Use shorter, warmer phrasing that still sounds professional.',
+          );
+        } else {
+          parts.add(
+            'Both empathy and clarity were below full marks, which lowered the combined tone score.',
+          );
+        }
+      }
+      notes['Tone'] = parts.join(' ');
+      final empSuggest = suggestions['Empathy'];
+      final clrSuggest = suggestions['Communication Clarity'];
+      if (empSuggest != null && empSuggest.isNotEmpty) {
+        suggestions['Tone'] = empSuggest;
+      } else if (clrSuggest != null && clrSuggest.isNotEmpty) {
+        suggestions['Tone'] = clrSuggest;
+      } else {
+        suggestions['Tone'] =
+            'I can hear how frustrating this has been. Let me walk you through the next step clearly so we can get you unblocked.';
+      }
+    }
+
+    double keepIfEvidenced(String label, double score) {
+      if (score >= 9.95) return score;
+      final n = notes[label];
+      if (n == null || n.trim().isEmpty) return 10.0;
+      return score;
+    }
+
+    final openingE = keepIfEvidenced('Opening Spiel', opening);
+    final positiveE = keepIfEvidenced('Positive Scripting', positive);
+    final empathyE = keepIfEvidenced('Empathy', empathy);
+    final activeE = keepIfEvidenced('Active Listening', active);
+    final problemE = keepIfEvidenced('Problem Identification', problemId);
+    final solutionE = keepIfEvidenced('Solution Delivery', solution);
+    final clarityE = keepIfEvidenced('Communication Clarity', clarity);
+    final toneE = keepIfEvidenced('Tone', toneProxy);
+    final sectorE = keepIfEvidenced('Sector Knowledge', sectorKnowledge);
+    final closingE = keepIfEvidenced('Closing Spiel', closing);
+    final overallE =
+        (openingE +
+            positiveE +
+            empathyE +
+            activeE +
+            problemE +
+            solutionE +
+            clarityE +
+            toneE +
+            sectorE +
+            closingE) /
+        10;
 
     return SessionEvaluation(
       sector: sector,
-      openingSpielScore: opening,
-      positiveScriptingScore: positive,
-      empathyScore: empathy,
-      activeListeningScore: active,
-      problemIdentificationScore: problemId,
-      solutionDeliveryScore: solution,
-      communicationClarityScore: clarity,
-      toneScore: toneProxy,
-      sectorKnowledgeScore: sectorKnowledge,
-      closingSpielScore: closing,
-      overallScore: double.parse(overall.toStringAsFixed(1)),
+      openingSpielScore: openingE,
+      positiveScriptingScore: positiveE,
+      empathyScore: empathyE,
+      activeListeningScore: activeE,
+      problemIdentificationScore: problemE,
+      solutionDeliveryScore: solutionE,
+      communicationClarityScore: clarityE,
+      toneScore: toneE,
+      sectorKnowledgeScore: sectorE,
+      closingSpielScore: closingE,
+      overallScore: double.parse(overallE.toStringAsFixed(1)),
       typingSpeedScore: typingSpeed,
       errorRateAccuracyScore: errorRate,
       responseConsistencyScore: consistency,
       categoryNotes: notes,
       categoryQuotes: quotes,
+      categorySuggestions: suggestions,
       strengths: [
         fields['STRENGTH_1'] ?? '',
         fields['STRENGTH_2'] ?? '',
@@ -476,12 +544,13 @@ class SessionEvaluation {
       'PACE_AND_SPEED': 'Pace & Speed',
       'PRONUNCIATION_AND_CLARITY': 'Pronunciation & Clarity',
       'FILLER_WORD_USAGE': 'Filler Word Usage',
-      'TONE_AND_INFLECTION': 'Tone & Inflection',
+      'TONE_AND_INFLECTION': 'Tone',
       'SECTOR_KNOWLEDGE': 'Sector Knowledge',
       'CLOSING_SPIEL': 'Closing Spiel',
     };
     final notes = <String, String>{};
     final quotes = <String, String>{};
+    final suggestions = <String, String>{};
     noteKeys.forEach((key, label) {
       final note = fields['${key}_NOTE'];
       if (note != null &&
@@ -496,26 +565,64 @@ class SessionEvaluation {
           quote.trim().toUpperCase() != 'N/A') {
         quotes[label] = quote.trim();
       }
+      final suggest = fields['${key}_SUGGEST'];
+      if (suggest != null &&
+          suggest.trim().isNotEmpty &&
+          suggest.trim().toUpperCase() != 'N/A' &&
+          !suggest.toLowerCase().contains('full marks')) {
+        suggestions[label] = suggest.trim();
+      }
     });
+
+    double keepIfEvidenced(String label, double score) {
+      if (score >= 9.95) return score;
+      final n = notes[label];
+      if (n == null || n.trim().isEmpty) return 10.0;
+      return score;
+    }
+
+    final openingE = keepIfEvidenced('Opening Spiel', opening);
+    final positiveE = keepIfEvidenced('Positive Scripting', positive);
+    final empathyE = keepIfEvidenced('Empathy', empathy);
+    final activeE = keepIfEvidenced('Active Listening', active);
+    final problemE = keepIfEvidenced('Problem Identification', problemId);
+    final solutionE = keepIfEvidenced('Solution Delivery', solution);
+    final clarityE = keepIfEvidenced('Communication Clarity', clarityProxy);
+    final toneE = keepIfEvidenced('Tone', tone);
+    final sectorE = keepIfEvidenced('Sector Knowledge', sectorKnowledge);
+    final closingE = keepIfEvidenced('Closing Spiel', closing);
+    final overallE =
+        (openingE +
+            positiveE +
+            empathyE +
+            activeE +
+            problemE +
+            solutionE +
+            clarityE +
+            toneE +
+            sectorE +
+            closingE) /
+        10;
 
     return SessionEvaluation(
       sector: sector,
-      openingSpielScore: opening,
-      positiveScriptingScore: positive,
-      empathyScore: empathy,
-      activeListeningScore: active,
-      problemIdentificationScore: problemId,
-      solutionDeliveryScore: solution,
-      communicationClarityScore: clarityProxy,
-      toneScore: tone,
-      sectorKnowledgeScore: sectorKnowledge,
-      closingSpielScore: closing,
-      overallScore: double.parse(overall.toStringAsFixed(1)),
+      openingSpielScore: openingE,
+      positiveScriptingScore: positiveE,
+      empathyScore: empathyE,
+      activeListeningScore: activeE,
+      problemIdentificationScore: problemE,
+      solutionDeliveryScore: solutionE,
+      communicationClarityScore: clarityE,
+      toneScore: toneE,
+      sectorKnowledgeScore: sectorE,
+      closingSpielScore: closingE,
+      overallScore: double.parse(overallE.toStringAsFixed(1)),
       paceAndSpeedScore: pace,
       pronunciationClarityScore: pronunciation,
       fillerWordUsageScore: fillerWords,
       categoryNotes: notes,
       categoryQuotes: quotes,
+      categorySuggestions: suggestions,
       strengths: [
         fields['STRENGTH_1'] ?? '',
         fields['STRENGTH_2'] ?? '',
