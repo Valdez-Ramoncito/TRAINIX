@@ -91,24 +91,30 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   void _scrollToDetails() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    void attempt() {
+      if (!mounted) return;
       final ctx = _detailsKey.currentContext;
       if (ctx != null) {
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 280),
+          duration: const Duration(milliseconds: 320),
           curve: Curves.easeOut,
-          alignment: 0.05,
+          alignment: 0.02,
         );
         return;
       }
       if (_listScrollController.hasClients) {
         _listScrollController.animateTo(
           _listScrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 280),
+          duration: const Duration(milliseconds: 320),
           curve: Curves.easeOut,
         );
       }
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      attempt();
+      WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
     });
   }
 

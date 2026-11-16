@@ -8,6 +8,7 @@ import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
+import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/screens/session_report_screen.dart';
 import 'package:trainixprogram/screens/mock_call_ui/header.dart';
@@ -72,6 +73,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   //how many fillers were used in a voice call
   int _voiceFillerCount = 0;
+
+  // Last agent utterance on voice (for hold-advisory gate).
+  String _lastVoiceTraineeText = '';
 
   //how long did it take for each customer in each channel got
   //their problems resolved
@@ -696,6 +700,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
           _voiceWpmSamples.add(wpm);
           _voiceFillerCount += fillerCount;
         },
+        onTraineeSpoke: (text) {
+          _lastVoiceTraineeText = text;
+        },
         onResolutionSeconds: null,
         onSendReport: _onSendReport,
       ),
@@ -741,11 +748,23 @@ class _MockCallScreenState extends State<MockCallScreen> {
               isOnHold ? Icons.play_arrow : Icons.pause,
               enabled: callInProgress,
               onTap: () {
-                setState(() {
-                  _phase = isOnHold
-                      ? SimulationPhase.active
-                      : SimulationPhase.onHold;
-                });
+                if (isOnHold) {
+                  setState(() => _phase = SimulationPhase.active);
+                  return;
+                }
+                if (!SimulationCoach.isHoldAdvisory(_lastVoiceTraineeText)) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Tell the customer you are placing them on hold first, '
+                        'wait for their reply, then press HOLD.',
+                      ),
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                  return;
+                }
+                setState(() => _phase = SimulationPhase.onHold);
               },
             ),
             _buildTimerDisplay(),

@@ -273,7 +273,7 @@ class SimMissionCatalog {
       problemSummary: 'Needs status on a submitted claim',
       emotion: 'concerned',
       accountDetails: const {
-        'Member ID': 'ACC-44108',
+        'Member ID': 'ACC-4108',
         'Coverage': 'Claim Pending',
       },
       openingCustomerLine:
@@ -309,7 +309,7 @@ class SimMissionCatalog {
             'full',
             'hold',
           ],
-          customerLineAfterPass: 'Maria Santos, member ID ACC-44108.',
+          customerLineAfterPass: 'Maria Santos, member ID ACC-4108.',
         ),
         SimStep(
           id: 'verify',
@@ -1170,7 +1170,7 @@ class SimMissionCatalog {
             'confirm',
             'full',
           ],
-          customerLineAfterPass: 'Jordan Lee, account 55201.',
+          customerLineAfterPass: 'Jordan Lee, account ends 5201.',
         ),
         SimStep(
           id: 'verify',
@@ -1186,11 +1186,21 @@ class SimMissionCatalog {
           id: 'explain',
           label: 'Explain findings in plain words',
           kind: SimStepKind.speak,
-          tip: 'Explain what Account Details show in plain words.',
+          tip:
+              'State a concrete finding from Account Details (status, recent activity, or open item), then the next action.',
           examples: [
-            'Here is what I see on the account in plain words. I can file a request next if needed.',
+            'I verified your account ending 5201. The profile shows an open service item on file. I can file a formal request so a specialist follows up. Does that work for you?',
+            'Thanks for confirming. On your account I see the case is still pending review. Next I can file a request so it is tracked. Shall I proceed?',
           ],
-          passPhrases: ['account', 'see', 'shows', 'plain'],
+          passPhrases: [
+            'account',
+            'see',
+            'shows',
+            'pending',
+            'open',
+            'file',
+            'request',
+          ],
           customerLineAfterPass:
               'Please file a request so this gets followed up.',
         ),

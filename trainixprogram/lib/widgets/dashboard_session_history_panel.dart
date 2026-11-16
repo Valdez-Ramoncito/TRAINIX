@@ -493,35 +493,71 @@ class _LiveSessionCard extends StatelessWidget {
                     ],
                     if (entry.notes.any((n) => n.body.trim().isNotEmpty)) ...[
                       const Gap(10),
-                      ...entry.notes
-                          .where((n) => n.body.trim().isNotEmpty)
-                          .take(3)
-                          .map(
-                            (n) => Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Icon(
-                                    Icons.notes_rounded,
-                                    size: 13,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF151515),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF2A2A2B)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.sticky_note_2_outlined,
+                                  size: 14,
+                                  color: Color(0xFFA78BFA),
+                                ),
+                                const Gap(6),
+                                Text(
+                                  'Trainer notes (${entry.notes.where((n) => n.body.trim().isNotEmpty).length})',
+                                  style: const TextStyle(
                                     color: Color(0xFFA78BFA),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  const Gap(6),
-                                  Expanded(
-                                    child: Text(
-                                      '${n.title.isEmpty ? "Note" : n.title}: ${n.body.trim()}',
-                                      style: const TextStyle(
-                                        color: Color(0xFFCBD5E1),
-                                        fontSize: 12,
-                                        height: 1.35,
-                                      ),
+                                ),
+                              ],
+                            ),
+                            const Gap(8),
+                            ...entry.notes
+                                .where((n) => n.body.trim().isNotEmpty)
+                                .map(
+                                  (n) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          n.title.trim().isEmpty
+                                              ? 'Note'
+                                              : n.title.trim(),
+                                          style: const TextStyle(
+                                            color: Color(0xFFE2E8F0),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        const Gap(2),
+                                        Text(
+                                          n.body.trim(),
+                                          style: const TextStyle(
+                                            color: Color(0xFFCBD5E1),
+                                            fontSize: 12,
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
-                            ),
-                          ),
+                                ),
+                          ],
+                        ),
+                      ),
                     ],
                     if (entry.checklist.isNotEmpty) ...[
                       const Gap(8),

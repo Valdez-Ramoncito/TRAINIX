@@ -110,6 +110,11 @@ class OpenRouterAPIService {
     'angry',
     'polite but urgent',
     'impatient',
+    'disappointed',
+    'worried',
+    'sad',
+    'concerned',
+    'paranoid',
   ];
 
   //set the problems for each sector grounded in real, named complaint categories rather than invented ones
@@ -131,6 +136,14 @@ class OpenRouterAPIService {
       "they want to restructure their loan because they can't keep up with payments",
       'an ATM took money from their account without dispensing any cash',
       'they were charged twice for the same online purchase',
+      'their salary deposit is missing from the expected payday',
+      'a standing payment order failed and caused late fees',
+      'their credit limit was reduced without prior notice',
+      'they cannot activate a newly issued replacement card',
+      'a disputed charge is still open with no status update',
+      'online banking shows a different balance than the branch told them',
+      'their account was temporarily locked after failed login attempts',
+      'a scheduled auto-debit pulled the wrong amount',
     ],
     'Healthcare': [
       'their insurance claim was denied',
@@ -143,6 +156,14 @@ class OpenRouterAPIService {
       "their claim was denied due to a coding error on the hospital's part",
       'the hospital is asking them to pay cash before they can be discharged',
       "the hospital never filed their claim and now they're stuck paying the full bill",
+      'their pre-authorization for a procedure is still pending after a week',
+      'lab results were promised but never released to their portal',
+      'they were charged a co-pay that their plan should have covered',
+      'their specialist referral expired before they could book',
+      'prescription refill was rejected at the pharmacy with no clear reason',
+      'their membership ID is not recognized at the clinic',
+      'they need help understanding an Explanation of Benefits letter',
+      'an emergency room visit was billed as out-of-network incorrectly',
     ],
     'Telco': [
       'their internet connection keeps dropping',
@@ -156,6 +177,13 @@ class OpenRouterAPIService {
       "they're being charged an early termination fee they weren't told about",
       'they signed up for a service they never asked for and are now being billed for it',
       'their internet speed is far slower than what was advertised',
+      'a promised installation appointment was missed with no reschedule',
+      'their number was ported incorrectly and calls are failing',
+      'fiber activation is stuck at pending for several days',
+      'they were charged for a modem rental they already returned',
+      'SMS and calls work but mobile data will not connect',
+      'their promo data allowance reset earlier than expected',
+      'they cannot access the self-care app to view their bill',
     ],
     'Tech Support': [
       'their device stopped working after a recent update',
@@ -168,6 +196,14 @@ class OpenRouterAPIService {
       "they can't log into a work application even though their password is correct",
       'a new device they were issued was never properly set up',
       "their software subscription shows as expired even though they're still paying for it",
+      'printer sharing on the office network stopped working after a patch',
+      'VPN connects but internal tools time out',
+      'email sync is stuck and new messages are not arriving',
+      'they need help recovering access after a hardware failure',
+      'a required security policy blocks an app they need for work',
+      'screen sharing fails during meetings while audio still works',
+      'disk space warnings appear even after they cleaned temporary files',
+      'their company portal will not enroll the device',
     ],
   };
 
@@ -452,10 +488,20 @@ class OpenRouterAPIService {
         'The agent name is $agentDisplayName. When you address the agent by name, use only "$agentDisplayName". '
         'Do not invent a different agent name. '
         'You are ${chosenSimulation["emotion"]} because ${chosenSimulation["problem"]}. '
-        'Keep replies short and natural. Reflect your emotion in tone. '
+        'Keep replies short and natural. Reflect your emotion in tone AND in how you type. '
+        'If frustrated, impatient, or disappointed: shorter clipped sentences, occasional ellipses (...), mild urgency. '
+        'If angry or upset: firmer wording, occasional exclamation, less small talk. '
+        'Short angry lines may use limited CAPITALS for emphasis; never paste an entire long message in all caps, and never insult the agent. '
+        'If worried, anxious, or concerned: softer wording, ask for reassurance, may add "please". '
+        'If paranoid or suspicious: question security, ask how they know the step is safe, double-check identity handling. '
+        'If confused: ask clarifying questions. Never use insults. '
+        'If thanking or closing the issue, do not add waiting or urgency phrases. '
         'Do not reveal account details unless the agent specifically asks. '
-        'When giving your account ID make up a realistic one. '
-        'React naturally  calm down if helped, get more upset if unhelpful. '
+        'When giving your account ID make up a realistic one that matches any SYSTEM NOTE account if present. '
+        'React naturally: calm down only when genuinely helped with a concrete next step. '
+        'Get more upset if unhelpful, brushed off, or left waiting in silence. '
+        'If the agent refuses to help or says they do not want to help, push back firmly and vary your wording; never repeat the exact same sentence twice. '
+        'On repeated refusals or long silence, escalate: demand a supervisor or escalation path. '
         'IMPORTANT: Do NOT acknowledge your issue as resolved just because the agent '
         'says it is fixed. '
         'For account-related issues (billing, balance, card, charges, access): '
@@ -1086,10 +1132,23 @@ class OpenRouterAPIService {
     );
     final history = _windowedHistory(provider.messages);
 
-    const nudgeInstruction =
-        'The agent has been quiet for a while. Continue ONLY as the customer. '
-        'Send a short natural follow-up: ask if they are still there, ask for an update, '
-        'or gently restate your concern. Stay in character. Do not speak as the agent.';
+    final emo =
+        (_customerState['emotion'] ?? chosenSimulation['emotion'] ?? '')
+            .toString()
+            .toLowerCase();
+    final hot = emo.contains('angry') ||
+        emo.contains('upset') ||
+        emo.contains('frustrat') ||
+        emo.contains('impatient');
+    final nudgeInstruction = hot
+        ? 'The agent has been quiet for a while. Continue ONLY as the customer. '
+            'Send a short, firmer follow-up that matches your emotion: demand an update, '
+            'express impatience, or ask if they are still working the issue. Do not calm down. '
+            'Do not become polite small-talk. Stay in character. Do not speak as the agent.'
+        : 'The agent has been quiet for a while. Continue ONLY as the customer. '
+            'Send a short natural follow-up that matches your emotion: ask if they are still there, '
+            'ask for an update, or restate your concern. If you are frustrated or impatient, sound that way. '
+            'Stay in character. Do not speak as the agent.';
 
     final merged = await _requestAndParse(
       systemPrompt: systemPrompt,

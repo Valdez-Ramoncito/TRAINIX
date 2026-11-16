@@ -38,6 +38,10 @@ class TypeCastAPIService {
   //exact return type of setBufferStream()
   dynamic _currentSource;
 
+  SoundHandle? _holdMusicHandle;
+  dynamic _holdMusicSource;
+  static const String holdMusicAsset = 'assets/audio/hold_music.mp3';
+
   //clear messages
   void clearMessages(BuildContext context) {
     openRouterAPI.clearMessages(context);
@@ -55,16 +59,22 @@ class TypeCastAPIService {
   EmotionPreset _emotion(String emotion) {
     switch (emotion.toLowerCase()) {
       case 'angry':
+      case 'upset':
         return EmotionPreset.angry;
       case 'frustrated':
+      case 'disappointed':
         return EmotionPreset.angry;
       case 'impatient':
         return EmotionPreset.toneup;
       case 'anxious':
+      case 'worried':
+      case 'sad':
         return EmotionPreset.sad;
       case 'concerned':
         return EmotionPreset.tonedown;
       case 'confused':
+        return EmotionPreset.normal;
+      case 'neutral':
         return EmotionPreset.normal;
       default:
         return EmotionPreset.normal;
@@ -75,16 +85,24 @@ class TypeCastAPIService {
   double _emotionIntensity(String emotion) {
     switch (emotion.toLowerCase()) {
       case 'angry':
-        return 1.5;
+      case 'upset':
+        return 1.75;
       case 'frustrated':
+      case 'disappointed':
+        return 1.6;
       case 'impatient':
-        return 1.2;
+        return 1.45;
       case 'anxious':
-        return 0.9;
+      case 'worried':
+        return 1.15;
+      case 'sad':
+        return 1.05;
       case 'concerned':
-        return 0.8;
+        return 0.95;
       case 'confused':
-        return 1.1;
+        return 1.15;
+      case 'neutral':
+        return 0.6;
       default:
         return 0.6;
     }
@@ -201,6 +219,45 @@ class TypeCastAPIService {
     if (_currentHandle != null) {
       _soLoud.stop(_currentHandle!);
       _currentHandle = null;
+    }
+  }
+
+  /// Loopable hold music. No-ops if the asset is not present yet.
+  Future<void> startHoldMusic() async {
+    await stopHoldMusic();
+    try {
+      await init();
+      final source = await _soLoud.loadAsset(holdMusicAsset);
+      _holdMusicSource = source;
+      // play returns SoundHandle (extension type), not a Future.
+      _holdMusicHandle = _soLoud.play(source, looping: true, volume: 0.45);
+    } catch (e) {
+      print('Hold music unavailable ($holdMusicAsset): $e');
+      _holdMusicHandle = null;
+      _holdMusicSource = null;
+    }
+  }
+
+  Future<void> stopHoldMusic() async {
+    try {
+      if (_holdMusicHandle != null) {
+        _soLoud.stop(_holdMusicHandle!);
+        _holdMusicHandle = null;
+      }
+      if (_holdMusicSource != null) {
+        try {
+          await _soLoud.disposeSource(_holdMusicSource);
+        } catch (_) {
+          try {
+            _soLoud.disposeSource(_holdMusicSource);
+          } catch (_) {}
+        }
+        _holdMusicSource = null;
+      }
+    } catch (e) {
+      print('stopHoldMusic: $e');
+      _holdMusicHandle = null;
+      _holdMusicSource = null;
     }
   }
 }

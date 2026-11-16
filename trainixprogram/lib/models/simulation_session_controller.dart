@@ -31,6 +31,7 @@ class SimulationSessionController extends ChangeNotifier {
     bool needsAccount = true,
     bool escalateFromStart = false,
     String? casePackId,
+    SimPack? packOverride,
   }) {
     messages.clear();
     mistakes.clear();
@@ -41,18 +42,20 @@ class SimulationSessionController extends ChangeNotifier {
     evidence = const Evidence();
     blueprint = null;
 
-    final pack = SimMissionCatalog.resolve(
-      sector: sector,
-      problem: problem,
-      family: family,
-      needsAccount: needsAccount,
-      escalateFromStart: escalateFromStart,
-    );
+    final pack = packOverride ??
+        SimMissionCatalog.resolve(
+          sector: sector,
+          problem: problem,
+          family: family,
+          needsAccount: needsAccount,
+          escalateFromStart: escalateFromStart,
+        );
     mission.start(pack);
     _mirrorFromMission();
     SimFlowLog.block('mission.start', {
       'pack': pack.id,
       'family': family.name,
+      'customer': pack.customerName,
       'steps': pack.steps.length,
       'needsAccount': pack.needsAccount,
       'current': mission.state.currentId,

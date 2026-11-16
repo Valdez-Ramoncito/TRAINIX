@@ -299,7 +299,8 @@ class ScoringTransparency {
         '-1 to -1.5: Occasional soft hesitation (partial)',
       ],
       sourceNote:
-          'Voice delivery category under ICT313365. Separate from Tone warmth.',
+          'Voice delivery category under ICT313365. Separate from Tone warmth. '
+          'Refuse wording alone is Positive Scripting, not automatic low Confidence.',
     ),
     ScoringDimension(
       key: 'spokenClarity',
@@ -404,7 +405,9 @@ class ScoringTransparency {
         '-1 to -1.5: Mild structure issue (partial)',
       ],
       sourceNote:
-          'Non-Voice Grammar is separate from keystroke accuracy and word choice.',
+          'Non-Voice Grammar is separate from keystroke accuracy and word choice. '
+          'Missing apostrophes in dont/cant are a mild pattern (max -1), not -2 each. '
+          'Refuse tone is Positive Scripting, not Grammar.',
     ),
     ScoringDimension(
       key: 'correctWordUse',

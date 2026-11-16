@@ -65,7 +65,12 @@ class SimulationCaseLibrary {
         'That helps for now. Thank you.',
         'Okay, I will wait for that update. Thanks for the help.',
       ],
-      otherReplies: ['Can you stay on this upgrade denial with me?'],
+      otherReplies: [
+        'Can you stay on this upgrade denial with me?',
+        'I still need a clear reason for the upgrade denial.',
+        'Please keep working the upgrade denial. What is the next step?',
+        'My upgrade is still blocked. Can we focus on fixing that?',
+      ],
     ),
     SimulationCasePack(
       id: 'telco_outage',
@@ -91,7 +96,12 @@ class SimulationCaseLibrary {
         'Please escalate to field support if remote checks fail.',
       ],
       closeReplies: ['Alright, I will wait for the ticket update. Thanks.'],
-      otherReplies: ['I still need my internet restored.'],
+      otherReplies: [
+        'I still need my internet restored.',
+        'Service is still down on my end. Any update?',
+        'Can we stay on restoring my internet connection?',
+        'My connection is still out. What can you do next?',
+      ],
     ),
     SimulationCasePack(
       id: 'telco_bill_spike',
@@ -117,7 +127,12 @@ class SimulationCaseLibrary {
         'Please escalate billing review if the charge cannot be explained here.',
       ],
       closeReplies: ['That clears it up. Thank you.'],
-      otherReplies: ['I still need the bill increase explained.'],
+      otherReplies: [
+        'I still need the bill increase explained.',
+        'The charge still does not make sense. Can you break it down?',
+        'Please stay on the unexpected bill increase with me.',
+        'I need a clear explanation of why my bill went up.',
+      ],
     ),
     SimulationCasePack(
       id: 'tech_virus_alert',
@@ -143,7 +158,12 @@ class SimulationCaseLibrary {
         'If this needs a specialist, please escalate and tell me what details they need.',
       ],
       closeReplies: ['That makes sense. I will follow those steps. Thank you.'],
-      otherReplies: ['I still need help with the security alert on my device.'],
+      otherReplies: [
+        'I still need help with the security alert on my device.',
+        'The security alert is still open. What should I do next?',
+        'Can we stay focused on clearing this security alert?',
+        'Please guide me through fixing the security alert.',
+      ],
     ),
     SimulationCasePack(
       id: 'tech_password_lock',
@@ -167,7 +187,12 @@ class SimulationCaseLibrary {
       ],
       escalateReplies: ['Please escalate if unlock needs another team.'],
       closeReplies: ['That helps. I will try again now. Thank you.'],
-      otherReplies: ['I still need help signing in.'],
+      otherReplies: [
+        'I still need help signing in.',
+        'I am still locked out. Can we keep working the sign-in issue?',
+        'Access is still blocked. What is the next recovery step?',
+        'Please stay on getting me back into my account.',
+      ],
     ),
     SimulationCasePack(
       id: 'tech_slow_app',
@@ -195,7 +220,12 @@ class SimulationCaseLibrary {
       closeReplies: [
         'Alright, I will try that and follow up if it fails. Thanks.',
       ],
-      otherReplies: ['I still need the freeze fixed.'],
+      otherReplies: [
+        'I still need the freeze fixed.',
+        'The app is still freezing on recent files. Any other step?',
+        'Can we stay on fixing this freeze?',
+        'My workflow is blocked until the app stops hanging.',
+      ],
     ),
     SimulationCasePack(
       id: 'finance_pending_card',
@@ -226,7 +256,12 @@ class SimulationCaseLibrary {
         'Understood. I will monitor it as you said. Thank you.',
         'That clears it up for now. Thanks for checking.',
       ],
-      otherReplies: ['I still need help with the pending card payment.'],
+      otherReplies: [
+        'I still need help with the pending card payment.',
+        'The charge is still pending. Will I be charged twice?',
+        'Can we stay on clearing this pending payment?',
+        'Please confirm the status of that pending transaction.',
+      ],
     ),
     SimulationCasePack(
       id: 'finance_wrong_fee',
@@ -252,7 +287,12 @@ class SimulationCaseLibrary {
         'Please escalate fee disputes if you cannot adjust it here.',
       ],
       closeReplies: ['That explanation helps. Thank you.'],
-      otherReplies: ['I still need the unexpected fee handled.'],
+      otherReplies: [
+        'I still need the unexpected fee handled.',
+        'That fee is still unexplained. Can you review it?',
+        'Please stay on the service fee dispute with me.',
+        'I need either a reversal or a clear reason for the fee.',
+      ],
     ),
     SimulationCasePack(
       id: 'finance_transfer_delay',
@@ -278,7 +318,12 @@ class SimulationCaseLibrary {
         'Please escalate to payments operations if the transfer is stuck.',
       ],
       closeReplies: ['I will wait for that status. Thank you.'],
-      otherReplies: ['I still need the transfer status.'],
+      otherReplies: [
+        'I still need the transfer status.',
+        'The funds still have not arrived. Can you trace it?',
+        'Please stay on locating this transfer with me.',
+        'I need to know if the transfer failed or is still processing.',
+      ],
     ),
     SimulationCasePack(
       id: 'health_appointment',
@@ -308,7 +353,12 @@ class SimulationCaseLibrary {
         'That is all I needed. Thank you.',
         'Great, I will follow those instructions. Thanks.',
       ],
-      otherReplies: ['I still need the appointment confirmation details.'],
+      otherReplies: [
+        'I still need the appointment confirmation details.',
+        'I still do not have a confirmed slot. Can we finish that?',
+        'Please stay on booking or confirming the appointment.',
+        'What is the next step so I get a confirmed visit time?',
+      ],
     ),
     SimulationCasePack(
       id: 'health_claim_status',
@@ -334,7 +384,12 @@ class SimulationCaseLibrary {
         'Please escalate to claims review if the status is stuck.',
       ],
       closeReplies: ['That is the update I needed. Thank you.'],
-      otherReplies: ['I still need the claim status update.'],
+      otherReplies: [
+        'I still need the claim status update.',
+        'The claim is still unclear. Can you check the status again?',
+        'Please stay on this claim with me until I know the outcome.',
+        'What is the next step while the claim is under review?',
+      ],
     ),
     SimulationCasePack(
       id: 'health_rx_refill',
@@ -360,7 +415,12 @@ class SimulationCaseLibrary {
         'Please escalate if authorization is stuck beyond normal time.',
       ],
       closeReplies: ['I understand the next step. Thank you.'],
-      otherReplies: ['I still need help with the delayed refill.'],
+      otherReplies: [
+        'I still need help with the delayed refill.',
+        'The pharmacy still cannot release the refill. Any update?',
+        'Please stay on getting this prescription refill approved.',
+        'What is the next step so I can pick up the medication?',
+      ],
     ),
   ];
 

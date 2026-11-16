@@ -37,9 +37,14 @@ class PerformanceStatsPanel extends StatelessWidget {
         final liveSessions = history.sessions
             .where((s) => !isDebugSession(s))
             .toList();
-        final liveEvals = history.evaluations
-            .where((e) => !isDebugEvaluation(e))
-            .toList();
+        // Match Session History order: newest sessions first, then customers
+        // within each session (latest customer first). Avoids flat eval order
+        // drifting from what the history list shows.
+        final liveEvals = <SessionEvaluation>[
+          for (final s in liveSessions)
+            for (final e in s.evaluations.reversed)
+              if (!isDebugEvaluation(e)) e,
+        ];
 
         if (liveEvals.isEmpty && liveSessions.isEmpty) {
           return Center(
@@ -246,7 +251,7 @@ class PerformanceStatsPanel extends StatelessWidget {
                       const Color(0xFF70BD8A),
                     ),
                     const Gap(10),
-                    ...liveEvals.reversed.take(6).map((e) {
+                    ...liveEvals.take(6).map((e) {
                       final c = stageColor(e.overallScore);
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 8),

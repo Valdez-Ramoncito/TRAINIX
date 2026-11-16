@@ -32,12 +32,13 @@ class AccountGeneratorService {
 
   static String _normalizeListAccountId(String raw, String ownerName) {
     final t = raw.trim();
-    if (t.toUpperCase().startsWith('ACC-')) return t;
-    final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isNotEmpty) {
-      final n = int.tryParse(digits) ?? ownerName.hashCode.abs();
-      return 'ACC-${(n % 9000) + 1000}';
+    if (t.toUpperCase().startsWith('ACC-')) {
+      final digits = t.substring(4).replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) return 'ACC-$digits';
+      return t;
     }
+    final digits = t.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isNotEmpty) return 'ACC-$digits';
     return 'ACC-${ownerName.hashCode.abs() % 9000 + 1000}';
   }
 

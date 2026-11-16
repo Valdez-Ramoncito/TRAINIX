@@ -73,6 +73,34 @@ class SimPack {
     required this.steps,
     this.accountDetails = const {},
   });
+
+  SimPack copyWith({
+    String? id,
+    String? title,
+    String? sector,
+    ProblemFamily? family,
+    bool? needsAccount,
+    String? customerName,
+    String? problemSummary,
+    String? emotion,
+    String? openingCustomerLine,
+    List<SimStep>? steps,
+    Map<String, String>? accountDetails,
+  }) {
+    return SimPack(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      sector: sector ?? this.sector,
+      family: family ?? this.family,
+      needsAccount: needsAccount ?? this.needsAccount,
+      customerName: customerName ?? this.customerName,
+      problemSummary: problemSummary ?? this.problemSummary,
+      emotion: emotion ?? this.emotion,
+      openingCustomerLine: openingCustomerLine ?? this.openingCustomerLine,
+      steps: steps ?? this.steps,
+      accountDetails: accountDetails ?? this.accountDetails,
+    );
+  }
 }
 
 class SimMissionState {
@@ -412,13 +440,15 @@ class SimMissionRunner {
           .toList(),
     );
     final views = checklistViews();
-    // Escalation tab after a few agent turns, or on true handoff cases.
     final traineeTurns = messages.where((m) => m.isTrainee).length;
+    final lateNetwork =
+        family == ProblemFamily.networkConnectivity && state.done.length >= 2;
     final showEscalate =
         evidence.branch == 'escalate' ||
         evidence.escalationSubmitted ||
         family == ProblemFamily.trueEscalate ||
         (pack?.id == 'mission_escalate') ||
+        lateNetwork ||
         traineeTurns >= 3;
     String? amber;
     if (step != null) {
@@ -454,6 +484,7 @@ class SimMissionRunner {
   void _evaluate() {
     final p = pack;
     if (p == null || p.steps.isEmpty) return;
+    _completeSatisfiedToolStepsAhead();
     var guard = 0;
     while (guard < 12) {
       guard++;
@@ -473,6 +504,34 @@ class SimMissionRunner {
         continue;
       }
       return;
+    }
+  }
+
+  /// Complete tool steps whose required tool event is already satisfied, even
+  /// if a prior speak step is still current, so tool order can vary slightly.
+  void _completeSatisfiedToolStepsAhead() {
+    final p = pack;
+    if (p == null) return;
+    for (var i = 0; i < p.steps.length; i++) {
+      final step = p.steps[i];
+      if (step.kind != SimStepKind.tool) continue;
+      if (state.done.contains(step.id)) continue;
+      if (!_toolMet(step.toolEvent)) continue;
+      final priorSpeakOpen = p.steps
+          .take(i)
+          .any(
+            (s) =>
+                s.kind == SimStepKind.speak &&
+                s.id == 'open' &&
+                !state.done.contains(s.id),
+          );
+      if (priorSpeakOpen) continue;
+      final done = {...state.done, step.id};
+      state = SimMissionState(
+        currentIndex: state.currentIndex,
+        done: done,
+        currentId: state.currentId,
+      );
     }
   }
 
@@ -540,6 +599,10 @@ class SimMissionRunner {
           final customerBefore = _customerSpokeJustBeforeLastTrainee();
           final escalated =
               evidence.escalationSubmitted || evidence.branch == 'escalate';
+          final requiresEscalate =
+              pack?.family == ProblemFamily.trueEscalate ||
+              pack?.id == 'mission_escalate';
+          if (requiresEscalate && !escalated) return false;
           final customerDone = _anyPhrase(const [
             'that is all',
             'thats all',
@@ -575,8 +638,11 @@ class SimMissionRunner {
             'how may i',
           ], trainee);
         }
-        return _phrasesHit(step.passPhrases, trainee) ||
-            _examplesAligned(step.examples, trainee);
+        if (_phrasesHit(step.passPhrases, trainee) ||
+            _examplesAligned(step.examples, trainee)) {
+          return true;
+        }
+        return _lenientSpeakPass(step, trainee);
       case SimStepKind.optionalSpeak:
         final trainee = evidence.lastTraineeText.trim();
         if (trainee.isEmpty) return false;
@@ -584,8 +650,37 @@ class SimMissionRunner {
         if (SimulationCoach.isInsultingAgentReply(trainee)) return false;
         return _phrasesHit(step.passPhrases, trainee) ||
             _anyPhrase(step.passPhrases, evidence.customerCorpus) ||
-            _examplesAligned(step.examples, trainee);
+            _examplesAligned(step.examples, trainee) ||
+            _lenientSpeakPass(step, trainee);
     }
+  }
+
+  /// Unguided-friendly and rephrased replies: substantial relevant speech
+  /// can advance non-open/non-close steps without exact bank wording.
+  bool _lenientSpeakPass(SimStep step, String trainee) {
+    if (step.id == 'open' || step.id == 'close') return false;
+    if (SimulationCoach.isInsultingAgentReply(trainee)) return false;
+    if (SimulationCoach.isNegativeAgentReply(trainee)) return false;
+    final words = SoftTextMatch.contentWords(SoftTextMatch.normalize(trainee));
+    if (words.length < 8) return false;
+    final pool = <String>[
+      ...step.passPhrases,
+      for (final ex in step.examples)
+        ...SoftTextMatch.contentWords(SoftTextMatch.normalize(ex)),
+    ];
+    if (pool.isEmpty) return false;
+    final meaningful = pool
+        .map(SoftTextMatch.normalize)
+        .where((p) => p.length >= 4)
+        .toSet()
+        .toList();
+    if (meaningful.isEmpty) return false;
+    final t = SoftTextMatch.normalize(trainee);
+    var hits = 0;
+    for (final needle in meaningful) {
+      if (t.contains(needle)) hits++;
+    }
+    return hits >= 2 && words.length >= 8;
   }
 
   /// Accept expanded or rephrased replies that stay close to a step example.
@@ -600,7 +695,7 @@ class SimMissionRunner {
       for (final w in words) {
         if (t.contains(w)) hits++;
       }
-      if (hits / words.length >= 0.5) return true;
+      if (hits / words.length >= 0.35) return true;
     }
     return false;
   }

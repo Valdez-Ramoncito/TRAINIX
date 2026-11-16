@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:trainixprogram/models/training/script_personalization.dart';
 import 'package:trainixprogram/models/training/soft_text_match.dart';
 import 'package:trainixprogram/models/simulation_stage.dart';
@@ -833,15 +835,118 @@ class SimulationCoach {
         t.contains('hold on while');
   }
 
-  static bool isNegativeAgentReply(String text) {
-    var t = text.toLowerCase().trim();
+  /// Agent told the customer they will place them on hold / need a moment.
+  static bool isHoldAdvisory(String text) {
+    final t = text.toLowerCase().trim();
     if (t.isEmpty) return false;
+    return t.contains('on hold') ||
+        t.contains('put you on hold') ||
+        t.contains('place you on hold') ||
+        t.contains('placing you on hold') ||
+        t.contains('may i hold') ||
+        t.contains('can i hold') ||
+        t.contains('hold for a') ||
+        t.contains('hold while') ||
+        t.contains('hold on while') ||
+        t.contains('one moment') ||
+        t.contains('one second') ||
+        t.contains('give me a moment') ||
+        t.contains('give me a second') ||
+        t.contains('give me a minute') ||
+        t.contains('bear with me') ||
+        t.contains('stay on the line') ||
+        t.contains('stay with me') ||
+        (t.contains('hold') &&
+            (t.contains('please') ||
+                t.contains('brief') ||
+                t.contains('moment') ||
+                t.contains('second') ||
+                t.contains('minute')));
+  }
+
+  static String _normalizeAgentToneText(String text) {
+    var t = text.toLowerCase().trim();
     t = t.replaceAll("'", '').replaceAll("'", '');
-    const patterns = [
+    return t;
+  }
+
+  /// True when the agent clearly commits to helping despite reluctant wording.
+  /// Example: "I dont want to do it, but sure I'll help".
+  static bool hasHelpCommitment(String text) {
+    final t = _normalizeAgentToneText(text);
+    if (t.isEmpty) return false;
+    const commits = [
+      'ill help',
+      'i will help',
+      'i can help',
+      'let me help',
+      'happy to help',
+      'glad to help',
+      'sure ill',
+      'sure i will',
+      'but sure',
+      'but i will help',
+      'but ill help',
+      'ill still help',
+      'i will still help',
+      'let me assist',
+      'i can assist',
+      'ill assist',
+      'i will assist',
+      'here to help',
+      'going to help',
+      'will help you',
+      'help you with',
+      'help you anyway',
+      'ill do it',
+      'i will do it',
+      'lets fix',
+      'let us fix',
+      'i can take care',
+      'ill take care',
+      'i will take care',
+    ];
+    for (final p in commits) {
+      if (t.contains(p)) return true;
+    }
+    if ((t.contains('but sure') || t.contains('but okay') || t.contains('but fine')) &&
+        (t.contains('help') || t.contains('assist') || t.contains('handle'))) {
+      return true;
+    }
+    return false;
+  }
+
+  /// Reluctant phrasing that is still a soft refuse unless help is committed.
+  static bool _hasSoftRefuseWording(String normalized) {
+    const soft = [
+      'i dont want',
+      'i do not want',
+      'dont want to',
+      'do not want to',
+      'i refuse',
+      'not going to',
+      'i dont feel like',
+      'i do not feel like',
+    ];
+    for (final p in soft) {
+      if (normalized.contains(p)) return true;
+    }
+    return false;
+  }
+
+  static bool isNegativeAgentReply(String text) {
+    final t = _normalizeAgentToneText(text);
+    if (t.isEmpty) return false;
+
+    // Hard refusals / dismissals: never overridden by a trailing "I'll help".
+    const hard = [
       'i dont know',
       'i do not know',
       'i cant help',
       'i cannot help',
+      'not going to help',
+      'wont help',
+      'will not help',
       'not my problem',
       'not my job',
       'deal with it',
@@ -883,10 +988,24 @@ class SimulationCoach {
       'bastard',
       'shut your',
     ];
-    for (final p in patterns) {
+    for (final p in hard) {
       if (t.contains(p)) return true;
     }
+    if (t == 'no' || t == 'nope' || t == 'nah') return true;
+
+    // Soft refuse: "I dont want to..." is negative unless they also commit to help.
+    if (_hasSoftRefuseWording(t)) {
+      if (hasHelpCommitment(t)) return false;
+      return true;
+    }
     return false;
+  }
+
+  /// Reluctant wording with an actual help commitment (tone issue, not hard refuse).
+  static bool isReluctantButHelping(String text) {
+    final t = _normalizeAgentToneText(text);
+    if (t.isEmpty) return false;
+    return _hasSoftRefuseWording(t) && hasHelpCommitment(t);
   }
 
   static bool isInsultingAgentReply(String text) {
@@ -921,53 +1040,210 @@ class SimulationCoach {
     return false;
   }
 
+  static final Random _reactionRandom = Random();
+  static final List<String> _recentOffTrackReplies = [];
+
+  static String _pickReaction(List<String> pool, {List<String>? avoid}) {
+    if (pool.isEmpty) return 'Can you help me with this issue?';
+    final avoidSet = <String>{
+      ...?avoid,
+      ..._recentOffTrackReplies,
+    };
+    var candidates = pool.where((p) => !avoidSet.contains(p)).toList();
+    if (candidates.isEmpty) {
+      candidates = pool
+          .where((p) => !_recentOffTrackReplies.contains(p))
+          .toList();
+    }
+    if (candidates.isEmpty) candidates = List<String>.from(pool);
+    final picked = candidates[_reactionRandom.nextInt(candidates.length)];
+    _recentOffTrackReplies.add(picked);
+    while (_recentOffTrackReplies.length > 8) {
+      _recentOffTrackReplies.removeAt(0);
+    }
+    return picked;
+  }
+
+  static void clearOffTrackMemory() {
+    _recentOffTrackReplies.clear();
+  }
+
   /// Customer reaction when the agent is off-script, rude, or nonsensical.
   /// Does not advance mission steps. Used so the customer does not go silent.
+  /// [refusalStreak] escalates firmness when the agent keeps refusing.
   static String offTrackCustomerReaction({
     required String agentText,
     required String problem,
     required String emotion,
     required String customerName,
+    int refusalStreak = 0,
+    List<String>? avoidRecent,
   }) {
-    final rude = isInsultingAgentReply(agentText) || isNegativeAgentReply(agentText);
+    final rude =
+        isInsultingAgentReply(agentText) || isNegativeAgentReply(agentText);
     final noise = isOffTopicReply(agentText, problem);
     final issue = problem.trim().isEmpty ? 'my issue' : problem.trim();
-    final shortIssue = issue.length > 60 ? 'this issue' : issue;
+    final shortIssue = issue.length > 40
+        ? 'this issue'
+        : (issue.toLowerCase().startsWith('needs help') ||
+                issue.toLowerCase().startsWith('wants ')
+            ? 'this issue'
+            : issue);
+
+    final emo = emotion.toLowerCase();
+    final isAngry = emo.contains('angry') || emo.contains('upset');
+    final isFrustrated = emo.contains('frustrat') ||
+        emo.contains('impatient') ||
+        emo.contains('annoy');
+    final isDisappointed = emo.contains('disappoint');
+    final isConfused = emo.contains('confused');
+    final isSad = emo.contains('sad');
+    final isWorried = emo.contains('worried') ||
+        emo.contains('anxious') ||
+        emo.contains('concern');
+    final baseHot = rude || isAngry || isFrustrated || isDisappointed;
+    final hot = baseHot || refusalStreak >= 1;
+    final veryHot = refusalStreak >= 2 || isAngry;
+
+    String applyIssue(String line) => line
+        .replaceAll('my issue', shortIssue)
+        .replaceAll('my concern', shortIssue)
+        .replaceAll('my problem', shortIssue);
 
     if (rude) {
+      if (veryHot || refusalStreak >= 2) {
+        const rudeEscalate = [
+          'That is the SECOND time you brushed me off. Get a supervisor on this NOW. I am done waiting.',
+          'I already told you this is unacceptable. Escalate my issue or put someone competent on the line.',
+          'You are refusing to help again?? Transfer me immediately. This is going in a formal complaint.',
+          'Enough. I called for help and you keep shutting me down. Supervisor. Right now.',
+          'I will not sit through another dismissive answer. Fix my issue or escalate it. No more excuses.',
+          'This is ridiculous. Twice now you have refused to help. Get me someone who will actually work the case.',
+        ];
+        return applyIssue(
+          _pickReaction(rudeEscalate, avoid: avoidRecent),
+        );
+      }
+      if (hot) {
+        const rudeHot = [
+          'EXCUSE ME?! That is completely unacceptable. I called for help, not to be brushed off. Fix my issue NOW.',
+          'Wow. Really?! I am already dealing with my issue and you talk to me like that?? I need a real agent.',
+          'That is unprofessional!! Transfer me to someone who will actually help with my issue, or fix it yourself.',
+          'I am NOT okay with that tone. Help me with my issue properly or get your supervisor. NOW.',
+          'Seriously?! I did not call to be dismissed. Handle my issue or escalate it. This is ridiculous.',
+          'Do not brush me off. I need action on my issue, not a refusal. What is the next step?',
+          'That response is not acceptable. Stay professional and work on my issue, or escalate it.',
+          'I am still here about my issue. Talking like that does not help. Fix it or get a supervisor.',
+        ];
+        return applyIssue(_pickReaction(rudeHot, avoid: avoidRecent));
+      }
       const rudePool = [
-        'Excuse me? That is not how I expect to be treated. Can we stay professional and focus on my issue?',
-        'I am not okay with that tone. I called for help, not to be dismissed. Please help me with my concern.',
-        'That was unprofessional. I still need help with my problem. Can you assist me properly?',
+        'Excuse me? That is not how I expect to be treated. Stay professional and focus on my issue.',
+        'I am not okay with that tone. I called for help, not to be dismissed. Please help with my issue.',
+        'That was unprofessional. I still need help with my issue. Assist me properly.',
         'Please do not speak to me that way. I need someone who will actually help with this.',
-        'I will need a supervisor if this continues. For now, can you help me with my issue the right way?',
+        'I will ask for a supervisor if this continues. For now, help me with my issue the right way.',
+        'That is not helpful. Can we stay focused on resolving my issue?',
+        'I need real assistance, not a brush-off. What can you do about my issue?',
       ];
-      return rudePool[agentText.hashCode.abs() % rudePool.length];
+      return applyIssue(_pickReaction(rudePool, avoid: avoidRecent));
     }
 
     if (noise) {
+      if (isConfused) {
+        const noiseConfused = [
+          'I am lost... how does that relate to my issue?',
+          'Sorry, I do not follow. Can you explain that in simpler terms for my issue?',
+          'That confused me more. Can we go back to my issue step by step?',
+          'I am not sure what you mean. Please connect that to my issue.',
+        ];
+        return applyIssue(_pickReaction(noiseConfused, avoid: avoidRecent));
+      }
+      if (hot) {
+        const noiseHot = [
+          'What?? That has NOTHING to do with my issue. Stay on topic and help me already!',
+          'I do not understand what you are doing... Can we PLEASE focus on my issue?!',
+          'That makes no sense. I am here about my issue. Give me a clear next step.',
+          'We are getting off track!! My issue is still not fixed. What is the actual next step?',
+          'Hello?? Can you actually help with my issue instead of saying random things?',
+          'That does not address my issue at all. Stick to the problem I called about.',
+          'Focus, please. My issue is still open. What is the concrete next step?',
+        ];
+        return applyIssue(_pickReaction(noiseHot, avoid: avoidRecent));
+      }
       const noisePool = [
         'Sorry, I did not understand that. Can you help me with my issue?',
         'I am not sure what you mean. Can we go back to my concern?',
         'That did not make sense to me. I still need help with this.',
         'Could you clarify? I am here about my problem and need a clear next step.',
         'I think we got off track. Can you help me resolve my issue?',
+        'Can we stay on my issue? I still need a clear answer.',
       ];
-      return noisePool[agentText.hashCode.abs() % noisePool.length];
+      return applyIssue(_pickReaction(noisePool, avoid: avoidRecent));
     }
 
-    final emo = emotion.toLowerCase();
-    if (emo.contains('frustrat') || emo.contains('angry') || emo.contains('impatient')) {
-      const pushPool = [
-        'That does not address what I asked. I need a clear answer on my issue.',
-        'I am still waiting for help on this. Can you focus on my concern?',
-        'Please stay on my issue. What is the next step to fix it?',
-        'I need you to work on my problem, not something else. Can you help with that?',
+    if (veryHot) {
+      const pushEscalate = [
+        'I already asked for real help. Stop stalling and work on my issue or escalate it.',
+        'This is still not fixed. I need a concrete action on my issue, not another vague reply.',
+        'I am losing patience. What exactly will you do about my issue right now?',
+        'Another non-answer. Either fix my issue or get me someone who can.',
       ];
-      return pushPool[agentText.hashCode.abs() % pushPool.length]
-          .replaceAll('my issue', shortIssue)
-          .replaceAll('my problem', shortIssue)
-          .replaceAll('my concern', shortIssue);
+      return applyIssue(_pickReaction(pushEscalate, avoid: avoidRecent));
+    }
+
+    if (isDisappointed && !isAngry) {
+      const disappointPool = [
+        'That is disappointing. I expected clearer help with my issue.',
+        'I was hoping for a real answer on my issue... Can we try again?',
+        'This is not what I expected when I reached out. Please focus on my issue.',
+        'I am let down by that response. What can you actually do about my issue?',
+        'Honestly, that does not help. I still need someone to work my issue properly.',
+      ];
+      return applyIssue(_pickReaction(disappointPool, avoid: avoidRecent));
+    }
+
+    if (hot) {
+      const pushPool = [
+        'That does NOT fix my issue. I need a real answer, not a runaround.',
+        'I am still waiting... What is the next step for my issue??',
+        'Please stay on my issue. What can you actually do about it right now?',
+        'I need you working on my issue, not something else. Help me with that.',
+        'That does not move my issue forward. Give me a clear next step.',
+        'I called about my issue. Can we focus on solving it instead of sidestepping?',
+      ];
+      return applyIssue(_pickReaction(pushPool, avoid: avoidRecent));
+    }
+
+    if (isConfused) {
+      const confusedPool = [
+        'I am confused... can you walk me through my issue more slowly?',
+        'I am not following. How does that help with my issue?',
+        'Sorry, that lost me. Can you explain the next step for my issue simply?',
+        'I still do not understand what I should do about my issue.',
+        'Can you rephrase that? I am stuck on how this fixes my issue.',
+      ];
+      return applyIssue(_pickReaction(confusedPool, avoid: avoidRecent));
+    }
+
+    if (isSad) {
+      const sadPool = [
+        'This has been really hard. Can you please help me with my issue?',
+        'I am struggling with this... please stay with me on my issue.',
+        'I just need some clear help with my issue. Can we keep going?',
+        'It is a lot to deal with. What is the next step for my issue?',
+      ];
+      return applyIssue(_pickReaction(sadPool, avoid: avoidRecent));
+    }
+
+    if (isWorried) {
+      const worriedPool = [
+        'I am worried this will get worse. Can you help me with my issue?',
+        'Please, I need reassurance and a clear next step for my issue.',
+        'This is stressing me out... what should we do about my issue?',
+        'Can we focus on my issue? I am anxious until this is handled.',
+      ];
+      return applyIssue(_pickReaction(worriedPool, avoid: avoidRecent));
     }
 
     const mildPool = [
@@ -975,11 +1251,10 @@ class SimulationCoach {
       'Could we focus on my concern? I still need help with that.',
       'Sorry, that did not seem related. What can you do about my issue?',
       'I need guidance on my problem. Can you walk me through the next step?',
+      'Can we stay on my issue? I still need a clear answer.',
+      'That did not quite address what I need. What is the next step for my issue?',
     ];
-    return mildPool[agentText.hashCode.abs() % mildPool.length]
-        .replaceAll('my issue', shortIssue)
-        .replaceAll('my problem', shortIssue)
-        .replaceAll('my concern', shortIssue);
+    return applyIssue(_pickReaction(mildPool, avoid: avoidRecent));
   }
 
   /// True when agent text is weak vs current step examples/pass phrases.

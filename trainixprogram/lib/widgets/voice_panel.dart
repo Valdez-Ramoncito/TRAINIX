@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
@@ -16,8 +17,8 @@ import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/models/simulation_session_controller.dart';
 import 'package:trainixprogram/models/sim_mission.dart';
-import 'package:trainixprogram/models/sim_mission_catalog.dart';
 import 'package:trainixprogram/models/training/pack_session_scorer.dart';
+import 'package:trainixprogram/models/training/sim_pack_selector.dart';
 import 'package:trainixprogram/screens/mock_call_ui/left_call.dart';
 import 'package:trainixprogram/widgets/account_lookup_view.dart';
 import 'package:trainixprogram/widgets/sector_issue_guide_view.dart';
@@ -74,6 +75,7 @@ class VoicePanel extends StatefulWidget {
 
   //on after call phase, handle the after call
   final VoidCallback? onSendReport;
+  final ValueChanged<String>? onTraineeSpoke;
   final bool showScriptGuide;
   final bool scriptGuideExpanded;
   final bool guidedMode;
@@ -89,6 +91,7 @@ class VoicePanel extends StatefulWidget {
     this.onVoiceTurn,
     this.onResolutionSeconds,
     this.onSendReport,
+    this.onTraineeSpoke,
     this.showScriptGuide = true,
     this.scriptGuideExpanded = true,
     this.guidedMode = true,
@@ -129,7 +132,6 @@ class _VoicePanelState extends State<VoicePanel> {
   bool _customerConfirmed = false;
   double? _handleSeconds;
   bool _traineeHasSpoken = false;
-  static int _scriptedPackSalt = 0;
   final SimulationSessionController _sessionController =
       SimulationSessionController();
   bool _missionStartedForCall = false;
@@ -138,6 +140,14 @@ class _VoicePanelState extends State<VoicePanel> {
   String _lastSyncedToolAction = '';
   bool _toolSyncScheduled = false;
   bool _postingScripted = false;
+  bool _holdCustomerAcked = false;
+  bool _holdResumeAcked = false;
+  bool _holdPreAcked = false;
+  Timer? _voiceSilenceTimer;
+  int _refusalStreak = 0;
+  int _idleNudgeCount = 0;
+  final List<String> _recentCustomerReactions = [];
+  final ScrollController _historyScrollController = ScrollController();
 
   /// Opening customer lines held until the agent finishes the open step.
   final List<String> _heldOpeningLines = [];
@@ -197,12 +207,32 @@ class _VoicePanelState extends State<VoicePanel> {
   @override
   void dispose() {
     _holdTicker?.cancel();
+    _voiceSilenceTimer?.cancel();
+    _historyScrollController.dispose();
     _sttService.dispose();
     _typeCastService.stop();
+    _typeCastService.stopHoldMusic();
     _reportController.dispose();
     _typeCastService.openRouterAPI.releaseHeldScenario();
     _clearRetainedAudio();
     super.dispose();
+  }
+
+  void _scrollHistoryToEnd() {
+    void attempt() {
+      if (!mounted || !_historyScrollController.hasClients) return;
+      final target = _historyScrollController.position.maxScrollExtent;
+      _historyScrollController.animateTo(
+        target,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+      );
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      attempt();
+      WidgetsBinding.instance.addPostFrameCallback((_) => attempt());
+    });
   }
 
   void _startHoldTimer() {
@@ -224,7 +254,35 @@ class _VoicePanelState extends State<VoicePanel> {
         _holdSeconds = next;
         if (crossed) _holdLongWarned = true;
       });
+      if (crossed) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _nudgeCustomerStillOnHold();
+        });
+      }
     });
+  }
+
+  Future<void> _nudgeCustomerStillOnHold() async {
+    if (!mounted) return;
+    if (widget.phase != SimulationPhase.onHold) return;
+    const lines = [
+      'Hello? I am still on hold.',
+      'Are you still checking on my account?',
+      'Just making sure I am still connected while I wait.',
+    ];
+    final line = lines[Random().nextInt(lines.length)];
+    final emotion =
+        _typeCastService.openRouterAPI.chosenSimulation['emotion'] ?? 'neutral';
+    _coachMessages.add(CoachMessage(isTrainee: false, text: line));
+    _scrollHistoryToEnd();
+    if (mounted) {
+      setState(() {
+        _customerTranscript = line;
+      });
+    }
+    try {
+      await _typeCastService.playCustomerLine(line, emotion);
+    } catch (_) {}
   }
 
   void _stopHoldTimer() {
@@ -233,6 +291,258 @@ class _VoicePanelState extends State<VoicePanel> {
     _holdStartedAt = null;
     _holdSeconds = 0;
     _holdLongWarned = false;
+  }
+
+  Future<void> _playHoldCustomerAck({required bool thenStartMusic}) async {
+    const lines = [
+      'Okay, I will hold.',
+      'Alright, I am on hold.',
+      'Sure, I will wait on the line.',
+      'Okay, take your time. I will stay on the line.',
+    ];
+    final line = lines[Random().nextInt(lines.length)];
+    final emotion =
+        _typeCastService.openRouterAPI.chosenSimulation['emotion'] ?? 'neutral';
+    _coachMessages.add(CoachMessage(isTrainee: false, text: line));
+    _scrollHistoryToEnd();
+    if (mounted) {
+      setState(() {
+        _customerTranscript = line;
+        _voicePhase = _VoicePhase.customerSpeaking;
+      });
+    }
+    try {
+      await _typeCastService.playCustomerLine(line, emotion);
+    } catch (_) {}
+    if (!mounted) return;
+    if (thenStartMusic && widget.phase == SimulationPhase.onHold) {
+      await _typeCastService.startHoldMusic();
+    }
+    if (mounted) {
+      setState(() => _voicePhase = _VoicePhase.idle);
+    }
+  }
+
+  Future<void> _acknowledgeCustomerOnHold() async {
+    if (!mounted || _holdCustomerAcked) return;
+    if (widget.phase != SimulationPhase.onHold) return;
+    _holdCustomerAcked = true;
+    if (_holdPreAcked) {
+      await _typeCastService.startHoldMusic();
+      return;
+    }
+    await _playHoldCustomerAck(thenStartMusic: true);
+  }
+
+  /// Customer acknowledges hold advice while the call is still active.
+  Future<void> _preAckHoldWhileActive() async {
+    if (!mounted || _holdPreAcked) return;
+    if (widget.phase != SimulationPhase.active) return;
+    _holdPreAcked = true;
+    await _playHoldCustomerAck(thenStartMusic: false);
+  }
+
+  Future<void> _acknowledgeCustomerResumedFromHold() async {
+    if (!mounted || _holdResumeAcked) return;
+    if (widget.phase != SimulationPhase.active) return;
+    _holdResumeAcked = true;
+    await _typeCastService.stopHoldMusic();
+    const lines = [
+      'Thanks for holding. Do you have an update on my issue?',
+      'Okay, I am back. What is the status now?',
+      'Thanks for holding. Were you able to find anything?',
+      'I am still here. Any update after the hold?',
+    ];
+    final line = lines[Random().nextInt(lines.length)];
+    final emotion =
+        _typeCastService.openRouterAPI.chosenSimulation['emotion'] ?? 'neutral';
+    _coachMessages.add(CoachMessage(isTrainee: false, text: line));
+    _scrollHistoryToEnd();
+    if (mounted) {
+      setState(() {
+        _customerTranscript = line;
+        _voicePhase = _VoicePhase.customerSpeaking;
+      });
+    }
+    try {
+      await _typeCastService.playCustomerLine(line, emotion);
+    } catch (_) {}
+    if (mounted &&
+        widget.phase == SimulationPhase.active &&
+        !_customerConfirmed) {
+      setState(() => _voicePhase = _VoicePhase.idle);
+      _scheduleVoiceSilenceNudge();
+    }
+  }
+
+  String _buildVoiceIdleNudgeLine(String emotion) {
+    final emo = emotion.toLowerCase();
+    final hot = emo.contains('angry') ||
+        emo.contains('upset') ||
+        emo.contains('frustrat') ||
+        emo.contains('impatient') ||
+        emo.contains('annoy');
+    final disappointed = emo.contains('disappoint');
+    final worried = emo.contains('worried') ||
+        emo.contains('anxious') ||
+        emo.contains('concern');
+    final confused = emo.contains('confused');
+    final sad = emo.contains('sad');
+    final level = _idleNudgeCount;
+
+    List<String> pool;
+    if (hot) {
+      if (level >= 2) {
+        pool = const [
+          'I have been waiting long enough. Are you still working on this or do I need a supervisor?',
+          'This silence is not helping. I need an update on my issue right now.',
+          'Hello? I am still on the line. Move this forward or escalate it.',
+          'I am losing patience. Update me on the next step or get someone who can.',
+        ];
+      } else if (level >= 1) {
+        pool = const [
+          'Still waiting here. Can we move faster on this?',
+          'I have been waiting on this already. Do you have an update?',
+          'Are you still there? I need progress, not more silence.',
+          'Checking in again. My issue is still open. What is the next step?',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I need an update on this.',
+          'Hello? Are you still on the line?',
+          'Any update? I am still on the call about my issue.',
+          'Just checking, are you still with me?',
+        ];
+      }
+    } else if (disappointed) {
+      if (level >= 1) {
+        pool = const [
+          'Still no update. This is disappointing. Are you working on it?',
+          'I expected a response by now. Can we continue?',
+          'Silence is not helping. Please tell me the next step.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I was hoping for an update.',
+          'Just checking in. I still need help with my issue.',
+          'Any word yet? I am still waiting for a clear next step.',
+        ];
+      }
+    } else if (confused) {
+      if (level >= 1) {
+        pool = const [
+          'I am still confused about what to do next. Are you there?',
+          'Can you come back to this? I do not know the next step yet.',
+          'Still waiting. Please explain where we left off.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I am a bit lost on the next step.',
+          'Just checking in. I am not sure what I should do now.',
+          'Hello? I still need help understanding what happens next.',
+        ];
+      }
+    } else if (sad) {
+      if (level >= 1) {
+        pool = const [
+          'I am still here. This is hard. Any update when you can?',
+          'Please do not leave me hanging. I need help with this.',
+          'Still waiting, and it is weighing on me. Can we continue?',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I could really use an update.',
+          'Just checking in. I am still on the line.',
+          'I am still here if you have a next step for me.',
+        ];
+      }
+    } else if (worried) {
+      if (level >= 1) {
+        pool = const [
+          'I am getting really worried. Are you still working on this?',
+          'Still here, and a bit anxious. Any update when you can?',
+          'Please do not leave me hanging. I need to know what happens next.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I am a little worried about this.',
+          'Just checking in. Do you still need anything from me?',
+          'I am still here if you have an update for me.',
+        ];
+      }
+    } else {
+      if (level >= 2) {
+        pool = const [
+          'I am still waiting for a response. Can we continue?',
+          'Any update yet? I need to know the next step.',
+          'Still on the line. Please let me know how we proceed.',
+        ];
+      } else if (level >= 1) {
+        pool = const [
+          'Just checking in again. Do you still need anything from my side?',
+          'I am still here if you have an update for me.',
+          'Are you still working on this? I can wait a bit longer.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there?',
+          'Hello? Are you still on the line?',
+          'Just checking, are you still with me?',
+          'I am still on the call if you have an update.',
+        ];
+      }
+    }
+    return pool[Random().nextInt(pool.length)];
+  }
+
+  void _scheduleVoiceSilenceNudge() {
+    _voiceSilenceTimer?.cancel();
+    if (!mounted) return;
+    if (widget.phase != SimulationPhase.active) return;
+    if (_customerConfirmed) return;
+    if (_voicePhase == _VoicePhase.customerSpeaking ||
+        _voicePhase == _VoicePhase.processing ||
+        _voicePhase == _VoicePhase.transcribing) {
+      return;
+    }
+    final seconds = 28 + Random().nextInt(18);
+    _voiceSilenceTimer = Timer(Duration(seconds: seconds), () async {
+      if (!mounted) return;
+      if (widget.phase != SimulationPhase.active || _customerConfirmed) return;
+      if (widget.phase == SimulationPhase.onHold) return;
+      if (_postingScripted) {
+        _scheduleVoiceSilenceNudge();
+        return;
+      }
+      if (_voicePhase == _VoicePhase.traineeSpeaking ||
+          _voicePhase == _VoicePhase.transcribing ||
+          _voicePhase == _VoicePhase.processing ||
+          _voicePhase == _VoicePhase.customerSpeaking) {
+        _scheduleVoiceSilenceNudge();
+        return;
+      }
+      final emotion = (_sessionController.mission.pack?.emotion ??
+              _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
+              'neutral')
+          .toString();
+      final line = _buildVoiceIdleNudgeLine(emotion);
+      _idleNudgeCount += 1;
+      _coachMessages.add(CoachMessage(isTrainee: false, text: line));
+      _scrollHistoryToEnd();
+      if (mounted) {
+        setState(() {
+          _customerTranscript = line;
+          _voicePhase = _VoicePhase.customerSpeaking;
+        });
+      }
+      try {
+        await _typeCastService.playCustomerLine(line, emotion);
+      } catch (_) {}
+      if (mounted) {
+        setState(() => _voicePhase = _VoicePhase.idle);
+      }
+      _scheduleVoiceSilenceNudge();
+    });
   }
 
   Widget _buildHoldStatusStrip() {
@@ -343,7 +653,18 @@ class _VoicePanelState extends State<VoicePanel> {
       if (widget.phase == SimulationPhase.onHold) {
         _typeCastService.stop();
         _sttService.cancel();
+        _voiceSilenceTimer?.cancel();
         _startHoldTimer();
+        _holdCustomerAcked = false;
+        _holdResumeAcked = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _acknowledgeCustomerOnHold();
+        });
+      }
+
+      if (oldWidget.phase == SimulationPhase.onHold &&
+          widget.phase != SimulationPhase.onHold) {
+        _holdPreAcked = false;
       }
 
       if (oldWidget.phase == SimulationPhase.onHold &&
@@ -351,6 +672,9 @@ class _VoicePanelState extends State<VoicePanel> {
         _stopHoldTimer();
         setState(() {
           _voicePhase = _VoicePhase.customerSpeaking;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _acknowledgeCustomerResumedFromHold();
         });
       }
 
@@ -401,40 +725,16 @@ class _VoicePanelState extends State<VoicePanel> {
           _lastSyncedIdentity = null;
           _lastSyncedToolWork = null;
           _lastSyncedToolAction = '';
+          _refusalStreak = 0;
+          _idleNudgeCount = 0;
+          _recentCustomerReactions.clear();
+          SimulationCoach.clearOffTrackMemory();
+          _holdCustomerAcked = false;
+          _holdResumeAcked = false;
+          _holdPreAcked = false;
         });
       }
     }
-  }
-
-  ProblemFamily _scriptedFamilyForSector(String sector) {
-    final s = sector.toLowerCase();
-    final n = _scriptedPackSalt++;
-    if (s.contains('finance') || s.contains('bank')) {
-      return n.isEven
-          ? ProblemFamily.billingSurprise
-          : ProblemFamily.fundTransfer;
-    }
-    if (s.contains('health')) {
-      const opts = [
-        ProblemFamily.claimStatus,
-        ProblemFamily.prescriptionRefill,
-        ProblemFamily.appointmentPrep,
-      ];
-      return opts[n % opts.length];
-    }
-    if (s.contains('telco') || s.contains('telecom') || s.contains('mobile')) {
-      return n.isEven
-          ? ProblemFamily.networkConnectivity
-          : ProblemFamily.planEligibility;
-    }
-    if (s.contains('tech') || s.contains('it')) {
-      return n.isEven
-          ? ProblemFamily.loginAccess
-          : ProblemFamily.genericNonAccount;
-    }
-    return n.isEven
-        ? ProblemFamily.genericAccount
-        : ProblemFamily.genericNonAccount;
   }
 
   Future<void> _startScriptedMissionCase() async {
@@ -448,13 +748,7 @@ class _VoicePanelState extends State<VoicePanel> {
       accountProvider.reset();
       _coachMessages.clear();
 
-      final family = _scriptedFamilyForSector(widget.sector);
-      final pack = SimMissionCatalog.resolve(
-        sector: widget.sector,
-        problem: family.name,
-        family: family,
-        needsAccount: ProblemFamilyClassifier.defaultNeedsAccount(family),
-      );
+      final pack = SimPackSelector.resolveForSector(widget.sector);
 
       _typeCastService.openRouterAPI.chosenSimulation = {
         'sector': pack.sector,
@@ -474,6 +768,7 @@ class _VoicePanelState extends State<VoicePanel> {
         problem: pack.problemSummary,
         family: pack.family,
         needsAccount: pack.needsAccount,
+        packOverride: pack,
       );
 
       accountProvider.configureCaseGates(
@@ -483,19 +778,26 @@ class _VoicePanelState extends State<VoicePanel> {
       if (pack.needsAccount && accountProvider.accounts.isEmpty) {
         final d = pack.accountDetails;
         String targetId;
+        final accountId = d['Account ID']?.trim() ?? '';
         final card = d['Card Ending']?.trim() ?? '';
         final mobile = d['Mobile Ending']?.trim() ?? '';
         final member = d['Member ID']?.trim() ?? '';
-        if (card.isNotEmpty) {
+        if (accountId.isNotEmpty) {
+          final digits = accountId.replaceAll(RegExp(r'[^0-9]'), '');
+          targetId = 'ACC-${digits.isNotEmpty ? digits : accountId}';
+        } else if (card.isNotEmpty) {
           final digits = card.replaceAll(RegExp(r'[^0-9]'), '');
           targetId = 'ACC-${digits.isNotEmpty ? digits : card}';
         } else if (mobile.isNotEmpty) {
           final digits = mobile.replaceAll(RegExp(r'[^0-9]'), '');
           targetId = 'ACC-${digits.isNotEmpty ? digits : mobile}';
         } else if (member.isNotEmpty) {
-          final digits = member.replaceAll(RegExp(r'[^0-9]'), '');
-          final n = int.tryParse(digits) ?? pack.customerName.hashCode.abs();
-          targetId = 'ACC-${(n % 9000) + 1000}';
+          if (member.toUpperCase().startsWith('ACC-')) {
+            targetId = member;
+          } else {
+            final digits = member.replaceAll(RegExp(r'[^0-9]'), '');
+            targetId = 'ACC-${digits.isNotEmpty ? digits : member}';
+          }
         } else {
           targetId = 'ACC-${pack.customerName.hashCode.abs() % 9000 + 1000}';
         }
@@ -561,7 +863,14 @@ class _VoicePanelState extends State<VoicePanel> {
           _customerTranscript = line;
           _voicePhase = _VoicePhase.customerSpeaking;
         });
+        _scrollHistoryToEnd();
         await _typeCastService.playCustomerLine(line, emotion);
+      }
+      if (mounted &&
+          widget.phase == SimulationPhase.active &&
+          !_customerConfirmed) {
+        setState(() => _voicePhase = _VoicePhase.idle);
+        _scheduleVoiceSilenceNudge();
       }
     } finally {
       _postingScripted = false;
@@ -630,6 +939,7 @@ class _VoicePanelState extends State<VoicePanel> {
       _traineeHasSpoken = true;
       if (words.trim().isNotEmpty) {
         _coachMessages.add(CoachMessage(isTrainee: true, text: words.trim()));
+        _scrollHistoryToEnd();
       }
 
       if (_customerConfirmed) {
@@ -676,8 +986,9 @@ class _VoicePanelState extends State<VoicePanel> {
       return;
     }
     if (_voicePhase == _VoicePhase.customerSpeaking ||
-        _voicePhase == _VoicePhase.awaitingClosing) {
-      //stop the service then get the date
+        _voicePhase == _VoicePhase.awaitingClosing ||
+        _voicePhase == _VoicePhase.idle) {
+      _voiceSilenceTimer?.cancel();
       _typeCastService.stop();
 
       setState(() {
@@ -687,7 +998,6 @@ class _VoicePanelState extends State<VoicePanel> {
 
       _turnStartTime = DateTime.now();
 
-      //start listening to the words
       await _sttService.startListening(
         onResult: (words) {
           if (mounted && _voicePhase == _VoicePhase.traineeSpeaking) {
@@ -701,6 +1011,10 @@ class _VoicePanelState extends State<VoicePanel> {
   //send to the customer what the agent said
   Future<void> _sendToCustomer(String spoken) async {
     print('[VOICE] _sendToCustomer called with: "$spoken"');
+    final trimmed = spoken.trim();
+    if (trimmed.isNotEmpty) {
+      widget.onTraineeSpoke?.call(trimmed);
+    }
 
     if (SimulationSessionController.useMissionGuide &&
         _sessionController.mission.pack != null) {
@@ -715,53 +1029,78 @@ class _VoicePanelState extends State<VoicePanel> {
           );
           _heldOpeningLines.clear();
         }
-        if (_sessionController.mission.pendingCustomerLines.isEmpty &&
-            _sessionController.mission.lastTraineeDidNotAdvance) {
-          final pack = _sessionController.mission.pack!;
-          final step = _sessionController.mission.currentStep;
-          final rude =
-              SimulationCoach.isInsultingAgentReply(spoken) ||
-              SimulationCoach.isNegativeAgentReply(spoken);
-          final offTopic = SimulationCoach.isOffTopicReply(
-            spoken,
-            pack.problemSummary,
+        final pack = _sessionController.mission.pack!;
+        final step = _sessionController.mission.currentStep;
+        final rude =
+            SimulationCoach.isInsultingAgentReply(spoken) ||
+            SimulationCoach.isNegativeAgentReply(spoken);
+        final offTopic = SimulationCoach.isOffTopicReply(
+          spoken,
+          pack.problemSummary,
+        );
+        final wordCount = spoken
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((w) => w.isNotEmpty)
+            .length;
+        if (rude || (offTopic && wordCount <= 8)) {
+          if (rude) {
+            _refusalStreak += 1;
+          }
+          final reaction = SimulationCoach.offTrackCustomerReaction(
+            agentText: spoken,
+            problem: pack.problemSummary,
+            emotion: pack.emotion,
+            customerName: pack.customerName,
+            refusalStreak: _refusalStreak,
+            avoidRecent: List<String>.from(_recentCustomerReactions),
           );
-          final wordCount = spoken
-              .trim()
-              .split(RegExp(r'\s+'))
-              .where((w) => w.isNotEmpty)
-              .length;
-          if (rude || (offTopic && wordCount <= 6)) {
-            final reaction = SimulationCoach.offTrackCustomerReaction(
+          _recentCustomerReactions.add(reaction);
+          while (_recentCustomerReactions.length > 6) {
+            _recentCustomerReactions.removeAt(0);
+          }
+          _sessionController.mission.queueOffTrackCustomerReaction(reaction);
+        } else if (_sessionController.mission.pendingCustomerLines.isEmpty &&
+            _sessionController.mission.lastTraineeDidNotAdvance &&
+            step != null &&
+            step.kind != SimStepKind.tool) {
+          final judged =
+              await _typeCastService.openRouterAPI.judgeMissionTurn(
+            agentMessage: spoken,
+            stepLabel: step.label,
+            stepTip: step.tip,
+            stepExamples: step.examples,
+            problem: pack.problemSummary,
+            emotion: pack.emotion,
+            customerName: pack.customerName,
+          );
+          if (!mounted) return;
+          if (judged.adequate) {
+            _refusalStreak = 0;
+            _sessionController.mission.forceCompleteCurrentSpeakStep(
+              fallbackCustomerLine: judged.customerReply,
+            );
+          } else {
+            final reply = SimulationCoach.offTrackCustomerReaction(
               agentText: spoken,
               problem: pack.problemSummary,
               emotion: pack.emotion,
               customerName: pack.customerName,
+              refusalStreak: _refusalStreak,
+              avoidRecent: List<String>.from(_recentCustomerReactions),
             );
-            _sessionController.mission.queueOffTrackCustomerReaction(reaction);
-          } else if (step != null && step.kind != SimStepKind.tool) {
-            final judged =
-                await _typeCastService.openRouterAPI.judgeMissionTurn(
-              agentMessage: spoken,
-              stepLabel: step.label,
-              stepTip: step.tip,
-              stepExamples: step.examples,
-              problem: pack.problemSummary,
-              emotion: pack.emotion,
-              customerName: pack.customerName,
-            );
-            if (!mounted) return;
-            if (judged.adequate) {
-              _sessionController.mission.forceCompleteCurrentSpeakStep(
-                fallbackCustomerLine: judged.customerReply,
-              );
-            } else {
-              _sessionController.mission.queueOffTrackCustomerReaction(
-                judged.customerReply,
-              );
+            _recentCustomerReactions.add(reply);
+            while (_recentCustomerReactions.length > 6) {
+              _recentCustomerReactions.removeAt(0);
             }
+            _sessionController.mission.queueOffTrackCustomerReaction(
+              reply.trim().isNotEmpty ? reply : judged.customerReply,
+            );
           }
+        } else {
+          _refusalStreak = 0;
         }
+        _idleNudgeCount = 0;
         await _postScriptedCustomerLinesVoice();
         if (!mounted) return;
         final closeDone = _sessionController.mission.state.done.contains(
@@ -789,6 +1128,10 @@ class _VoicePanelState extends State<VoicePanel> {
         }
         if (mounted && _voicePhase == _VoicePhase.processing) {
           setState(() => _voicePhase = _VoicePhase.customerSpeaking);
+        }
+        if (SimulationCoach.isHoldAdvisory(spoken) &&
+            widget.phase == SimulationPhase.active) {
+          await _preAckHoldWhileActive();
         }
       } catch (e) {
         print('[VOICE] mission send failed: $e');
@@ -1278,6 +1621,7 @@ class _VoicePanelState extends State<VoicePanel> {
       isEscalating: _sessionEscalated,
       onEscalationSubmit: (msg) {
         _sessionEscalated = true;
+        _acwDisposition = 'Escalated';
         final accountProvider = Provider.of<AccountProvider>(
           context,
           listen: false,
@@ -1289,6 +1633,7 @@ class _VoicePanelState extends State<VoicePanel> {
         _coachMessages.add(CoachMessage(isTrainee: true, text: msg));
         _traineeHasSpoken = true;
         _traineeTranscript = msg;
+        _scrollHistoryToEnd();
         _sessionController.replaceMessages(
           List<CoachMessage>.from(_coachMessages),
           notify: false,
@@ -1304,6 +1649,26 @@ class _VoicePanelState extends State<VoicePanel> {
           _postScriptedCustomerLinesVoice();
         } else if (mounted) {
           setState(() {});
+          Future<void>.delayed(const Duration(milliseconds: 900), () async {
+            if (!mounted || _customerConfirmed || _postingScripted) return;
+            const reactions = [
+              'Okay. Please make sure the specialist has my details.',
+              'Thank you. I will wait for the next team to contact me.',
+              'Alright. Please note that I already explained the full issue.',
+            ];
+            final line = reactions[Random().nextInt(reactions.length)];
+            final emotion =
+                _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
+                'neutral';
+            _coachMessages.add(CoachMessage(isTrainee: false, text: line));
+            setState(() {
+              _customerTranscript = line;
+              _voicePhase = _VoicePhase.customerSpeaking;
+            });
+            try {
+              await _typeCastService.playCustomerLine(line, emotion);
+            } catch (_) {}
+          });
         }
       },
     );
@@ -1501,9 +1866,16 @@ class _VoicePanelState extends State<VoicePanel> {
     final bool isResolved = _voicePhase == _VoicePhase.resolved;
     final bool isAwaitingClosing = _voicePhase == _VoicePhase.awaitingClosing;
 
+    final bool isIdle = _voicePhase == _VoicePhase.idle;
     final bool micEnabled =
-        (isCustomerSpeaking || isTraineeSpeaking || isAwaitingClosing) &&
+        (isCustomerSpeaking ||
+            isTraineeSpeaking ||
+            isAwaitingClosing ||
+            isIdle) &&
         !isResolved &&
+        !isTranscribing &&
+        !isProcessing &&
+        widget.phase != SimulationPhase.onHold &&
         _sttReady;
 
     String statusText;
@@ -1519,6 +1891,8 @@ class _VoicePanelState extends State<VoicePanel> {
       statusText = 'Your turn';
     } else if (isProcessing) {
       statusText = 'Processing...';
+    } else if (isIdle) {
+      statusText = 'Your turn to speak';
     } else if (isCustomerSpeaking &&
         _customerTranscript.isEmpty &&
         !_traineeHasSpoken) {
@@ -1654,41 +2028,13 @@ class _VoicePanelState extends State<VoicePanel> {
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
             child: Column(
               children: [
-                Expanded(
-                  child: _voiceTranscriptCard(
-                    label: 'You',
-                    text: _traineeTranscript.isEmpty
-                        ? (isTraineeSpeaking
-                              ? 'Listening...'
-                              : (!_traineeHasSpoken &&
-                                        _customerTranscript.isEmpty
-                                    ? 'Your turn: deliver the opening spiel'
-                                    : 'Your response will appear here...'))
-                        : _traineeTranscript,
-                    empty: _traineeTranscript.isEmpty,
-                    accent: const Color(0xFF60A5FA),
-                    active:
-                        isTraineeSpeaking ||
-                        (!_traineeHasSpoken &&
-                            _customerTranscript.isEmpty &&
-                            !isProcessing &&
-                            !isResolved),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Expanded(
-                  child: _voiceTranscriptCard(
-                    label: 'Customer',
-                    text: _customerTranscript.isEmpty
-                        ? 'Waiting for customer...'
-                        : SimulationCoach.stripInternalFields(
-                            _customerTranscript,
-                          ),
-                    empty: _customerTranscript.isEmpty,
-                    accent: const Color(0xFF4ADE80),
-                    active:
-                        isCustomerSpeaking && _customerTranscript.isNotEmpty,
-                  ),
+                Expanded(child: _buildConversationHistory()),
+                const SizedBox(height: 8),
+                _buildLiveTurnStrip(
+                  isTraineeSpeaking: isTraineeSpeaking,
+                  isCustomerSpeaking: isCustomerSpeaking,
+                  isProcessing: isProcessing,
+                  isResolved: isResolved,
                 ),
               ],
             ),
@@ -1750,6 +2096,166 @@ class _VoicePanelState extends State<VoicePanel> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildConversationHistory() {
+    final history = _coachMessages
+        .where((m) => m.text.trim().isNotEmpty)
+        .toList();
+    if (history.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFF12171E),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF2A313A)),
+        ),
+        child: const Center(
+          child: Text(
+            'Conversation history will appear here as the call progresses.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF9CA3AF),
+              height: 1.35,
+            ),
+          ),
+        ),
+      );
+    }
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: const Color(0xFF12171E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFF2A313A)),
+      ),
+      child: ListView.builder(
+        controller: _historyScrollController,
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        itemCount: history.length,
+        itemBuilder: (context, index) {
+          final msg = history[index];
+          final isTrainee = msg.isTrainee;
+          final accent =
+              isTrainee ? const Color(0xFF60A5FA) : const Color(0xFF4ADE80);
+          return Padding(
+            padding: EdgeInsets.only(bottom: index == history.length - 1 ? 0 : 10),
+            child: Column(
+              crossAxisAlignment:
+                  isTrainee ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isTrainee ? 'You' : 'Customer',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  constraints: const BoxConstraints(maxWidth: 520),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isTrainee
+                        ? const Color(0xFF1E3A5F)
+                        : const Color(0xFF1F2937),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isTrainee
+                          ? const Color(0xFF3B82F6)
+                          : const Color(0xFF374151),
+                    ),
+                  ),
+                  child: Text(
+                    SimulationCoach.stripInternalFields(msg.text.trim()),
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFFE5E7EB),
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLiveTurnStrip({
+    required bool isTraineeSpeaking,
+    required bool isCustomerSpeaking,
+    required bool isProcessing,
+    required bool isResolved,
+  }) {
+    String liveLabel;
+    String liveText;
+    Color accent;
+    if (isResolved) {
+      liveLabel = 'Status';
+      liveText = 'Call resolved';
+      accent = const Color(0xFF4ADE80);
+    } else if (isTraineeSpeaking) {
+      liveLabel = 'You (live)';
+      liveText = _traineeTranscript.isEmpty ? 'Listening...' : _traineeTranscript;
+      accent = const Color(0xFF60A5FA);
+    } else if (isProcessing) {
+      liveLabel = 'Status';
+      liveText = 'Processing your reply...';
+      accent = const Color(0xFFF59E0B);
+    } else if (isCustomerSpeaking && _customerTranscript.isNotEmpty) {
+      liveLabel = 'Customer (live)';
+      liveText = SimulationCoach.stripInternalFields(_customerTranscript);
+      accent = const Color(0xFF4ADE80);
+    } else if (!_traineeHasSpoken && _customerTranscript.isEmpty) {
+      liveLabel = 'You';
+      liveText = 'Your turn: deliver the opening spiel';
+      accent = const Color(0xFF60A5FA);
+    } else {
+      liveLabel = 'Status';
+      liveText = 'Your turn to speak';
+      accent = const Color(0xFF9CA3AF);
+    }
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF12171E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            liveLabel,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: accent,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            liveText,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Color(0xFFE5E7EB),
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

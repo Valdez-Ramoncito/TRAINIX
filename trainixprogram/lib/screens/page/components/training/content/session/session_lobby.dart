@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -35,6 +34,12 @@ class _SessionLobbyState extends State<SessionLobby> {
   int? _selectedQuota;
   bool _guidedMode = true;
   bool _starting = false;
+
+  static const _accent = Color(0xFF70BD8A);
+  static const _accentBlue = Color(0xFF3B82F6);
+  static const _accentPurple = Color(0xFFA78BFA);
+  static const _cardBg = Color(0xFF151515);
+  static const _border = Color(0xFF2A2A2B);
 
   @override
   void activate() {
@@ -71,6 +76,15 @@ class _SessionLobbyState extends State<SessionLobby> {
     }
   }
 
+  Color get _modeColor {
+    switch (widget.mode) {
+      case SimulationMode.chat:
+        return _accentBlue;
+      case SimulationMode.voice:
+        return _accent;
+    }
+  }
+
   bool get _unlocked {
     switch (widget.mode) {
       case SimulationMode.chat:
@@ -97,40 +111,97 @@ class _SessionLobbyState extends State<SessionLobby> {
     widget.onStart(sector, _selectedQuota, _guidedMode);
   }
 
-  Widget _sectorChip({
+  IconData _sectorIcon(String label) {
+    switch (label.toLowerCase()) {
+      case 'random':
+        return Icons.shuffle_rounded;
+      case 'finance':
+        return Icons.account_balance_rounded;
+      case 'healthcare':
+        return Icons.local_hospital_outlined;
+      case 'telco':
+        return Icons.signal_cellular_alt_rounded;
+      case 'tech support':
+        return Icons.support_agent_rounded;
+      default:
+        return Icons.apartment_rounded;
+    }
+  }
+
+  Widget _optionChip({
     required String label,
     required bool selected,
     required VoidCallback onTap,
+    IconData? icon,
+    Color? selectedColor,
   }) {
+    final color = selectedColor ?? _accent;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
             color: selected
-                ? const Color.fromARGB(255, 12, 67, 30)
-                : const Color.fromARGB(180, 21, 21, 21),
-            borderRadius: BorderRadius.circular(20),
+                ? color.withValues(alpha: 0.16)
+                : const Color(0xFF1C1C1C),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected
-                  ? const Color.fromARGB(255, 112, 189, 138)
-                  : const Color.fromARGB(255, 49, 48, 48),
-              width: 0.5,
+              color: selected ? color.withValues(alpha: 0.7) : _border,
+              width: selected ? 1.2 : 1,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : const Color(0xFF9CA3AF),
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 14,
+                  color: selected ? color : const Color(0xFF9CA3AF),
+                ),
+                const Gap(6),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: selected ? Colors.white : const Color(0xFF9CA3AF),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _sectionHeader(IconData icon, String title, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color.withValues(alpha: 0.35)),
+          ),
+          child: Icon(icon, size: 15, color: color),
+        ),
+        const Gap(10),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ],
     );
   }
 
@@ -138,6 +209,7 @@ class _SessionLobbyState extends State<SessionLobby> {
   Widget build(BuildContext context) {
     final unlocked = _unlocked;
     final canStart = unlocked && (_useRandom || _selectedSector != null);
+    final modeColor = _modeColor;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
@@ -146,49 +218,73 @@ class _SessionLobbyState extends State<SessionLobby> {
         children: [
           Row(
             children: [
-              Icon(
-                _icon,
-                size: 26,
-                color: unlocked ? Colors.white : const Color(0xFF9CA3AF),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: modeColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: modeColor.withValues(alpha: 0.4)),
+                ),
+                child: Icon(
+                  _icon,
+                  size: 22,
+                  color: unlocked ? modeColor : const Color(0xFF9CA3AF),
+                ),
               ),
-              const Gap(12),
-              Text(
-                _title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: unlocked ? Colors.white : const Color(0xFF9CA3AF),
+              const Gap(14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: unlocked ? Colors.white : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                    const Gap(4),
+                    Text(
+                      unlocked ? _description : _lockHint,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF94A3B8),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          const Gap(8),
-          Text(
-            unlocked ? _description : _lockHint,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white70,
-              height: 1.4,
-            ),
-          ),
           if (!unlocked) ...[
-            const Gap(12),
+            const Gap(14),
             LockedPathBanner(
               message:
                   'This mode stays locked until the matching Scenario Practice stage is cleared in Mini Training.',
               actionLabel: 'Go to Scenario Practice',
               onAction: () {
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => const MiniTraining()));
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const MiniTraining()),
+                );
               },
             ),
           ],
           const Gap(22),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: boxDecoration(false, unlocked),
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: _cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: unlocked
+                    ? modeColor.withValues(alpha: 0.35)
+                    : _border,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -196,11 +292,11 @@ class _SessionLobbyState extends State<SessionLobby> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: const Color(0xFF1C1C1C),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF333333)),
+                      border: Border.all(color: _border),
                     ),
                     child: const Row(
                       children: [
@@ -223,31 +319,32 @@ class _SessionLobbyState extends State<SessionLobby> {
                       ],
                     ),
                   ),
-                const Text(
+                _sectionHeader(
+                  Icons.apartment_rounded,
                   'Sector',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white70,
-                  ),
+                  modeColor,
                 ),
-                const Gap(10),
+                const Gap(12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _sectorChip(
+                    _optionChip(
                       label: 'Random',
+                      icon: Icons.shuffle_rounded,
                       selected: _useRandom,
+                      selectedColor: modeColor,
                       onTap: () => setState(() {
                         _useRandom = true;
                         _selectedSector = null;
                       }),
                     ),
                     ...SimulationProvider.allSectors.map((s) {
-                      return _sectorChip(
+                      return _optionChip(
                         label: s,
+                        icon: _sectorIcon(s),
                         selected: !_useRandom && _selectedSector == s,
+                        selectedColor: modeColor,
                         onTap: () => setState(() {
                           _useRandom = false;
                           _selectedSector = s;
@@ -263,33 +360,34 @@ class _SessionLobbyState extends State<SessionLobby> {
                       : 'This sector will be used. You can switch back to Random anytime.',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.white54,
+                    color: Color(0xFF94A3B8),
                     height: 1.35,
                   ),
                 ),
                 const Gap(22),
-                const Text(
+                _sectionHeader(
+                  Icons.groups_outlined,
                   'Customer quota',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
-                  ),
+                  _accentPurple,
                 ),
-                const Gap(10),
+                const Gap(12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _sectorChip(
+                    _optionChip(
                       label: 'Random (3-5)',
+                      icon: Icons.casino_outlined,
                       selected: _selectedQuota == null,
+                      selectedColor: _accentPurple,
                       onTap: () => setState(() => _selectedQuota = null),
                     ),
                     ...[1, 3, 4, 5].map(
-                      (n) => _sectorChip(
+                      (n) => _optionChip(
                         label: n == 1 ? '1 customer' : '$n customers',
+                        icon: Icons.person_outline_rounded,
                         selected: _selectedQuota == n,
+                        selectedColor: _accentPurple,
                         onTap: () => setState(() => _selectedQuota = n),
                       ),
                     ),
@@ -304,32 +402,33 @@ class _SessionLobbyState extends State<SessionLobby> {
                       : 'This run will include exactly $_selectedQuota customers.',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.white54,
+                    color: Color(0xFF94A3B8),
                     height: 1.35,
                   ),
                 ),
                 const Gap(22),
-                const Text(
+                _sectionHeader(
+                  Icons.menu_book_outlined,
                   'Guidance',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF9CA3AF),
-                  ),
+                  _accentBlue,
                 ),
-                const Gap(10),
+                const Gap(12),
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _sectorChip(
+                    _optionChip(
                       label: 'Guided',
+                      icon: Icons.menu_book_outlined,
                       selected: _guidedMode,
+                      selectedColor: _accentBlue,
                       onTap: () => setState(() => _guidedMode = true),
                     ),
-                    _sectorChip(
+                    _optionChip(
                       label: 'Unguided',
+                      icon: Icons.school_outlined,
                       selected: !_guidedMode,
+                      selectedColor: _accentPurple,
                       onTap: () => setState(() => _guidedMode = false),
                     ),
                   ],
@@ -341,7 +440,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                       : 'No Script Guide, tips, or step examples. Real call-center style assessment with scoring still on.',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.white54,
+                    color: Color(0xFF94A3B8),
                     height: 1.35,
                   ),
                 ),
@@ -349,79 +448,105 @@ class _SessionLobbyState extends State<SessionLobby> {
                 if (unlocked) ...[
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1F26),
-                      borderRadius: BorderRadius.circular(10),
+                      color: modeColor.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF70BD8A).withValues(alpha: 0.35),
+                        color: modeColor.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: const Text(
-                      'Pick a sector, customer quota, and guidance mode, then start. After the run you will see a score report. Modes unlock from Scenario Practice in Mini Training.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9CA3AF),
-                        height: 1.35,
-                      ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 18,
+                          color: modeColor,
+                        ),
+                        const Gap(10),
+                        const Expanded(
+                          child: Text(
+                            'Pick a sector, customer quota, and guidance mode, then start. After the run you will see a score report. Modes unlock from Scenario Practice in Mini Training.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFCBD5E1),
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Gap(16),
-                ],
-                Row(
-                  children: [
-                    MouseRegion(
+                  const Gap(18),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: MouseRegion(
                       cursor: canStart && !_starting
                           ? SystemMouseCursors.click
                           : SystemMouseCursors.basic,
-                      child: ElevatedButton.icon(
-                        onPressed: canStart && !_starting ? _start : null,
-                        icon: _starting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white70,
-                                ),
-                              )
-                            : const Icon(Icons.play_arrow_rounded, size: 20),
-                        label: Text(
-                          _starting ? 'Starting...' : 'Start Session',
-                        ),
-                        style:
-                            ElevatedButton.styleFrom(
-                              backgroundColor: canStart
-                                  ? const Color.fromARGB(255, 12, 67, 30)
-                                  : null,
-                              foregroundColor: Colors.white,
-                              disabledForegroundColor: const Color(0xFF6B7280),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                            ).copyWith(
-                              mouseCursor: WidgetStatePropertyAll(
-                                canStart && !_starting
-                                    ? SystemMouseCursors.click
-                                    : SystemMouseCursors.basic,
-                              ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          mouseCursor: canStart && !_starting
+                              ? SystemMouseCursors.click
+                              : SystemMouseCursors.basic,
+                          onTap: canStart && !_starting ? _start : null,
+                          borderRadius: BorderRadius.circular(12),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 150),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 22,
+                              vertical: 13,
                             ),
+                            decoration: BoxDecoration(
+                              color: canStart && !_starting
+                                  ? modeColor
+                                  : const Color(0xFF2A2A2B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _starting
+                                      ? Icons.hourglass_top_rounded
+                                      : Icons.play_arrow_rounded,
+                                  size: 20,
+                                  color: canStart && !_starting
+                                      ? const Color(0xFF0B1A12)
+                                      : const Color(0xFF6B7280),
+                                ),
+                                const Gap(8),
+                                Text(
+                                  _starting ? 'Starting...' : 'Start Session',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                    color: canStart && !_starting
+                                        ? const Color(0xFF0B1A12)
+                                        : const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    if (TrainixDebug.unlocked &&
-                        widget.onDebugUnlock != null) ...[
-                      const Gap(12),
-                      MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: OutlinedButton(
-                          onPressed: widget.onDebugUnlock,
-                          child: const Text('DEBUG: Unlock'),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  ),
+                ],
+                if (TrainixDebug.unlocked && widget.onDebugUnlock != null) ...[
+                  const Gap(16),
+                  TextButton.icon(
+                    onPressed: widget.onDebugUnlock,
+                    icon: const Icon(Icons.lock_open_rounded, size: 16),
+                    label: const Text('DEBUG: Unlock this mode'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: const Color(0xFFF59E0B),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

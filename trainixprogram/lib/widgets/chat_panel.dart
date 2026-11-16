@@ -15,9 +15,10 @@ import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/models/case_checklist.dart';
 import 'package:trainixprogram/models/simulation_session_controller.dart';
-import 'package:trainixprogram/models/sim_mission_catalog.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/training/pack_session_scorer.dart';
+import 'package:trainixprogram/models/training/sim_pack_selector.dart';
+import 'package:trainixprogram/models/training/customer_emotion_style.dart';
 import 'package:trainixprogram/services/gemini_evaluation_api_service.dart';
 import 'package:trainixprogram/services/open_router_api_service.dart';
 import 'package:trainixprogram/screens/mock_call_ui/right_message.dart';
@@ -152,7 +153,6 @@ class _ChatPanelState extends State<ChatPanel> {
   //resolution timer
   DateTime? _customerStartTime;
   bool _customerConfirmed = false;
-  static int _scriptedPackSalt = 0;
   bool _postingScripted = false;
   bool? _lastSyncedIdentity;
   bool? _lastSyncedToolWork;
@@ -173,6 +173,9 @@ class _ChatPanelState extends State<ChatPanel> {
   bool _toolWaitCustomerNudged = false;
   Timer? _toolWaitTicker;
   int _customerWaitSeconds = 0;
+  int _refusalStreak = 0;
+  int _idleNudgeCount = 0;
+  final List<String> _recentCustomerReactions = [];
 
   @override
   void initState() {
@@ -322,8 +325,8 @@ class _ChatPanelState extends State<ChatPanel> {
     final seconds = DateTime.now().difference(started).inSeconds;
     _customerWaitSeconds = seconds;
 
-    final softCoachAt = _agentAdvisedWait ? 70 : 40;
-    final customerNudgeAt = _agentAdvisedWait ? 120 : 75;
+    final softCoachAt = _agentAdvisedWait ? 55 : 30;
+    final customerNudgeAt = _agentAdvisedWait ? 90 : 45;
 
     if (!_toolWaitCoachNudged &&
         seconds >= softCoachAt &&
@@ -360,7 +363,12 @@ class _ChatPanelState extends State<ChatPanel> {
       'Just checking in. Are you still working on my request?',
       'I am still here whenever you have an update for me.',
     ];
-    final line = lines[Random().nextInt(lines.length)];
+    final emotion =
+        openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+    final line = CustomerEmotionStyle.apply(
+      lines[Random().nextInt(lines.length)],
+      emotion,
+    );
     setState(() => _waitingForCustomer = true);
     await Future<void>.delayed(
       Duration(milliseconds: 900 + Random().nextInt(700)),
@@ -497,13 +505,7 @@ class _ChatPanelState extends State<ChatPanel> {
       messageProvider.clearMessage(notify: false);
       accountProvider.reset(notify: false);
 
-      final family = _scriptedFamilyForSector(widget.sector);
-      final pack = SimMissionCatalog.resolve(
-        sector: widget.sector,
-        problem: family.name,
-        family: family,
-        needsAccount: ProblemFamilyClassifier.defaultNeedsAccount(family),
-      );
+      final pack = SimPackSelector.resolveForSector(widget.sector);
 
       openRouterAPI.chosenSimulation = {
         'sector': pack.sector,
@@ -523,6 +525,7 @@ class _ChatPanelState extends State<ChatPanel> {
         problem: pack.problemSummary,
         family: pack.family,
         needsAccount: pack.needsAccount,
+        packOverride: pack,
       );
 
       accountProvider.configureCaseGates(
@@ -574,6 +577,11 @@ class _ChatPanelState extends State<ChatPanel> {
 
   String _targetAccountIdForPack(SimPack pack) {
     final d = pack.accountDetails;
+    final accountId = d['Account ID'];
+    if (accountId != null && accountId.trim().isNotEmpty) {
+      final digits = accountId.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) return 'ACC-$digits';
+    }
     final card = d['Card Ending'];
     if (card != null && card.trim().isNotEmpty) {
       final digits = card.replaceAll(RegExp(r'[^0-9]'), '');
@@ -586,44 +594,12 @@ class _ChatPanelState extends State<ChatPanel> {
     }
     final member = d['Member ID'];
     if (member != null && member.trim().isNotEmpty) {
-      final digits = member.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.isNotEmpty) {
-        final n = int.tryParse(digits) ?? pack.customerName.hashCode.abs();
-        return 'ACC-${(n % 9000) + 1000}';
-      }
+      final raw = member.trim();
+      if (raw.toUpperCase().startsWith('ACC-')) return raw;
+      final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.isNotEmpty) return 'ACC-$digits';
     }
     return 'ACC-${pack.customerName.hashCode.abs() % 9000 + 1000}';
-  }
-
-  ProblemFamily _scriptedFamilyForSector(String sector) {
-    final s = sector.toLowerCase();
-    final n = _scriptedPackSalt++;
-    if (s.contains('finance') || s.contains('bank')) {
-      return n.isEven
-          ? ProblemFamily.billingSurprise
-          : ProblemFamily.fundTransfer;
-    }
-    if (s.contains('health')) {
-      const opts = [
-        ProblemFamily.claimStatus,
-        ProblemFamily.prescriptionRefill,
-        ProblemFamily.appointmentPrep,
-      ];
-      return opts[n % opts.length];
-    }
-    if (s.contains('telco') || s.contains('telecom') || s.contains('mobile')) {
-      return n.isEven
-          ? ProblemFamily.networkConnectivity
-          : ProblemFamily.planEligibility;
-    }
-    if (s.contains('tech') || s.contains('it')) {
-      return n.isEven
-          ? ProblemFamily.loginAccess
-          : ProblemFamily.genericNonAccount;
-    }
-    return n.isEven
-        ? ProblemFamily.genericAccount
-        : ProblemFamily.genericNonAccount;
   }
 
   void _syncMissionMessages() {
@@ -671,7 +647,10 @@ class _ChatPanelState extends State<ChatPanel> {
         await Future<void>.delayed(Duration(milliseconds: delayMs));
         if (!mounted) return;
         if (line.trim().isEmpty) continue;
-        messageProvider.addMessage('assistant', line);
+        final emotion =
+            openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+        final styled = CustomerEmotionStyle.apply(line.trim(), emotion);
+        messageProvider.addMessage('assistant', styled);
         if (!mounted) return;
         _syncMissionMessages();
       }
@@ -966,6 +945,7 @@ class _ChatPanelState extends State<ChatPanel> {
       lastTraineeMessage: lastTraineeText,
       onEscalationSubmit: (msg) {
         _sessionEscalated = true;
+        _acwDisposition = 'Escalated';
         final accountProvider = Provider.of<AccountProvider>(
           context,
           listen: false,
@@ -977,6 +957,28 @@ class _ChatPanelState extends State<ChatPanel> {
         _syncMissionMessages();
         _inputController.text = msg;
         sendChatmessage();
+        if (SimulationSessionController.useMissionGuide) {
+          Future<void>.delayed(const Duration(milliseconds: 1600), () {
+            if (!mounted || _customerConfirmed) return;
+            final messageProvider = Provider.of<MessageProvider>(
+              context,
+              listen: false,
+            );
+            const reactions = [
+              'Okay. Please make sure the specialist has my details.',
+              'Thank you. I will wait for the next team to contact me.',
+              'Alright. Please note that I already explained the full issue.',
+            ];
+            final emotion =
+                openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+            final line = CustomerEmotionStyle.apply(
+              reactions[Random().nextInt(reactions.length)],
+              emotion,
+            );
+            messageProvider.addMessage('assistant', line);
+            _syncMissionMessages();
+          });
+        }
       },
       inputHint: awaitingClosing
           ? (_sessionEscalated
@@ -1449,6 +1451,10 @@ class _ChatPanelState extends State<ChatPanel> {
     _lastSyncedToolAction = '';
     _customerCheckTimer?.cancel();
     _idleNudgeTimer?.cancel();
+    _refusalStreak = 0;
+    _idleNudgeCount = 0;
+    _recentCustomerReactions.clear();
+    SimulationCoach.clearOffTrackMemory();
     _stopToolWait(resetFlags: true);
     _agentAdvisedWait = false;
     _reminders.clear();
@@ -1578,11 +1584,133 @@ class _ChatPanelState extends State<ChatPanel> {
     return false;
   }
 
+  String _buildIdleNudgeLine(String emotion) {
+    final emo = emotion.toLowerCase();
+    final hot = emo.contains('angry') ||
+        emo.contains('upset') ||
+        emo.contains('frustrat') ||
+        emo.contains('impatient') ||
+        emo.contains('annoy');
+    final disappointed = emo.contains('disappoint');
+    final worried = emo.contains('worried') ||
+        emo.contains('anxious') ||
+        emo.contains('concern');
+    final confused = emo.contains('confused');
+    final sad = emo.contains('sad');
+    final level = _idleNudgeCount;
+
+    List<String> pool;
+    if (hot) {
+      if (level >= 2) {
+        pool = const [
+          'I have been waiting long enough. Are you still working on this or do I need a supervisor??',
+          'This silence is not helping. I need an update on my issue RIGHT NOW.',
+          'Hello?? I am still here and still waiting. Move this forward or escalate it.',
+          'I am losing patience. Either update me on the next step or get someone who can.',
+        ];
+      } else if (level >= 1) {
+        pool = const [
+          'Still waiting here... Can we move faster on this??',
+          'I have been waiting on this already. Do you have an update yet?',
+          'Are you still there? I need progress on my issue, not more silence.',
+          'Checking in again. My issue is still open. What is the next step?',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I need an update on this.',
+          'Just checking in. I am still waiting for the next step.',
+          'Any update? I am still on the chat about my issue.',
+          'Hello? I am still here if you have a next step for me.',
+        ];
+      }
+    } else if (disappointed) {
+      if (level >= 1) {
+        pool = const [
+          'Still no update... this is disappointing. Are you working on it?',
+          'I expected a response by now. Can we continue with my issue?',
+          'Silence is not helping. Please tell me the next step.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I was hoping for an update on this.',
+          'Just checking in. I still need help with my issue.',
+          'Any word yet? I am still waiting for a clear next step.',
+        ];
+      }
+    } else if (confused) {
+      if (level >= 1) {
+        pool = const [
+          'I am still confused about what to do next. Are you there?',
+          'Can you come back to this? I do not know the next step yet.',
+          'Still waiting... please explain where we left off on my issue.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I am a bit lost on the next step.',
+          'Just checking in. I am not sure what I should do now.',
+          'Hello? I still need help understanding what happens next.',
+        ];
+      }
+    } else if (sad) {
+      if (level >= 1) {
+        pool = const [
+          'I am still here... this is hard. Any update when you can?',
+          'Please do not leave me hanging. I need help with this.',
+          'Still waiting, and it is weighing on me. Can we continue?',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I could really use an update...',
+          'Just checking in, please. I am still on the chat.',
+          'I am still here if you have a next step for me.',
+        ];
+      }
+    } else if (worried) {
+      if (level >= 1) {
+        pool = const [
+          'I am getting really worried... Are you still working on this, please?',
+          'Still here, and a bit anxious. Any update when you can?',
+          'Please do not leave me hanging. I need to know what happens next.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I am a little worried about this...',
+          'Just checking in, please. Do you still need anything from me?',
+          'I am still here if you have an update for me.',
+        ];
+      }
+    } else {
+      if (level >= 2) {
+        pool = const [
+          'I am still waiting for a response. Can we continue with my issue?',
+          'Any update yet? I need to know the next step.',
+          'Still on the chat. Please let me know how we proceed.',
+        ];
+      } else if (level >= 1) {
+        pool = const [
+          'Just checking in again. Do you still need anything from my side?',
+          'I am still here if you have an update for me.',
+          'Are you still working on this? I can wait a bit longer.',
+        ];
+      } else {
+        pool = const [
+          'Are you still there? I am waiting for the next step.',
+          'Just checking in. Do you still need anything from my side?',
+          'I am still on the chat if you have an update for me.',
+          'Hello, still here whenever you are ready with the next step.',
+        ];
+      }
+    }
+
+    final base = pool[Random().nextInt(pool.length)];
+    return CustomerEmotionStyle.apply(base, emotion);
+  }
+
   void _scheduleIdleNudge() {
     _idleNudgeTimer?.cancel();
     if (_chatPhase != _ChatPhase.active || _waitingForCustomer) return;
-    final minutes = 4 + Random().nextInt(3);
-    _idleNudgeTimer = Timer(Duration(minutes: minutes), () async {
+    final seconds = 28 + Random().nextInt(18);
+    _idleNudgeTimer = Timer(Duration(seconds: seconds), () async {
       if (!mounted) return;
       if (_chatPhase != _ChatPhase.active ||
           _isSending ||
@@ -1590,17 +1718,21 @@ class _ChatPanelState extends State<ChatPanel> {
           _customerConfirmed) {
         return;
       }
+      if (_selectedTab == 1 || _selectedTab == 2) {
+        _scheduleIdleNudge();
+        return;
+      }
       if (SimulationSessionController.useMissionGuide) {
         final messageProvider = Provider.of<MessageProvider>(
           context,
           listen: false,
         );
-        const nudges = [
-          'Are you still there? I am waiting for the next step.',
-          'Just checking in. Do you still need anything from my side?',
-          'I am still on the chat if you have an update for me.',
-        ];
-        final line = nudges[Random().nextInt(nudges.length)];
+        final emotion =
+            openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+        final packEmotion =
+            _sessionController.mission.pack?.emotion.toString() ?? emotion;
+        final line = _buildIdleNudgeLine(packEmotion);
+        _idleNudgeCount += 1;
         setState(() => _waitingForCustomer = true);
         await Future<void>.delayed(
           Duration(milliseconds: 1200 + Random().nextInt(800)),
@@ -1746,6 +1878,13 @@ class _ChatPanelState extends State<ChatPanel> {
         );
       });
     } else if (widget.guidedMode &&
+        SimulationCoach.isReluctantButHelping(text)) {
+      setState(() {
+        _reminders.add(
+          'AI coach tip: Avoid saying you do not want to help, even if you continue. Stay professional: offer help directly.',
+        );
+      });
+    } else if (widget.guidedMode &&
         SimulationCoach.isOffTopicReply(
           text,
           openRouterAPI.chosenSimulation['problem'] ?? '',
@@ -1780,6 +1919,7 @@ class _ChatPanelState extends State<ChatPanel> {
       _typingStartTime = null;
       _pasteSuspectedThisMessage = false;
       _previousInputLength = 0;
+      _idleNudgeCount = 0;
 
       if (SimulationSessionController.useMissionGuide &&
           _sessionController.mission.pack != null) {
@@ -1789,51 +1929,77 @@ class _ChatPanelState extends State<ChatPanel> {
         );
         messageProvider.addMessage('user', text);
         _syncMissionMessages();
-        if (_sessionController.mission.pendingCustomerLines.isEmpty &&
-            _sessionController.mission.lastTraineeDidNotAdvance) {
-          final pack = _sessionController.mission.pack!;
-          final step = _sessionController.mission.currentStep;
-          final rude =
-              SimulationCoach.isInsultingAgentReply(text) ||
-              SimulationCoach.isNegativeAgentReply(text);
-          final offTopic = SimulationCoach.isOffTopicReply(
-            text,
-            pack.problemSummary,
+        final pack = _sessionController.mission.pack!;
+        final step = _sessionController.mission.currentStep;
+        final rude =
+            SimulationCoach.isInsultingAgentReply(text) ||
+            SimulationCoach.isNegativeAgentReply(text);
+        final offTopic = SimulationCoach.isOffTopicReply(
+          text,
+          pack.problemSummary,
+        );
+        final wordCount = text
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((w) => w.isNotEmpty)
+            .length;
+        // Always react to rude/refuse/short noise. Do not rely only on
+        // lastTraineeDidNotAdvance, which can miss short negative replies.
+        if (rude || (offTopic && wordCount <= 8)) {
+          if (rude) {
+            _refusalStreak += 1;
+          }
+          final reaction = SimulationCoach.offTrackCustomerReaction(
+            agentText: text,
+            problem: pack.problemSummary,
+            emotion: pack.emotion,
+            customerName: pack.customerName,
+            refusalStreak: _refusalStreak,
+            avoidRecent: List<String>.from(_recentCustomerReactions),
           );
-          final wordCount = text
-              .trim()
-              .split(RegExp(r'\s+'))
-              .where((w) => w.isNotEmpty)
-              .length;
-          if (rude || (offTopic && wordCount <= 6)) {
-            final reaction = SimulationCoach.offTrackCustomerReaction(
+          _recentCustomerReactions.add(reaction);
+          while (_recentCustomerReactions.length > 6) {
+            _recentCustomerReactions.removeAt(0);
+          }
+          _sessionController.mission.queueOffTrackCustomerReaction(reaction);
+        } else if (_sessionController.mission.pendingCustomerLines.isEmpty &&
+            _sessionController.mission.lastTraineeDidNotAdvance &&
+            step != null &&
+            step.kind != SimStepKind.tool) {
+          final judged = await openRouterAPI.judgeMissionTurn(
+            agentMessage: text,
+            stepLabel: step.label,
+            stepTip: step.tip,
+            stepExamples: step.examples,
+            problem: pack.problemSummary,
+            emotion: pack.emotion,
+            customerName: pack.customerName,
+          );
+          if (!mounted) return;
+          if (judged.adequate) {
+            _refusalStreak = 0;
+            _sessionController.mission.forceCompleteCurrentSpeakStep(
+              fallbackCustomerLine: judged.customerReply,
+            );
+          } else {
+            final reply = SimulationCoach.offTrackCustomerReaction(
               agentText: text,
               problem: pack.problemSummary,
               emotion: pack.emotion,
               customerName: pack.customerName,
+              refusalStreak: _refusalStreak,
+              avoidRecent: List<String>.from(_recentCustomerReactions),
             );
-            _sessionController.mission.queueOffTrackCustomerReaction(reaction);
-          } else if (step != null && step.kind != SimStepKind.tool) {
-            final judged = await openRouterAPI.judgeMissionTurn(
-              agentMessage: text,
-              stepLabel: step.label,
-              stepTip: step.tip,
-              stepExamples: step.examples,
-              problem: pack.problemSummary,
-              emotion: pack.emotion,
-              customerName: pack.customerName,
-            );
-            if (!mounted) return;
-            if (judged.adequate) {
-              _sessionController.mission.forceCompleteCurrentSpeakStep(
-                fallbackCustomerLine: judged.customerReply,
-              );
-            } else {
-              _sessionController.mission.queueOffTrackCustomerReaction(
-                judged.customerReply,
-              );
+            _recentCustomerReactions.add(reply);
+            while (_recentCustomerReactions.length > 6) {
+              _recentCustomerReactions.removeAt(0);
             }
+            _sessionController.mission.queueOffTrackCustomerReaction(
+              reply.trim().isNotEmpty ? reply : judged.customerReply,
+            );
           }
+        } else {
+          _refusalStreak = 0;
         }
         await _postScriptedCustomerLines();
         if (!mounted) return;
