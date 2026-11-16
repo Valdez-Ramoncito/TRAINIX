@@ -188,7 +188,9 @@ class SimMissionRunner {
     if (step.kind == SimStepKind.tool) return false;
     final trainee = evidence.lastTraineeText.trim();
     if (trainee.isEmpty) return false;
-    if (trainee == _speakConsumedTraineeText) return true;
+    // This agent text already completed a speak step; do not treat it as a
+    // failed advance on the next step (was causing "rephrase" after confirm).
+    if (trainee == _speakConsumedTraineeText) return false;
     return !_stepPassed(step);
   }
 

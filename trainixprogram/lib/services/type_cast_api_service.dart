@@ -40,7 +40,7 @@ class TypeCastAPIService {
 
   SoundHandle? _holdMusicHandle;
   dynamic _holdMusicSource;
-  static const String holdMusicAsset = 'assets/audio/hold_music.mp3';
+  static const String holdMusicAsset = 'assets/audios/hold_music.mp3';
 
   //clear messages
   void clearMessages(BuildContext context) {

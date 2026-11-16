@@ -1112,7 +1112,8 @@ class SimMissionCatalog {
           examples: [
             'Glad it is smoother now. Is there anything else on this issue?',
           ],
-          passPhrases: ['anything else', 'glad', 'help'],
+          passPhrases: ['anything else', 'glad', 'help', 'smoother', 'solved'],
+          customerLineAfterPass: 'No, that is all. Thank you.',
         ),
         SimStep(
           id: 'close',

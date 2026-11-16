@@ -143,6 +143,7 @@ class _VoicePanelState extends State<VoicePanel> {
   bool _holdCustomerAcked = false;
   bool _holdResumeAcked = false;
   bool _holdPreAcked = false;
+  bool _awaitingAgentResumeLine = false;
   Timer? _voiceSilenceTimer;
   int _refusalStreak = 0;
   int _idleNudgeCount = 0;
@@ -345,8 +346,9 @@ class _VoicePanelState extends State<VoicePanel> {
   Future<void> _acknowledgeCustomerResumedFromHold() async {
     if (!mounted || _holdResumeAcked) return;
     if (widget.phase != SimulationPhase.active) return;
+    if (!_awaitingAgentResumeLine) return;
     _holdResumeAcked = true;
-    await _typeCastService.stopHoldMusic();
+    _awaitingAgentResumeLine = false;
     const lines = [
       'Thanks for holding. Do you have an update on my issue?',
       'Okay, I am back. What is the status now?',
@@ -670,12 +672,16 @@ class _VoicePanelState extends State<VoicePanel> {
       if (oldWidget.phase == SimulationPhase.onHold &&
           widget.phase == SimulationPhase.active) {
         _stopHoldTimer();
-        setState(() {
-          _voicePhase = _VoicePhase.customerSpeaking;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _acknowledgeCustomerResumedFromHold();
-        });
+        _typeCastService.stopHoldMusic();
+        _holdResumeAcked = false;
+        _awaitingAgentResumeLine = true;
+        if (mounted) {
+          setState(() {
+            _voicePhase = _VoicePhase.customerSpeaking;
+            _customerTranscript =
+                'Waiting for you to come back on the line...';
+          });
+        }
       }
 
       //if the current phase is incoming, then set the voice phase
@@ -732,6 +738,7 @@ class _VoicePanelState extends State<VoicePanel> {
           _holdCustomerAcked = false;
           _holdResumeAcked = false;
           _holdPreAcked = false;
+          _awaitingAgentResumeLine = false;
         });
       }
     }
@@ -1014,6 +1021,12 @@ class _VoicePanelState extends State<VoicePanel> {
     final trimmed = spoken.trim();
     if (trimmed.isNotEmpty) {
       widget.onTraineeSpoke?.call(trimmed);
+    }
+
+    // After RESUME: agent speaks first (e.g. sorry for the wait), then customer.
+    if (_awaitingAgentResumeLine && trimmed.isNotEmpty) {
+      await _acknowledgeCustomerResumedFromHold();
+      if (!mounted) return;
     }
 
     if (SimulationSessionController.useMissionGuide &&
