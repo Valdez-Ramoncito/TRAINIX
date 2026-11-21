@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
-Widget node(bool isComplete, bool isNext) {
+Widget node(bool isComplete, bool isNext, BuildContext context) {
+  final secondary = AppColors.secondary(context);
+  final primary = AppColors.primary(context);
+  final listBase = AppColors.listBase(context);
+  final nextTint = AppColors.nextTint(context);
+  final textMuted = AppColors.textMuted(context);
+
   if (isComplete) {
     return Container(
       width: 10,
       decoration: BoxDecoration(
-        shape: .circle,
-        color: const Color.fromARGB(255, 130, 174, 240),
+        shape: BoxShape.circle,
+        color: secondary,
       ),
     );
   } else if (isNext) {
@@ -15,19 +22,18 @@ Widget node(bool isComplete, bool isNext) {
         Container(
           width: 30,
           decoration: BoxDecoration(
-            shape: .circle,
-            color: const Color.fromARGB(255, 21, 21, 21),
-            border: Border.all(color: Color.fromARGB(255, 41, 70, 51)),
+            shape: BoxShape.circle,
+            color: listBase,
+            border: Border.all(color: nextTint),
           ),
         ),
-
         Positioned(
           child: Center(
             child: Container(
               width: 10,
               decoration: BoxDecoration(
-                shape: .circle,
-                color: Color.fromARGB(255, 112, 189, 138),
+                shape: BoxShape.circle,
+                color: primary,
               ),
             ),
           ),
@@ -38,8 +44,8 @@ Widget node(bool isComplete, bool isNext) {
     return Container(
       width: 10,
       decoration: BoxDecoration(
-        shape: .circle,
-        color: Color.fromARGB(180, 41, 40, 40),
+        shape: BoxShape.circle,
+        color: textMuted.withValues(alpha: 0.45),
       ),
     );
   }

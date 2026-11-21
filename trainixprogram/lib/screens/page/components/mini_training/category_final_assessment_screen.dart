@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/combined_assessment_screen.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
+import 'package:trainixprogram/models/scoring_transparency.dart';
+import 'package:trainixprogram/widgets/rubric/rubric_widgets.dart';
 
 class CategoryFinalAssessmentScreen extends StatefulWidget {
   final String categoryName;
@@ -103,11 +106,31 @@ class _CategoryFinalAssessmentScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              "Category Final Assessment",
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryText().withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.verified_outlined,
+                    size: 22,
+                    color: AppColors.secondaryText(),
+                  ),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Text(
+                    "Category Final Assessment",
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
             const Gap(12),
             Text(
@@ -115,15 +138,30 @@ class _CategoryFinalAssessmentScreenState
               style: const TextStyle(fontSize: 15, height: 1.4),
             ),
             const Gap(8),
-            const Text(
+            Text(
               "It may include quiz, typing, and voice items depending on the category.",
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: Colors.white70,
+                color: AppColors.textSecondary(context),
               ),
             ),
-            const Gap(40),
+            const Gap(20),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: RubricHowScoredCard(
+                title: 'How the final is scored',
+                formula: ScoringTransparency.assessmentFormulaLine,
+                rules: const [
+                  ScoringTransparency.quizInstrumentLine,
+                  'Typing and voice items earn their own points; their rules appear on the results screen.',
+                  'The 75% pass mark applies to the whole final, not to each item.',
+                ],
+                footer:
+                    'Retake any time. A passed final keeps the category unlocked.',
+              ),
+            ),
+            const Gap(32),
             Align(
               alignment: Alignment.center,
               child: ConstrainedBox(
@@ -134,9 +172,9 @@ class _CategoryFinalAssessmentScreenState
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: alreadyPassed
-                          ? const Color(0xFF374151)
-                          : const Color(0xFF16A34A),
-                      foregroundColor: Colors.white,
+                          ? AppColors.borderStrong(context)
+                          : AppColors.primaryText(),
+                      foregroundColor: AppColors.onPrimary(context),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -146,8 +184,8 @@ class _CategoryFinalAssessmentScreenState
                       alreadyPassed
                           ? "Assessment Already Passed"
                           : hasFinal
-                          ? "Start Final Assessment"
-                          : "Final Assessment Not Ready",
+                              ? "Start Final Assessment"
+                              : "Final Assessment Not Ready",
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,

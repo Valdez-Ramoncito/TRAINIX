@@ -230,7 +230,7 @@ class TypeCastAPIService {
       final source = await _soLoud.loadAsset(holdMusicAsset);
       _holdMusicSource = source;
       // play returns SoundHandle (extension type), not a Future.
-      _holdMusicHandle = _soLoud.play(source, looping: true, volume: 0.45);
+      _holdMusicHandle = _soLoud.play(source, looping: true, volume: 0.22);
     } catch (e) {
       print('Hold music unavailable ($holdMusicAsset): $e');
       _holdMusicHandle = null;

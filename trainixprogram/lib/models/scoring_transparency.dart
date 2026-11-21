@@ -14,6 +14,52 @@ class ScoringTransparency {
       'whole-number steps. Channel metrics (typing, fillers, pace) are tracked '
       'separately and do not change overall.';
 
+  static const String assessmentFormulaLine =
+      'Assessment score = points earned / points available. Each item is worth '
+      'one point, so the percentage is passed items over total items. Pass mark '
+      'is 75% in every Mini Training assessment.';
+
+  static const String quizInstrumentLine =
+      'Quiz items are scored by correct-answer count. This is not the '
+      '10-dimension competency rubric used in Dashboard and Session Report.';
+
+  static const String quizDeductionLine =
+      'One point is lost per wrong answer. Unanswered items count as wrong.';
+
+  static const String typingInstrumentLine =
+      'Typing items are scored by meaning match against the target reply. One '
+      'point is earned when your text covers the same meaning; exact wording, '
+      'spacing, and punctuation are not required.';
+
+  static const String voiceInstrumentLine =
+      'Voice items are scored in two halves: Content Accuracy (max 50) plus '
+      'Delivery Quality (max 50), for a 100-point total. A voice item passes '
+      'when the total is 75 or higher, content is at least 30, and delivery is '
+      'at least 28. Items without delivery scoring use the content percentage '
+      'as the total.';
+
+  static const String pendingDeliveryLine =
+      'When the delivery evaluation is unavailable, neutral delivery points '
+      'are applied and the note says so on the result.';
+
+  static const String deliveryRubricLine =
+      'Delivery Quality = Clarity (max 15) + Pace (max 10) + Tone (max 15) + '
+      'Confidence (max 10).';
+
+  static const String openingContentLine =
+      'Opening content = courtesy / thanks (10) + company identification (10) + '
+      'agent name (15) + offer of help (15). Missing the agent name or the '
+      'offer of help fails the item even when the percentage is 75 or higher.';
+
+  static const String closingContentLine =
+      'Closing content = summary or close framing (15) + offer of further help '
+      '(15) + polite thanks (10) + polite ending (10).';
+
+  static const String scriptContentLine =
+      'Content = share of target words detected in your transcript. 75% or '
+      'more of the target words earns 50 of 50, 55% earns 42, 40% earns 30, '
+      '25% earns 18, and below 25% earns 0.';
+
   static const String whoScoresLine =
       'AI scores customer-facing turns. Trainer notes are labeled when present. '
       'Scenario setup is not scored as trainee performance.';
@@ -48,7 +94,7 @@ class ScoringTransparency {
       min: 7.0,
       max: 8.99,
       colorValue: 0xFF3B82F6,
-      rangeLabel: '7-8',
+      rangeLabel: '7-8.9',
       meaning: 'Solid performance; minor gaps only.',
     ),
     ScoreLevel(
@@ -57,7 +103,7 @@ class ScoringTransparency {
       min: 5.0,
       max: 6.99,
       colorValue: 0xFFF59E0B,
-      rangeLabel: '5-6',
+      rangeLabel: '5-6.9',
       meaning: 'Partial credit; important cues missing or weak.',
     ),
     ScoreLevel(
@@ -66,7 +112,7 @@ class ScoringTransparency {
       min: 0.0,
       max: 4.99,
       colorValue: 0xFFEF4444,
-      rangeLabel: '0-4',
+      rangeLabel: '0-4.9',
       meaning: 'Limited evidence; priority practice area.',
     ),
   ];
@@ -78,6 +124,20 @@ class ScoringTransparency {
     }
     return levels.last;
   }
+
+  /// Band for a 0-100 assessment percentage, on the same ladder as [levels].
+  static ScoreLevel levelForPercent(num percent) {
+    return levelFor(percent.toDouble() / 10.0);
+  }
+
+  static String bandLabelFor(double score) => levelFor(score).label;
+
+  /// One label for chips so no surface hand-writes a range.
+  static String chipText(ScoreLevel level) {
+    return '${level.rangeLabel} ${level.label}';
+  }
+
+  static String bandChipText(double score) => chipText(levelFor(score));
 
   static double deductedFromTen(double score) {
     final s = score.clamp(0.0, 10.0);
@@ -179,7 +239,8 @@ class ScoringTransparency {
         '-2: Correct direction but never confirmed with the customer',
         '-1 to -1.5: Thin confirmation of the root cause (partial)',
       ],
-      sourceNote: 'TESDA Core Unit 2 ICT313366 (Customer Service Delivery Processes).',
+      sourceNote:
+          'TESDA Core Unit 2 ICT313366 (Customer Service Delivery Processes).',
     ),
     ScoringDimension(
       key: 'solutionDelivery',
@@ -287,7 +348,8 @@ class ScoringTransparency {
       label: 'Confidence',
       short: 'Steady, assured delivery without weak or apologetic hesitation.',
       tesda: 'ICT313365',
-      excellent: 'Assured volume and pacing; no undercutting of the agent role.',
+      excellent:
+          'Assured volume and pacing; no undercutting of the agent role.',
       good: 'Mostly steady; occasional soft hesitation.',
       developing: 'Frequent hesitation or trailing off.',
       needsWork: 'Frail, uncertain, or apologetic delivery throughout.',
@@ -364,7 +426,8 @@ class ScoringTransparency {
       good: 'Slightly fast or slow but still clear.',
       developing: 'Noticeably rushed or slow.',
       needsWork: 'Extreme pace or unannounced long dead air.',
-      gapExamples: 'Rushing, dragging, or long silent gaps without explanation.',
+      gapExamples:
+          'Rushing, dragging, or long silent gaps without explanation.',
       deductionAnchors: [
         '-3: Rushing past a healthy baseline',
         '-3: Speaking noticeably slower than a healthy baseline',
@@ -387,7 +450,8 @@ class ScoringTransparency {
         '-2: Noticeable cluster of fillers',
         '-1 to -1.5: Occasional fillers (partial)',
       ],
-      sourceNote: 'Voice filler scoring under ICT313365 clarity and conciseness.',
+      sourceNote:
+          'Voice filler scoring under ICT313365 clarity and conciseness.',
     ),
     ScoringDimension(
       key: 'grammar',
@@ -436,7 +500,8 @@ class ScoringTransparency {
       good: 'Solid accuracy with minor corrections.',
       developing: 'Accuracy under the practice threshold.',
       needsWork: 'Heavy correction pattern / low keystroke accuracy.',
-      gapExamples: 'Accuracy under 95% practice threshold (Trainix convention).',
+      gapExamples:
+          'Accuracy under 95% practice threshold (Trainix convention).',
       deductionAnchors: [
         '-3: Keystroke accuracy under 95%',
       ],
@@ -462,11 +527,154 @@ class ScoringTransparency {
     ),
   ];
 
+  /// Seven dimensions scored in Speaking Practice. Spoken-only categories sit
+  /// here so the explainer UI can reuse the same widget as live sessions.
+  static const List<ScoringDimension> speakingDimensions = [
+    ScoringDimension(
+      key: 'speakingGrammar',
+      label: 'Grammar Accuracy',
+      short: 'Sentence structure, agreement, tense, and articles in speech.',
+      tesda: 'ICT313365',
+      excellent: 'Grammar is correct throughout with no distracting slips.',
+      good: 'Mostly correct; one small slip that does not block meaning.',
+      developing: 'Repeated slips that make the sentence harder to follow.',
+      needsWork: 'Grammar errors block meaning or sound unprofessional.',
+      gapExamples:
+          'Wrong tense, missing article, subject-verb disagreement, or a sentence fragment.',
+      deductionAnchors: [
+        '-3: Repeated pattern in the same sentence or in consecutive turns',
+        '-2: One clear grammar error that changes the meaning',
+        '-1 to -1.5: Single minor slip that does not change meaning (partial)',
+      ],
+      sourceNote:
+          'Spoken grammar under TESDA Core Unit 1 ICT313365. Judged from the transcript, not the accent.',
+    ),
+    ScoringDimension(
+      key: 'speakingWordChoice',
+      label: 'Word Choice',
+      short: 'Precise, contact-center appropriate vocabulary.',
+      tesda: 'ICT313365',
+      excellent: 'Accurate and professional terms throughout.',
+      good: 'Mostly precise; one loose word with clear meaning.',
+      developing: 'Vague or informal terms used for a policy or step.',
+      needsWork:
+          'Wrong word that changes the meaning or sounds unprofessional.',
+      gapExamples:
+          'Slang, vague verbs, or a wrong term where the process needs a specific one.',
+      deductionAnchors: [
+        '-3: Wrong term that changes what the customer should do',
+        '-2: Slang or informal wording in a professional statement',
+        '-1 to -1.5: Vague but understandable wording (partial)',
+      ],
+      sourceNote:
+          'Word choice is separate from grammar. Repeating a grammar slip does not cost points twice.',
+    ),
+    ScoringDimension(
+      key: 'speakingFluency',
+      label: 'Fluency',
+      short: 'Smooth delivery at a workable speaking rate.',
+      tesda: 'ICT313365',
+      excellent: 'Steady rate with natural phrasing and no long stalls.',
+      good: 'Mostly steady; a few short stalls.',
+      developing: 'Frequent restarts or a rate outside the working band.',
+      needsWork: 'Long dead air or broken delivery throughout.',
+      gapExamples:
+          'Restarting sentences, dragging pace, rushing, or unexplained silence.',
+      deductionAnchors: [
+        '-5: Unexplained silence of roughly 10 seconds or more',
+        '-3: Speaking rate far outside a workable band',
+        '-2: Repeated restarts in one answer',
+        '-1 to -1.5: A few short stalls (partial)',
+      ],
+      sourceNote:
+          'Fluency uses measured words per minute plus transcript evidence. Target band is 110 to 160 WPM, a Trainix practice convention.',
+    ),
+    ScoringDimension(
+      key: 'speakingPronunciationClarity',
+      label: 'Pronunciation Clarity',
+      short: 'Words are intelligible in the audio, regardless of accent.',
+      tesda: 'ICT313365',
+      excellent: 'Every key term is easy to recognize on first listen.',
+      good: 'One term needs a second listen but the meaning is clear.',
+      developing: 'Several words are hard to recognize from the audio.',
+      needsWork: 'The listener cannot follow the answer from the audio.',
+      gapExamples:
+          'Key terms that are unintelligible in the recording, or dropped word endings that hide the word.',
+      deductionAnchors: [
+        '-3: Key term unintelligible and it changes the meaning',
+        '-2: Several words hard to recognize in one answer',
+        '-1 to -1.5: One soft word that is still understandable (partial)',
+      ],
+      sourceNote:
+          'Scored from the audio. Accent is not penalized. When audio is missing or rejected the dimension is marked not scored.',
+    ),
+    ScoringDimension(
+      key: 'speakingFillerUsage',
+      label: 'Filler Usage',
+      short: 'Control of um, uh, like, you know, and repeated so.',
+      tesda: 'ICT313365',
+      excellent: 'No distracting fillers.',
+      good: 'One or two fillers in a short answer.',
+      developing: 'Fillers interrupt the flow several times.',
+      needsWork: 'Fillers dominate the answer.',
+      gapExamples: 'Repeated fillers between phrases or inside a sentence.',
+      deductionAnchors: [
+        '-1 per filler beyond two in an answer, capped at -5',
+        '-2 extra when a filler replaces the word the listener needs',
+      ],
+      sourceNote:
+          'Counted from the transcript. Fillers are tracked separately and are not deducted from Grammar.',
+    ),
+    ScoringDimension(
+      key: 'speakingConfidence',
+      label: 'Speaking Confidence',
+      short: 'Assured delivery without hedging or trailing off.',
+      tesda: 'ICT313365',
+      excellent: 'Steady volume and committed statements throughout.',
+      good: 'Mostly assured; one hedge or soft ending.',
+      developing: 'Frequent hedging or a trailing voice.',
+      needsWork: 'Apologetic or uncertain delivery throughout.',
+      gapExamples:
+          'Phrases like sort of, maybe we could, or I guess, and sentences that trail off.',
+      deductionAnchors: [
+        '-4: Repeated hedging that weakens the answer',
+        '-2: One hedge on a statement that needed a clear commitment',
+        '-1 to -1.5: Occasional soft ending (partial)',
+      ],
+      sourceNote:
+          'Confidence is separate from tone warmth. A polite refusal is not scored as low confidence by itself.',
+    ),
+    ScoringDimension(
+      key: 'speakingCompleteness',
+      label: 'Completeness',
+      short: 'Every required point in the prompt was actually covered.',
+      tesda: 'ICT313366',
+      excellent: 'All required points are covered in a clear order.',
+      good: 'All points covered; one point is thin.',
+      developing: 'One required point is missing.',
+      needsWork: 'Most required points are missing.',
+      gapExamples:
+          'A free-response answer that skips the timeline, the verification step, or the next action.',
+      deductionAnchors: [
+        '-5: A required point is missing entirely',
+        '-2: A required point is mentioned but not actionable',
+        '-1: The answer runs past the time budget without adding a point (partial)',
+      ],
+      sourceNote:
+          'Read-aloud prompts check that the script was read. Free-response prompts score the required points listed on the prompt.',
+    ),
+  ];
+
+  static ScoreLevel speakingBandFor(double score) => levelFor(score);
+
   static ScoringDimension? byLabel(String label) {
     for (final d in sharedDimensions) {
       if (d.label == label) return d;
     }
     for (final d in channelDimensions) {
+      if (d.label == label) return d;
+    }
+    for (final d in speakingDimensions) {
       if (d.label == label) return d;
     }
     return null;
@@ -513,6 +721,20 @@ class ScoringTransparency {
         return Icons.fact_check_outlined;
       case 'Typing Speed':
         return Icons.keyboard_rounded;
+      case 'Grammar Accuracy':
+        return Icons.spellcheck_rounded;
+      case 'Word Choice':
+        return Icons.text_fields_rounded;
+      case 'Fluency':
+        return Icons.bolt_outlined;
+      case 'Pronunciation Clarity':
+        return Icons.mic_none_rounded;
+      case 'Filler Usage':
+        return Icons.graphic_eq_rounded;
+      case 'Speaking Confidence':
+        return Icons.trending_up_rounded;
+      case 'Completeness':
+        return Icons.checklist_rounded;
       default:
         return Icons.analytics_outlined;
     }

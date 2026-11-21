@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
@@ -92,14 +93,13 @@ class ScenarioPlayView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canNext =
-        !waitingCustomer &&
+    final canNext = !waitingCustomer &&
         coachPrompt == null &&
         turnIndex < scenario.turns.length &&
         scenario.turns[turnIndex].type == ScenarioTurnType.guide;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.scaffold(context),
       body: Column(
         children: [
           _sessionHeader(context),
@@ -113,7 +113,7 @@ class ScenarioPlayView extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 12, 8, 16),
                     child: Column(
                       children: [
-                        _objectiveBanner(canNext),
+                        _objectiveBanner(context, canNext),
                         if (feedbackKind != null) ...[
                           const Gap(8),
                           ScenarioFeedbackBanner(
@@ -134,11 +134,12 @@ class ScenarioPlayView extends StatelessWidget {
                                         child: TabBar(
                                           isScrollable: true,
                                           tabAlignment: TabAlignment.start,
-                                          indicatorColor: const Color(
-                                            0xFF70BD8A,
-                                          ),
-                                          labelColor: Colors.white,
-                                          unselectedLabelColor: Colors.white54,
+                                          indicatorColor:
+                                              AppColors.primaryText(context),
+                                          labelColor:
+                                              AppColors.textPrimary(context),
+                                          unselectedLabelColor:
+                                              AppColors.textMuted(context),
                                           tabs: const [
                                             Tab(text: 'Non-Voice'),
                                             Tab(text: 'Account Lookup'),
@@ -149,7 +150,7 @@ class ScenarioPlayView extends StatelessWidget {
                                       Expanded(
                                         child: TabBarView(
                                           children: [
-                                            _chatColumn(),
+                                            _chatColumn(context),
                                             ScenarioKeepAlive(
                                               child: ScenarioAccountLookupPanel(
                                                 accounts: visibleAccounts,
@@ -159,27 +160,21 @@ class ScenarioPlayView extends StatelessWidget {
                                                 issueResolved: issueResolved,
                                                 accountsRevealed:
                                                     accountsRevealed,
-                                                allowSearch:
-                                                    turnIndex <
+                                                allowSearch: turnIndex <
                                                         scenario.turns.length &&
-                                                    scenario
-                                                            .turns[turnIndex]
+                                                    scenario.turns[turnIndex]
                                                             .type ==
                                                         ScenarioTurnType
                                                             .accountSearch,
-                                                allowSelect:
-                                                    turnIndex <
+                                                allowSelect: turnIndex <
                                                         scenario.turns.length &&
-                                                    scenario
-                                                            .turns[turnIndex]
+                                                    scenario.turns[turnIndex]
                                                             .type ==
                                                         ScenarioTurnType
                                                             .accountSelect,
-                                                allowResolve:
-                                                    turnIndex <
+                                                allowResolve: turnIndex <
                                                         scenario.turns.length &&
-                                                    scenario
-                                                            .turns[turnIndex]
+                                                    scenario.turns[turnIndex]
                                                             .type ==
                                                         ScenarioTurnType
                                                             .accountResolve,
@@ -208,18 +203,18 @@ class ScenarioPlayView extends StatelessWidget {
                                     ],
                                   ),
                                 )
-                              : _chatColumn(),
+                              : _chatColumn(context),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const VerticalDivider(
+                VerticalDivider(
                   width: 1,
                   thickness: 0.5,
-                  color: Color(0xFF2A2A2A),
+                  color: AppColors.border(context),
                 ),
-                SizedBox(width: 320, child: _scriptGuidePanel()),
+                SizedBox(width: 320, child: _scriptGuidePanel(context)),
               ],
             ),
           ),
@@ -232,10 +227,10 @@ class ScenarioPlayView extends StatelessWidget {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF141414),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
         border: Border(
-          bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+          bottom: BorderSide(color: AppColors.border(context), width: 0.5),
         ),
       ),
       child: Row(
@@ -243,12 +238,12 @@ class ScenarioPlayView extends StatelessWidget {
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-            color: Colors.white70,
+            color: AppColors.textSecondary(context),
           ),
-          const Text(
+          Text(
             'Non-Voice Session',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontWeight: FontWeight.w700,
               fontSize: 16,
             ),
@@ -257,14 +252,14 @@ class ScenarioPlayView extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E3A5F),
+              color: AppColors.completeTint(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF3B82F6)),
+              border: Border.all(color: AppColors.secondaryText()),
             ),
             child: Text(
               scenario.sector.toUpperCase(),
-              style: const TextStyle(
-                color: Color(0xFF93C5FD),
+              style: TextStyle(
+                color: AppColors.secondaryText(),
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
               ),
@@ -273,14 +268,17 @@ class ScenarioPlayView extends StatelessWidget {
           const Spacer(),
           Text(
             scenario.customerName,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(
+                color: AppColors.textSecondary(context), fontSize: 13),
           ),
           const Gap(12),
           if (!scenario.isGuided)
             Text(
               'Mistakes ${mistakes}/${scenario.maxMistakes}',
               style: TextStyle(
-                color: mistakes > 0 ? Colors.redAccent : Colors.white38,
+                color: mistakes > 0
+                    ? AppColors.errorText()
+                    : AppColors.textMuted(context),
                 fontSize: 12,
               ),
             ),
@@ -289,30 +287,30 @@ class ScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _objectiveBanner(bool canNext) {
+  Widget _objectiveBanner(BuildContext context, bool canNext) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2A)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.flag_outlined,
                 size: 16,
-                color: Color(0xFF70BD8A),
+                color: AppColors.primaryText(),
               ),
               const Gap(8),
-              const Text(
+              Text(
                 'Objective',
                 style: TextStyle(
-                  color: Color(0xFF70BD8A),
+                  color: AppColors.primaryText(),
                   fontWeight: FontWeight.w700,
                   fontSize: 12,
                 ),
@@ -325,8 +323,8 @@ class ScenarioPlayView extends StatelessWidget {
           const Gap(6),
           Text(
             hudText ?? scenario.title,
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 13,
               height: 1.35,
             ),
@@ -336,9 +334,9 @@ class ScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _scriptGuidePanel() {
+  Widget _scriptGuidePanel(BuildContext context) {
     return Container(
-      color: const Color(0xFF121212),
+      color: AppColors.inputFill(context),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 56),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,13 +349,13 @@ class ScenarioPlayView extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF166534),
+                  color: AppColors.nextTint(context),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Text(
+                child: Text(
                   'Script Guide',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -367,10 +365,10 @@ class ScenarioPlayView extends StatelessWidget {
           ),
           const Gap(12),
           if (scenario.missionSteps.isNotEmpty) ...[
-            const Text(
+            Text(
               'Missions',
               style: TextStyle(
-                color: Colors.white70,
+                color: AppColors.textSecondary(context),
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
@@ -387,25 +385,23 @@ class ScenarioPlayView extends StatelessWidget {
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: current
-                          ? const Color(0xFF1A2E1A)
-                          : const Color(0xFF1A1A1A),
+                          ? AppColors.nextTint(context)
+                          : AppColors.elevated(context),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: done
-                            ? const Color(0xFF70BD8A)
+                            ? AppColors.primaryText()
                             : current
-                            ? const Color(0xFF34D399)
-                            : const Color(0xFF333333),
+                                ? AppColors.successText()
+                                : AppColors.border(context),
                       ),
                     ),
                     child: Text(
-                      '${done
-                          ? "Done"
-                          : current
-                          ? "Now"
-                          : "Todo"} · ${step.label}',
+                      '${done ? "Done" : current ? "Now" : "Todo"} · ${step.label}',
                       style: TextStyle(
-                        color: done ? const Color(0xFF70BD8A) : Colors.white70,
+                        color: done
+                            ? AppColors.primaryText()
+                            : AppColors.textSecondary(context),
                         fontSize: 12,
                         fontWeight: current ? FontWeight.w700 : FontWeight.w500,
                       ),
@@ -417,29 +413,39 @@ class ScenarioPlayView extends StatelessWidget {
             const Gap(12),
           ] else
             const Spacer(),
-          const Text(
-            'Coach note',
-            style: TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.psychology_outlined,
+                size: 16,
+                color: AppColors.secondaryText(),
+              ),
+              const Gap(6),
+              Text(
+                'Coach note',
+                style: TextStyle(
+                  color: AppColors.textSecondary(context),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
           ),
           const Gap(6),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E3A5F),
+              color: AppColors.completeTint(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF3B82F6)),
+              border: Border.all(color: AppColors.secondaryText()),
             ),
             child: Text(
               coachPrompt ??
                   hudText ??
                   'Follow the guided steps for this ${scenario.sector} scenario.',
-              style: const TextStyle(
-                color: Color(0xFF93C5FD),
+              style: TextStyle(
+                color: AppColors.secondaryText(),
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -447,10 +453,10 @@ class ScenarioPlayView extends StatelessWidget {
           ),
           if (coachTarget != null) ...[
             const Gap(12),
-            const Text(
+            Text(
               'You can type these',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontWeight: FontWeight.w700,
                 fontSize: 12,
               ),
@@ -460,14 +466,14 @@ class ScenarioPlayView extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 12, 67, 30),
+                color: AppColors.nextTint(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF70BD8A)),
+                border: Border.all(color: AppColors.primaryText()),
               ),
               child: Text(
                 coachTarget!,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColors.textPrimary(context),
                   fontSize: 13,
                   height: 1.35,
                 ),
@@ -478,7 +484,8 @@ class ScenarioPlayView extends StatelessWidget {
             const Gap(10),
             Text(
               feedback,
-              style: const TextStyle(color: Colors.white54, fontSize: 11),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 11),
             ),
           ],
         ],
@@ -486,7 +493,7 @@ class ScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _chatColumn() {
+  Widget _chatColumn(BuildContext context) {
     return Column(
       children: [
         Expanded(
@@ -494,15 +501,15 @@ class ScenarioPlayView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF161616),
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF2A2A2A)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: bubbles.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Customer chat will appear here.',
-                      style: TextStyle(color: Colors.white38),
+                      style: TextStyle(color: AppColors.textMuted(context)),
                     ),
                   )
                 : ListView.builder(
@@ -524,19 +531,20 @@ class ScenarioPlayView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1A),
+              color: AppColors.nextTint(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.withOpacity(0.45)),
+              border: Border.all(
+                  color: AppColors.primaryText().withValues(alpha: 0.45)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'COACH',
                   style: TextStyle(
                     fontSize: 11,
                     letterSpacing: 1,
-                    color: Colors.white54,
+                    color: AppColors.textMuted(context),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -551,17 +559,18 @@ class ScenarioPlayView extends StatelessWidget {
                 ),
                 if (coachTarget != null) ...[
                   const Gap(10),
-                  const Text(
+                  Text(
                     'Type this exactly:',
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
                   const Gap(4),
                   Text(
                     coachTarget!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       height: 1.4,
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                 ],
@@ -570,9 +579,10 @@ class ScenarioPlayView extends StatelessWidget {
                     scenario.turns[turnIndex].type ==
                         ScenarioTurnType.chooseOne) ...[
                   const Gap(12),
-                  const Text(
+                  Text(
                     'Choose one of the phrases below:',
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
                   const Gap(8),
                   ...List.generate(
@@ -584,8 +594,8 @@ class ScenarioPlayView extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Material(
                           color: selected
-                              ? const Color(0xFF1A3A1A)
-                              : const Color(0xFF121212),
+                              ? AppColors.nextTint(context)
+                              : AppColors.inputFill(context),
                           borderRadius: BorderRadius.circular(8),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
@@ -597,8 +607,8 @@ class ScenarioPlayView extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: selected
-                                      ? Colors.green
-                                      : const Color(0xFF333333),
+                                      ? AppColors.primary(context)
+                                      : AppColors.border(context),
                                 ),
                               ),
                               child: Text(
@@ -623,15 +633,14 @@ class ScenarioPlayView extends StatelessWidget {
                         height: 42,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF16A34A),
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primaryText(),
+                            foregroundColor: AppColors.onPrimary(context),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: selectedChoice == null
-                              ? null
-                              : onSubmitChoice,
+                          onPressed:
+                              selectedChoice == null ? null : onSubmitChoice,
                           child: const Text('Confirm Choice'),
                         ),
                       ),
@@ -664,50 +673,49 @@ class ScenarioPlayView extends StatelessWidget {
                       maxLines: 3,
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => onSubmitTyped(),
-                      style: const TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: 14),
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: inputFlashError
-                            ? const Color(0xFF3A1515)
+                            ? AppColors.elevated(context)
                             : inputFlashSuccess
-                            ? const Color(0xFF153A22)
-                            : const Color(0xFF1A1A1A),
+                                ? AppColors.nextTint(context)
+                                : AppColors.elevated(context),
                         hintText: 'Type your reply...',
-                        hintStyle: const TextStyle(color: Colors.white30),
+                        hintStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide(
                             color: inputFlashError
-                                ? Colors.redAccent
+                                ? AppColors.errorText()
                                 : inputFlashSuccess
-                                ? Colors.green
-                                : const Color(0xFF333333),
-                            width: (inputFlashError || inputFlashSuccess)
-                                ? 2
-                                : 1,
+                                    ? AppColors.primary(context)
+                                    : AppColors.border(context),
+                            width:
+                                (inputFlashError || inputFlashSuccess) ? 2 : 1,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide(
                             color: inputFlashError
-                                ? Colors.redAccent
+                                ? AppColors.errorText()
                                 : inputFlashSuccess
-                                ? Colors.green
-                                : const Color(0xFF333333),
-                            width: (inputFlashError || inputFlashSuccess)
-                                ? 2
-                                : 1,
+                                    ? AppColors.primary(context)
+                                    : AppColors.border(context),
+                            width:
+                                (inputFlashError || inputFlashSuccess) ? 2 : 1,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
                           borderSide: BorderSide(
                             color: inputFlashError
-                                ? Colors.redAccent
+                                ? AppColors.errorText()
                                 : inputFlashSuccess
-                                ? Colors.green
-                                : Colors.green,
+                                    ? AppColors.primary(context)
+                                    : AppColors.primary(context),
                             width: 2,
                           ),
                         ),
@@ -718,7 +726,7 @@ class ScenarioPlayView extends StatelessWidget {
                 const Gap(8),
                 IconButton(
                   onPressed: waitingCustomer ? null : onSubmitTyped,
-                  icon: const Icon(Icons.send, color: Colors.green),
+                  icon: Icon(Icons.send, color: AppColors.primary(context)),
                 ),
               ],
             ),
@@ -730,9 +738,10 @@ class ScenarioPlayView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A2E1A),
+              color: AppColors.nextTint(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.green.withOpacity(0.4)),
+              border: Border.all(
+                  color: AppColors.primary(context).withValues(alpha: 0.4)),
             ),
             child: Text(
               coachPrompt!,
@@ -744,7 +753,7 @@ class ScenarioPlayView extends StatelessWidget {
           const Gap(8),
           Text(
             feedback,
-            style: const TextStyle(fontSize: 12, color: Colors.white54),
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
           ),
         ],
       ],

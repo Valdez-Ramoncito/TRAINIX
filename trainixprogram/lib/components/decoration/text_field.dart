@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/components/size.dart';
 
 class AppTextField extends StatefulWidget {
@@ -73,16 +74,23 @@ class _AppTextFieldState extends State<AppTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final currentLabelColor = _isFocused ? Colors.white : widget.labelColor;
+    final textPrimary = AppColors.textPrimary(context);
+    final textSecondary = AppColors.textSecondary(context);
+    final textMuted = AppColors.textMuted(context);
+    final border = AppColors.border(context);
+    final focus = AppColors.inputFocus(context);
+
+    final currentLabelColor = _isFocused
+        ? textPrimary
+        : (widget.labelColor ?? textSecondary);
 
     return TextFormField(
       controller: widget.controller,
       focusNode: _effectiveFocusNode,
       obscureText: widget.isPassword && _obscure,
-      cursorColor: Colors.white,
+      cursorColor: textPrimary,
       validator: widget.validator,
-      textInputAction:
-          widget.textInputAction ??
+      textInputAction: widget.textInputAction ??
           (widget.isPassword ? TextInputAction.done : TextInputAction.next),
       onFieldSubmitted: widget.onSubmitted,
       style: Theme.of(
@@ -98,29 +106,30 @@ class _AppTextFieldState extends State<AppTextField> {
         ),
         prefixIcon: widget.prefixIcon,
         prefixIconColor: _isFocused
-            ? Colors.white
-            : (widget.labelColor ?? Colors.grey),
+            ? textPrimary
+            : (widget.labelColor ?? textMuted),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-            color: Color.fromARGB(255, 205, 205, 205),
-            width: .5,
+          borderSide: BorderSide(
+            color: border,
+            width: 0.5,
           ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(
-            color: Color.fromARGB(255, 255, 255, 255),
-            width: 1,
+          borderSide: BorderSide(
+            color: focus,
+            width: 1.5,
           ),
         ),
-        border: const OutlineInputBorder(
-          borderRadius: BorderRadius.all(Radius.circular(10)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
         suffixIcon: widget.isPassword
             ? IconButton(
                 onPressed: () => setState(() => _obscure = !_obscure),
                 icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                color: textSecondary,
                 style: IconButton.styleFrom(
                   enabledMouseCursor: SystemMouseCursors.click,
                 ),

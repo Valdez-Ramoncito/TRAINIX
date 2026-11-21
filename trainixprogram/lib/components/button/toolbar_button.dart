@@ -1,5 +1,5 @@
-// ── Reusable icon toolbar button ─────────────────────────────────────────────
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class ToolbarIcon extends StatefulWidget {
   final IconData icon;
@@ -17,17 +17,22 @@ class ToolbarIconState extends State<ToolbarIcon> {
 
   @override
   Widget build(BuildContext context) {
+    final elevated = AppColors.elevated(context);
+    final textPrimary = AppColors.textPrimary(context);
+    final textMuted = AppColors.textMuted(context);
+    final border = AppColors.border(context);
+
     return Tooltip(
       message: widget.tooltip,
       preferBelow: false,
       verticalOffset: 28,
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 35, 39, 43),
+        color: elevated,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white12),
+        border: Border.all(color: border),
       ),
-      textStyle: const TextStyle(
-        color: Colors.white,
+      textStyle: TextStyle(
+        color: textPrimary,
         fontSize: 12,
         fontWeight: FontWeight.w400,
       ),
@@ -47,12 +52,12 @@ class ToolbarIconState extends State<ToolbarIcon> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: _isHovered && widget.onTap != null
-                  ? Colors.white.withValues(alpha: 0.08)
+                  ? textPrimary.withValues(alpha: 0.08)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
                 color: _isHovered && widget.onTap != null
-                    ? Colors.white.withValues(alpha: 0.15)
+                    ? textPrimary.withValues(alpha: 0.15)
                     : Colors.transparent,
               ),
             ),
@@ -60,8 +65,8 @@ class ToolbarIconState extends State<ToolbarIcon> {
               widget.icon,
               size: 24,
               color: widget.onTap == null
-                  ? Colors.white24
-                  : (_isHovered ? Colors.white : Colors.grey),
+                  ? textMuted
+                  : (_isHovered ? textPrimary : AppColors.textSecondary(context)),
             ),
           ),
         ),

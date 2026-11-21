@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/components/background.dart';
@@ -88,10 +89,10 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         return StatefulBuilder(
           builder: (ctx, setLocal) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1A1A1A),
-              title: const Text(
+              backgroundColor: AppColors.elevated(context),
+              title: Text(
                 'Session setup',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
               ),
               content: SizedBox(
                 width: 360,
@@ -100,10 +101,10 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Sector',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -128,10 +129,10 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const Text(
+                      Text(
                         'Customer quota',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -155,10 +156,10 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const Text(
+                      Text(
                         'Guidance',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -179,13 +180,13 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: 8),
                       Text(
                         guidedMode
                             ? 'Script Guide and tips available.'
                             : 'No guides or scripts. Real call-center style.',
-                        style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                           height: 1.35,
                         ),
@@ -227,18 +228,22 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? const Color(0xFF1A2A22) : const Color(0xFF252525),
+            color: selected
+                ? AppColors.nextTint(context)
+                : AppColors.elevated(context),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF70BD8A)
-                  : const Color(0xFF3A3A3A),
+                  ? AppColors.primaryText()
+                  : AppColors.borderStrong(context),
             ),
           ),
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? const Color(0xFF70BD8A) : Colors.white70,
+              color: selected
+                  ? AppColors.primaryText()
+                  : AppColors.textSecondary(context),
               fontSize: 12,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             ),
@@ -269,7 +274,11 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           width: double.infinity,
           height: 110,
           margin: const EdgeInsets.only(bottom: 14),
-          decoration: boxDecoration(false, enabled),
+          decoration: themedBoxDecoration(
+            context,
+            isComplete: false,
+            isNext: enabled,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -277,7 +286,9 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                 Icon(
                   icon,
                   size: 28,
-                  color: enabled ? Colors.white : const Color(0xFF9CA3AF),
+                  color: enabled
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textMuted(context),
                 ),
                 const Gap(18),
                 Expanded(
@@ -291,8 +302,8 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: enabled
-                              ? Colors.white
-                              : const Color(0xFF9CA3AF),
+                              ? AppColors.textPrimary(context)
+                              : AppColors.textMuted(context),
                         ),
                       ),
                       const Gap(6),
@@ -301,8 +312,8 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           color: enabled
-                              ? Colors.white70
-                              : const Color(0xFF6B7280),
+                              ? AppColors.textSecondary(context)
+                              : AppColors.textMuted(context),
                           height: 1.3,
                         ),
                       ),
@@ -316,20 +327,20 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
+                      color: AppColors.border(context),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: const Color(0xFF4A4A4A),
+                        color: AppColors.borderStrong(context),
                         width: 0.8,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.lock_rounded,
                           size: 14,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textMuted(context),
                         ),
                         SizedBox(width: 6),
                         Text(
@@ -337,16 +348,16 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF9CA3AF),
+                            color: AppColors.textMuted(context),
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: Colors.white54,
+                    color: AppColors.textMuted(context),
                   ),
               ],
             ),
@@ -371,7 +382,11 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           width: double.infinity,
           height: 100,
           margin: const EdgeInsets.only(bottom: 14),
-          decoration: boxDecoration(false, isUnlocked),
+          decoration: themedBoxDecoration(
+            context,
+            isComplete: false,
+            isNext: isUnlocked,
+          ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
@@ -379,7 +394,9 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                 Icon(
                   icon,
                   size: 26,
-                  color: isUnlocked ? Colors.white : const Color(0xFF9CA3AF),
+                  color: isUnlocked
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textMuted(context),
                 ),
                 const Gap(18),
                 Expanded(
@@ -393,8 +410,8 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
                           color: isUnlocked
-                              ? Colors.white
-                              : const Color(0xFF9CA3AF),
+                              ? AppColors.textPrimary(context)
+                              : AppColors.textMuted(context),
                         ),
                       ),
                       const Gap(6),
@@ -403,8 +420,8 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           color: isUnlocked
-                              ? Colors.white70
-                              : const Color(0xFF6B7280),
+                              ? AppColors.textSecondary(context)
+                              : AppColors.textMuted(context),
                           height: 1.3,
                         ),
                       ),
@@ -418,20 +435,20 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2A2A2A),
+                      color: AppColors.border(context),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: const Color(0xFF4A4A4A),
+                        color: AppColors.borderStrong(context),
                         width: 0.8,
                       ),
                     ),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.lock_rounded,
                           size: 14,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textMuted(context),
                         ),
                         SizedBox(width: 6),
                         Text(
@@ -439,16 +456,16 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF9CA3AF),
+                            color: AppColors.textMuted(context),
                           ),
                         ),
                       ],
                     ),
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: Colors.white54,
+                    color: AppColors.textMuted(context),
                   ),
               ],
             ),
@@ -500,9 +517,12 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           ],
         ),
         const Gap(8),
-        const Text(
+        Text(
           'Pick a channel mode. Next you will choose sector and customer quota (1, 3-5, or random). Locked modes clear after Scenario Practice.',
-          style: TextStyle(fontSize: 13, color: Colors.white70, height: 1.4),
+          style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary(context),
+              height: 1.4),
         ),
         const Gap(20),
         _modeCard(
@@ -571,9 +591,9 @@ class _SimulationHubScreenState extends State<SimulationHubScreen> {
           unlocked
               ? 'Start a new practice session or review past runs.'
               : 'Simulation Training unlocks after you clear Non-Voice Scenario Practice.',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
-            color: Colors.white70,
+            color: AppColors.textSecondary(context),
             height: 1.4,
           ),
         ),
@@ -689,12 +709,12 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                           .where((s) => !isDebugSession(s))
                           .toList();
                       if (visible.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Text(
                             'No sessions yet.\nComplete a simulation to see your history.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white70,
+                              color: AppColors.textSecondary(context),
                               height: 1.4,
                             ),
                           ),
@@ -735,17 +755,30 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                 horizontal: 18,
                                 vertical: 14,
                               ),
-                              decoration: boxDecoration(false, true),
+                              decoration: themedBoxDecoration(
+                                context,
+                                isComplete: false,
+                                isNext: true,
+                              ),
                               child: Row(
                                 children: [
-                                  Text(
-                                    '#$number',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14,
+                                  Container(
+                                    width: 34,
+                                    height: 34,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.secondaryWash(context),
+                                      borderRadius: BorderRadius.circular(9),
+                                    ),
+                                    child: Icon(
+                                      session.mode == SimulationMode.voice
+                                          ? Icons.mic_rounded
+                                          : Icons.chat_bubble_outline_rounded,
+                                      size: 18,
+                                      color: AppColors.secondaryText(),
                                     ),
                                   ),
-                                  const Gap(16),
+                                  const Gap(12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
@@ -753,8 +786,8 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                       children: [
                                         Text(
                                           session.sector.isEmpty
-                                              ? 'Session'
-                                              : session.sector,
+                                              ? 'Session #$number'
+                                              : '${session.sector} · #$number',
                                           style: const TextStyle(
                                             fontWeight: FontWeight.w600,
                                             fontSize: 14,
@@ -762,10 +795,10 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                         ),
                                         const Gap(4),
                                         Text(
-                                          '${modeLabel.toUpperCase()} · ${session.evaluations.length} customer(s)',
-                                          style: const TextStyle(
+                                          '${session.mode == SimulationMode.voice ? 'VOICE' : 'NON-VOICE'} · ${session.evaluations.length} customer(s)',
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.white54,
+                                            color: AppColors.textMuted(context),
                                           ),
                                         ),
                                         if (customerLabel.isNotEmpty) ...[
@@ -774,9 +807,10 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                             customerLabel,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 11,
-                                              color: Color(0xFF9CA3AF),
+                                              color:
+                                                  AppColors.textMuted(context),
                                             ),
                                           ),
                                         ],
@@ -788,24 +822,24 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                                     children: [
                                       Text(
                                         session.overallScore.toStringAsFixed(1),
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontWeight: FontWeight.w700,
                                           fontSize: 16,
-                                          color: Color(0xFF70BD8A),
+                                          color: AppColors.primaryText(),
                                         ),
                                       ),
-                                      const Text(
+                                      Text(
                                         'View report',
                                         style: TextStyle(
                                           fontSize: 10,
-                                          color: Colors.white54,
+                                          color: AppColors.textMuted(context),
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const Icon(
+                                  Icon(
                                     Icons.chevron_right,
-                                    color: Color(0xFF9CA3AF),
+                                    color: AppColors.textMuted(context),
                                     size: 18,
                                   ),
                                 ],

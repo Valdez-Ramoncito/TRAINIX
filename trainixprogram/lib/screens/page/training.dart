@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -85,7 +86,7 @@ class _TrainingSessionState extends State<TrainingSession> {
     setState(() {});
   }
 
-  Widget _buildMainContent() {
+  Widget _buildMainContent(BuildContext context) {
     switch (_selectedMenuIndex) {
       case 0:
         return SessionLobby(
@@ -150,10 +151,10 @@ class _TrainingSessionState extends State<TrainingSession> {
                 showSkipGuide: true,
               ),
             ),
-            const Divider(
+            Divider(
               height: .5,
               thickness: .3,
-              color: Color.fromARGB(255, 105, 106, 106),
+              color: AppColors.textMuted(context),
             ),
             Expanded(
               child: Row(
@@ -167,21 +168,21 @@ class _TrainingSessionState extends State<TrainingSession> {
                       },
                     ),
                   ),
-                  const VerticalDivider(
+                  VerticalDivider(
                     width: .5,
                     thickness: .3,
-                    color: Color.fromARGB(255, 105, 106, 106),
+                    color: AppColors.textMuted(context),
                   ),
                   Expanded(
                     child: KeyedSubtree(
                       key: ValueKey(_selectedMenuIndex),
-                      child: _buildMainContent(),
+                      child: _buildMainContent(context),
                     ),
                   ),
-                  const VerticalDivider(
+                  VerticalDivider(
                     width: .5,
                     thickness: .3,
-                    color: Color.fromARGB(255, 105, 106, 106),
+                    color: AppColors.textMuted(context),
                   ),
                   SizedBox(
                     width: 100,

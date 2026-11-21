@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/carousel_button.dart';
@@ -195,6 +196,7 @@ class _CarouselState extends State<Carousel> {
                           height: 420 * value,
                           width: 320 * value,
                           child: ContainerDecoration(
+                            key: ValueKey('carousel-card-${data.id}'),
                             onTap: () => _openCard(context, data),
                             isFocused: isFocused,
                             isHighlighted: isHighlighted,
@@ -223,6 +225,7 @@ class _CarouselState extends State<Carousel> {
                                         .textTheme
                                         .titleSmall
                                         ?.copyWith(
+                                          color: AppColors.textPrimary(context),
                                           fontSize: isFocused
                                               ? context.responsiveFont(6)
                                               : context.responsiveFont(4),
@@ -234,6 +237,7 @@ class _CarouselState extends State<Carousel> {
                                     data.subtitle,
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
+                                          color: AppColors.textSecondary(context),
                                           fontSize: isFocused
                                               ? context.responsiveFont(3)
                                               : context.responsiveFont(2.5),

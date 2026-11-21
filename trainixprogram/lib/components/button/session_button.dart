@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class NewSessionButton extends StatefulWidget {
   final ValueChanged<int>? onSelectChoice;
@@ -74,6 +75,13 @@ class NewSessionButtonState extends State<NewSessionButton>
 
   @override
   Widget build(BuildContext context) {
+    final secondary = AppColors.secondary(context);
+    final error = AppColors.error(context);
+    final elevated = AppColors.elevated(context);
+    final textPrimary = AppColors.textPrimary(context);
+    final border = AppColors.border(context);
+    final primary = AppColors.primary(context);
+
     return SizedBox(
       width: double.infinity,
       child: Column(
@@ -85,12 +93,12 @@ class NewSessionButtonState extends State<NewSessionButton>
             preferBelow: false,
             verticalOffset: 28,
             decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 35, 39, 43),
+              color: elevated,
               borderRadius: BorderRadius.circular(6),
-              border: Border.all(color: Colors.white12),
+              border: Border.all(color: border),
             ),
-            textStyle: const TextStyle(
-              color: Colors.white,
+            textStyle: TextStyle(
+              color: textPrimary,
               fontSize: 12,
               fontWeight: FontWeight.w400,
             ),
@@ -108,19 +116,15 @@ class NewSessionButtonState extends State<NewSessionButton>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: _isOpen
-                          ? const Color.fromARGB(255, 239, 68, 68)
+                          ? error
                           : (_isHovered
-                                ? const Color.fromARGB(255, 30, 140, 230)
-                                : const Color.fromARGB(255, 9, 118, 214)),
+                              ? secondary.withValues(alpha: 0.9)
+                              : secondary),
                       boxShadow: [
                         BoxShadow(
-                          color:
-                              (_isOpen
-                                      ? const Color.fromARGB(255, 239, 68, 68)
-                                      : const Color.fromARGB(255, 9, 118, 214))
-                                  .withValues(
-                                    alpha: _isHovered || _isOpen ? 0.45 : 0.25,
-                                  ),
+                          color: (_isOpen ? error : secondary).withValues(
+                            alpha: _isHovered || _isOpen ? 0.45 : 0.25,
+                          ),
                           blurRadius: _isHovered || _isOpen ? 12 : 6,
                           spreadRadius: _isHovered || _isOpen ? 2 : 0,
                         ),
@@ -129,9 +133,9 @@ class NewSessionButtonState extends State<NewSessionButton>
                     child: Center(
                       child: RotationTransition(
                         turns: _rotationAnimation,
-                        child: const Icon(
+                        child: Icon(
                           Icons.add_rounded,
-                          color: Colors.white,
+                          color: AppColors.onSecondary(context),
                           size: 22,
                         ),
                       ),
@@ -157,7 +161,7 @@ class NewSessionButtonState extends State<NewSessionButton>
                       _buildChoiceItem(
                         icon: Icons.call_rounded,
                         label: 'Voice',
-                        color: const Color.fromARGB(255, 230, 208, 252),
+                        color: secondary,
                         index: 0,
                         delayFactor: 0.1,
                       ),
@@ -165,7 +169,7 @@ class NewSessionButtonState extends State<NewSessionButton>
                       _buildChoiceItem(
                         icon: Icons.chat_bubble_outline_rounded,
                         label: 'Non-Voice',
-                        color: const Color.fromARGB(255, 230, 208, 252),
+                        color: primary,
                         index: 1,
                         delayFactor: 0.3,
                       ),
@@ -207,6 +211,11 @@ class _SessionChoiceItemState extends State<_SessionChoiceItem> {
 
   @override
   Widget build(BuildContext context) {
+    final elevated = AppColors.elevated(context);
+    final border = AppColors.border(context);
+    final textPrimary = AppColors.textPrimary(context);
+    final textSecondary = AppColors.textSecondary(context);
+
     return SizedBox(
       width: 42,
       child: Center(
@@ -215,12 +224,12 @@ class _SessionChoiceItemState extends State<_SessionChoiceItem> {
           preferBelow: false,
           verticalOffset: 24,
           decoration: BoxDecoration(
-            color: const Color.fromARGB(106, 25, 30, 38),
+            color: elevated,
             borderRadius: BorderRadius.circular(6),
-            border: Border.all(color: Colors.white12),
+            border: Border.all(color: border),
           ),
-          textStyle: const TextStyle(
-            color: Colors.white,
+          textStyle: TextStyle(
+            color: textPrimary,
             fontSize: 11,
             fontWeight: FontWeight.w500,
           ),
@@ -239,19 +248,17 @@ class _SessionChoiceItemState extends State<_SessionChoiceItem> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: _isHovered
-                      ? widget.color.withValues(alpha: 0.1)
-                      : const Color.fromARGB(92, 22, 28, 38),
+                      ? widget.color.withValues(alpha: 0.12)
+                      : elevated.withValues(alpha: 0.55),
                   border: Border.all(
-                    color: _isHovered
-                        ? widget.color
-                        : const Color.fromARGB(255, 45, 55, 72),
-                    width: .5,
+                    color: _isHovered ? widget.color : border,
+                    width: 0.5,
                   ),
                 ),
                 child: Center(
                   child: Icon(
                     widget.icon,
-                    color: _isHovered ? widget.color : Colors.white70,
+                    color: _isHovered ? widget.color : textSecondary,
                     size: 18,
                   ),
                 ),

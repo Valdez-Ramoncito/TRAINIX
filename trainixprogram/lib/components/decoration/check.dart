@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class CheckProgress extends StatelessWidget {
   const CheckProgress({super.key});
@@ -8,11 +9,15 @@ class CheckProgress extends StatelessWidget {
     return Container(
       width: 36,
       height: 36,
-      decoration: const BoxDecoration(
-        color: Color(0xFF0D82FE),
+      decoration: BoxDecoration(
+        color: AppColors.secondary(context),
         shape: BoxShape.circle,
       ),
-      child: const Icon(Icons.check, color: Colors.white, size: 20),
+      child: Icon(
+        Icons.check,
+        color: AppColors.onSecondary(context),
+        size: 20,
+      ),
     );
   }
 }

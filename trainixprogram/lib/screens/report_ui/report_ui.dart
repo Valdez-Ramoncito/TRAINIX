@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/scoring_transparency.dart';
@@ -13,7 +14,8 @@ double displayScore10(double raw) {
   return raw.clamp(0, 10);
 }
 
-Widget reportScoreRing({
+Widget reportScoreRing(
+  BuildContext context, {
   required double score,
   required Color color,
   double size = 120,
@@ -32,7 +34,7 @@ Widget reportScoreRing({
           child: CircularProgressIndicator(
             value: value,
             strokeWidth: stroke,
-            backgroundColor: const Color(0xFF1F2937),
+            backgroundColor: AppColors.chipBg(context),
             color: color,
             strokeCap: StrokeCap.round,
           ),
@@ -52,7 +54,7 @@ Widget reportScoreRing({
             Text(
               '/ 10',
               style: TextStyle(
-                color: const Color(0xFF94A3B8),
+                color: AppColors.textSecondary(context),
                 fontSize: size * 0.1,
                 fontWeight: FontWeight.w600,
               ),
@@ -129,13 +131,14 @@ class _ReportUIState extends State<ReportUI> {
 
   Color get _performanceColor {
     final avg = _averageOverall;
-    if (avg >= 8.5) return const Color(0xFF10B981);
-    if (avg >= 7.0) return const Color(0xFF3B82F6);
-    if (avg >= 5.0) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (avg >= 8.5) return AppColors.primaryText();
+    if (avg >= 7.0) return AppColors.secondaryText();
+    if (avg >= 5.0) return AppColors.warningText();
+    return AppColors.errorStrongText();
   }
 
-  Widget _collapsibleSection({
+  Widget _collapsibleSection(
+    BuildContext context, {
     required String title,
     required IconData icon,
     required Color accent,
@@ -145,9 +148,10 @@ class _ReportUIState extends State<ReportUI> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
+        boxShadow: AppColors.cardShadow(context),
       ),
       child: Column(
         children: [
@@ -171,8 +175,8 @@ class _ReportUIState extends State<ReportUI> {
                   Expanded(
                     child: Text(
                       title,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.textPrimary(context),
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
@@ -182,14 +186,14 @@ class _ReportUIState extends State<ReportUI> {
                     open
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
-                    color: const Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                   ),
                 ],
               ),
             ),
           ),
           if (open) ...[
-            const Divider(height: 1, color: Color(0xFF2A2A2B)),
+            Divider(height: 1, color: AppColors.border(context)),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               child: child,
@@ -214,59 +218,63 @@ class _ReportUIState extends State<ReportUI> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Session Performance Report',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.bold,
                     fontSize: 26,
                   ),
                 ),
                 const Gap(20),
-                _buildHeroOverallCard(),
+                _buildHeroOverallCard(context),
                 const Gap(14),
-                _buildTopMetricGrid(),
+                _buildTopMetricGrid(context),
                 const Gap(14),
                 _collapsibleSection(
+                  context,
                   title: 'Session analysis',
                   icon: Icons.psychology_outlined,
-                  accent: const Color(0xFF0EA5E9),
+                  accent: AppColors.secondaryText(),
                   open: _openAnalysis,
                   onToggle: (v) => setState(() => _openAnalysis = v),
-                  child: _buildSessionAnalysisCard(),
+                  child: _buildSessionAnalysisCard(context),
                 ),
                 const Gap(14),
                 _collapsibleSection(
+                  context,
                   title: 'Scoring guide and formula',
                   icon: Icons.rule_folder_outlined,
-                  accent: const Color(0xFF60A5FA),
+                  accent: AppColors.secondaryText(),
                   open: _openScoringGuide,
                   onToggle: (v) => setState(() => _openScoringGuide = v),
                   child: Column(
                     children: [
-                      _buildChannelAveragesCard(),
+                      _buildChannelAveragesCard(context),
                       const Gap(12),
                       _buildHowScoringWorksCard(context),
                       const Gap(12),
-                      _buildSkillBandDistributionCard(),
+                      _buildSkillBandDistributionCard(context),
                     ],
                   ),
                 ),
                 const Gap(14),
                 _collapsibleSection(
+                  context,
                   title: 'Competency rubric',
                   icon: Icons.grid_view_rounded,
-                  accent: const Color(0xFFA78BFA),
+                  accent: AppColors.secondaryText(),
                   open: _openRubric,
                   onToggle: (v) => setState(() => _openRubric = v),
                   child: _buildScoreBreakdownCard(),
                 ),
                 const Gap(14),
                 _collapsibleSection(
+                  context,
                   title: 'Telemetry, CSAT, and AHT',
                   icon: Icons.speed_rounded,
-                  accent: const Color(0xFF0EA5E9),
+                  accent: AppColors.secondaryText(),
                   open: _openTelemetry,
                   onToggle: (v) => setState(() => _openTelemetry = v),
                   child: Column(
@@ -275,15 +283,16 @@ class _ReportUIState extends State<ReportUI> {
                       const Gap(12),
                       _buildInteractionStatsCard(),
                       const Gap(12),
-                      _buildCsatAndAhtCard(),
+                      _buildCsatAndAhtCard(context),
                     ],
                   ),
                 ),
                 const Gap(14),
                 _collapsibleSection(
+                  context,
                   title: 'Customers in this session',
                   icon: Icons.people_outline_rounded,
-                  accent: const Color(0xFF70BD8A),
+                  accent: AppColors.primaryText(),
                   open: _openCustomers,
                   onToggle: (v) => setState(() => _openCustomers = v),
                   child: _buildCustomerLists(context),
@@ -299,7 +308,7 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildTopMetricGrid() {
+  Widget _buildTopMetricGrid(BuildContext context) {
     final withCsat =
         evaluations.where((e) => e.customerRating != null).toList();
     final avgCsat = withCsat.isEmpty
@@ -322,9 +331,9 @@ class _ReportUIState extends State<ReportUI> {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 28, 28, 28),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -342,8 +351,8 @@ class _ReportUIState extends State<ReportUI> {
             const Gap(2),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: AppColors.textPrimary(context),
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -351,7 +360,8 @@ class _ReportUIState extends State<ReportUI> {
             const Gap(2),
             Text(
               sub,
-              style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 11),
             ),
           ],
         ),
@@ -364,30 +374,31 @@ class _ReportUIState extends State<ReportUI> {
         final children = [
           tile(
             icon: Icons.forum_outlined,
-            color: const Color(0xFF60A5FA),
+            color: AppColors.secondaryText(),
             label: 'Interactions',
             value: '${evaluations.length}',
             sub: 'Scored customers',
           ),
           tile(
             icon: Icons.star_rate_rounded,
-            color: const Color(0xFFFBBF24),
+            color: AppColors.warningText(),
             label: 'Avg CSAT',
             value: avgCsat == null ? '—' : avgCsat.toStringAsFixed(1),
             sub: 'Out of 5 stars',
           ),
           tile(
             icon: Icons.timer_outlined,
-            color: overCount > 0
-                ? const Color(0xFFF87171)
-                : const Color(0xFF34D399),
+            color:
+                overCount > 0 ? AppColors.errorText() : AppColors.successText(),
             label: 'AHT status',
-            value: withAht.isEmpty ? '—' : (overCount > 0 ? '$overCount over' : 'On target'),
+            value: withAht.isEmpty
+                ? '—'
+                : (overCount > 0 ? '$overCount over' : 'On target'),
             sub: 'Target ${ScoringTransparency.ahtTargetSeconds}s',
           ),
           tile(
             icon: Icons.alt_route_rounded,
-            color: const Color(0xFFA78BFA),
+            color: AppColors.secondaryText(),
             label: 'Attentiveness',
             value: multitaskingScore == null
                 ? '—'
@@ -437,7 +448,7 @@ class _ReportUIState extends State<ReportUI> {
         list.length;
   }
 
-  Widget _buildChannelAveragesCard() {
+  Widget _buildChannelAveragesCard(BuildContext context) {
     final chatAvg = _avgForChannel('chat');
     final voiceAvg = _avgForChannel('voice');
     if (chatAvg == null && voiceAvg == null) return const SizedBox.shrink();
@@ -445,21 +456,22 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.hub_outlined, color: Color(0xFF60A5FA), size: 20),
+              Icon(Icons.hub_outlined,
+                  color: AppColors.secondaryText(), size: 20),
               Gap(8),
               Text(
                 'Channel averages',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
@@ -472,20 +484,22 @@ class _ReportUIState extends State<ReportUI> {
               if (chatAvg != null)
                 Expanded(
                   child: _channelAvgTile(
+                    context,
                     'Non-Voice',
                     chatAvg,
                     Icons.chat_bubble_outline,
-                    const Color(0xFF3B82F6),
+                    AppColors.secondaryText(),
                   ),
                 ),
               if (chatAvg != null && voiceAvg != null) const Gap(12),
               if (voiceAvg != null)
                 Expanded(
                   child: _channelAvgTile(
+                    context,
                     'Voice',
                     voiceAvg,
                     Icons.call_outlined,
-                    const Color(0xFF70BD8A),
+                    AppColors.primaryText(),
                   ),
                 ),
             ],
@@ -496,6 +510,7 @@ class _ReportUIState extends State<ReportUI> {
   }
 
   Widget _channelAvgTile(
+    BuildContext context,
     String label,
     double score,
     IconData icon,
@@ -504,7 +519,7 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.45)),
       ),
@@ -518,7 +533,8 @@ class _ReportUIState extends State<ReportUI> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 12),
                 ),
                 const Gap(4),
                 Text(
@@ -535,7 +551,7 @@ class _ReportUIState extends State<ReportUI> {
                   child: LinearProgressIndicator(
                     value: (score / 10).clamp(0.0, 1.0),
                     minHeight: 6,
-                    backgroundColor: const Color(0xFF2A2A2A),
+                    backgroundColor: AppColors.border(context),
                     color: color,
                   ),
                 ),
@@ -547,7 +563,7 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _miniBadge(String label, Color color) {
+  Widget _miniBadge(BuildContext context, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
@@ -570,25 +586,25 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.rule_rounded,
-                color: Color.fromARGB(255, 177, 203, 245),
+                color: AppColors.secondaryText(),
                 size: 20,
               ),
               Gap(8),
               Text(
                 'Scoring guide',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -596,18 +612,18 @@ class _ReportUIState extends State<ReportUI> {
             ],
           ),
           const Gap(14),
-          _buildFormulaStrip(),
+          _buildFormulaStrip(context),
           if (evaluations.isNotEmpty) ...[
             const Gap(12),
-            _buildScoreComputationBlock(),
+            _buildScoreComputationBlock(context),
           ],
           const Gap(14),
-          _buildLevelBandRow(),
+          _buildLevelBandRow(context),
           const Gap(12),
           Text(
             ScoringTransparency.methodLine,
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 12,
               height: 1.4,
             ),
@@ -615,8 +631,8 @@ class _ReportUIState extends State<ReportUI> {
           const Gap(6),
           Text(
             ScoringTransparency.whoScoresLine,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
@@ -626,22 +642,22 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildFormulaStrip() {
+  Widget _buildFormulaStrip(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'How overall is computed',
             style: TextStyle(
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
@@ -653,24 +669,27 @@ class _ReportUIState extends State<ReportUI> {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              _formulaChip('Start each at 10'),
-              const Icon(Icons.arrow_forward, size: 14, color: Color(0xFF64748B)),
-              _formulaChip('Deduct for observed gaps only'),
-              const Icon(Icons.arrow_forward, size: 14, color: Color(0xFF64748B)),
-              _formulaChip('Average the 10 dimensions'),
+              _formulaChip(context, 'Start each at 10'),
+              Icon(Icons.arrow_forward,
+                  size: 14, color: AppColors.textMuted(context)),
+              _formulaChip(context, 'Deduct for observed gaps only'),
+              Icon(Icons.arrow_forward,
+                  size: 14, color: AppColors.textMuted(context)),
+              _formulaChip(context, 'Average the 10 dimensions'),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2563EB).withValues(alpha: 0.15),
+                  color: AppColors.secondaryText().withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF3B82F6)),
+                  border: Border.all(color: AppColors.secondaryText()),
                 ),
                 child: Text(
                   evaluations.isEmpty
                       ? 'Overall —'
                       : 'Overall ${_averageOverall.toStringAsFixed(1)}',
-                  style: const TextStyle(
-                    color: Color(0xFF93C5FD),
+                  style: TextStyle(
+                    color: AppColors.secondaryText(),
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                   ),
@@ -683,18 +702,18 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _formulaChip(String label) {
+  Widget _formulaChip(BuildContext context, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF334155)),
+        border: Border.all(color: AppColors.borderStrong(context)),
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: Color(0xFFE2E8F0),
+        style: TextStyle(
+          color: AppColors.textSecondary(context),
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
@@ -702,7 +721,7 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildScoreComputationBlock() {
+  Widget _buildScoreComputationBlock(BuildContext context) {
     final dims = <(String, double)>[
       ('Opening Spiel', _averageCategory((e) => e.openingSpielScore)),
       ('Positive Scripting', _averageCategory((e) => e.positiveScriptingScore)),
@@ -730,17 +749,17 @@ class _ReportUIState extends State<ReportUI> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'How your overall was calculated',
             style: TextStyle(
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.3,
@@ -754,8 +773,8 @@ class _ReportUIState extends State<ReportUI> {
                 : 'Step 1: Each skill starts at 10 per customer. Gaps are removed.\n'
                     'Step 2: Average each skill across your $n customers (chips below).\n'
                     'Step 3: Add those 10 averages, divide by 10. Session overall also averages each customer overall.',
-            style: const TextStyle(
-              color: Color(0xFFCBD5E1),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 12,
               height: 1.45,
             ),
@@ -766,7 +785,8 @@ class _ReportUIState extends State<ReportUI> {
             runSpacing: 6,
             children: dims.map((d) {
               final level = ScoringTransparency.levelFor(d.$2);
-              final color = Color(level.colorValue);
+              final color =
+                  AppColors.readable(Color(level.colorValue), context);
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
@@ -790,33 +810,33 @@ class _ReportUIState extends State<ReportUI> {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF0F172A),
+              color: AppColors.scaffold(context),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF1E3A5F)),
+              border: Border.all(color: AppColors.completeTint(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Add the chips: ${sum.toStringAsFixed(1)}',
-                  style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 12,
                   ),
                 ),
                 const Gap(4),
                 Text(
                   'Divide by 10 skills: ${sum.toStringAsFixed(1)} / 10 = ${fromDims.toStringAsFixed(1)}',
-                  style: const TextStyle(
-                    color: Color(0xFFCBD5E1),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 12,
                   ),
                 ),
                 const Gap(6),
                 Text(
                   'Your session overall: ${sessionOverall.toStringAsFixed(1)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
                   ),
@@ -829,12 +849,16 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildCsatAndAhtCard() {
-    final withCsat = evaluations.where((e) => e.customerRating != null).toList();
-    final withAht = evaluations.where((e) => e.ahtHandleSeconds != null).toList();
+  Widget _buildCsatAndAhtCard(BuildContext context) {
+    final withCsat =
+        evaluations.where((e) => e.customerRating != null).toList();
+    final withAht =
+        evaluations.where((e) => e.ahtHandleSeconds != null).toList();
     final avgCsat = withCsat.isEmpty
         ? null
-        : withCsat.map((e) => e.customerRating!.toDouble()).reduce((a, b) => a + b) /
+        : withCsat
+                .map((e) => e.customerRating!.toDouble())
+                .reduce((a, b) => a + b) /
             withCsat.length;
     final avgAht = withAht.isEmpty
         ? null
@@ -845,21 +869,22 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.star_rate_rounded, color: Color(0xFFFBBF24), size: 20),
+              Icon(Icons.star_rate_rounded,
+                  color: AppColors.warningText(), size: 20),
               Gap(8),
               Text(
                 'CSAT and handle time',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -873,22 +898,22 @@ class _ReportUIState extends State<ReportUI> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF151515),
+                    color: AppColors.listBase(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2A2A2B)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.sentiment_satisfied_alt_rounded,
-                              size: 16, color: Color(0xFFFBBF24)),
+                              size: 16, color: AppColors.warningText()),
                           Gap(6),
                           Text(
                             'CSAT',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -900,17 +925,17 @@ class _ReportUIState extends State<ReportUI> {
                         avgCsat == null
                             ? 'Not recorded'
                             : '${avgCsat.toStringAsFixed(1)} / 5',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                       const Gap(4),
-                      const Text(
+                      Text(
                         'Session average customer stars',
                         style: TextStyle(
-                          color: Color(0xFF64748B),
+                          color: AppColors.textMuted(context),
                           fontSize: 11,
                         ),
                       ),
@@ -923,22 +948,22 @@ class _ReportUIState extends State<ReportUI> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF151515),
+                    color: AppColors.listBase(context),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFF2A2A2B)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.timer_outlined,
-                              size: 16, color: Color(0xFF60A5FA)),
+                              size: 16, color: AppColors.secondaryText()),
                           Gap(6),
                           Text(
                             'AHT',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -950,8 +975,8 @@ class _ReportUIState extends State<ReportUI> {
                         avgAht == null
                             ? 'Not recorded'
                             : '${avgAht.toStringAsFixed(0)}s avg',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
@@ -959,8 +984,8 @@ class _ReportUIState extends State<ReportUI> {
                       const Gap(4),
                       Text(
                         'Target ${ScoringTransparency.ahtTargetSeconds}s · $overCount over',
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 11,
                         ),
                       ),
@@ -975,17 +1000,17 @@ class _ReportUIState extends State<ReportUI> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF151515),
+              color: AppColors.listBase(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2A2A2B)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'How CSAT is computed',
                   style: TextStyle(
-                    color: Color(0xFFFBBF24),
+                    color: AppColors.warningText(),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -993,17 +1018,17 @@ class _ReportUIState extends State<ReportUI> {
                 const Gap(4),
                 Text(
                   ScoringTransparency.csatFormulaLine,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 11,
                     height: 1.4,
                   ),
                 ),
                 const Gap(10),
-                const Text(
+                Text(
                   'How AHT is judged',
                   style: TextStyle(
-                    color: Color(0xFF60A5FA),
+                    color: AppColors.secondaryText(),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1011,8 +1036,8 @@ class _ReportUIState extends State<ReportUI> {
                 const Gap(4),
                 Text(
                   ScoringTransparency.ahtFormulaLine,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 11,
                     height: 1.4,
                   ),
@@ -1025,7 +1050,7 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildSkillBandDistributionCard() {
+  Widget _buildSkillBandDistributionCard(BuildContext context) {
     if (evaluations.isEmpty) return const SizedBox.shrink();
     final dims = <(String, double)>[
       ('Opening Spiel', _averageCategory((e) => e.openingSpielScore)),
@@ -1057,22 +1082,22 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.pie_chart_outline_rounded,
-                  color: Color(0xFFA78BFA), size: 20),
+                  color: AppColors.secondaryText(), size: 20),
               Gap(8),
               Text(
                 'Skill band mix (session averages)',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1080,9 +1105,10 @@ class _ReportUIState extends State<ReportUI> {
             ],
           ),
           const Gap(6),
-          const Text(
+          Text(
             'How many of the 10 skills sit in each performance band.',
-            style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+            style: TextStyle(
+                color: AppColors.textSecondary(context), fontSize: 12),
           ),
           const Gap(14),
           ClipRRect(
@@ -1095,7 +1121,9 @@ class _ReportUIState extends State<ReportUI> {
                     if ((counts[level.label] ?? 0) > 0)
                       Expanded(
                         flex: counts[level.label]!,
-                        child: Container(color: Color(level.colorValue)),
+                        child: Container(
+                            color: AppColors.readable(
+                                Color(level.colorValue), context)),
                       ),
                 ],
               ),
@@ -1108,7 +1136,8 @@ class _ReportUIState extends State<ReportUI> {
             children: ScoringTransparency.levels.map((level) {
               final n = counts[level.label] ?? 0;
               final pct = total == 0 ? 0.0 : (n / total) * 100;
-              final color = Color(level.colorValue);
+              final color =
+                  AppColors.readable(Color(level.colorValue), context);
               return Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1133,14 +1162,14 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildLevelBandRow() {
+  Widget _buildLevelBandRow(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Performance levels',
           style: TextStyle(
-            color: Color(0xFF94A3B8),
+            color: AppColors.textSecondary(context),
             fontSize: 11,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.3,
@@ -1151,7 +1180,8 @@ class _ReportUIState extends State<ReportUI> {
           builder: (context, constraints) {
             final wide = constraints.maxWidth > 640;
             final children = ScoringTransparency.levels.map((level) {
-              final color = Color(level.colorValue);
+              final color =
+                  AppColors.readable(Color(level.colorValue), context);
               return Container(
                 width: wide ? null : double.infinity,
                 padding: const EdgeInsets.all(10),
@@ -1185,8 +1215,8 @@ class _ReportUIState extends State<ReportUI> {
                         const Gap(6),
                         Text(
                           level.rangeLabel,
-                          style: const TextStyle(
-                            color: Color(0xFF94A3B8),
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
                             fontSize: 11,
                           ),
                         ),
@@ -1195,8 +1225,8 @@ class _ReportUIState extends State<ReportUI> {
                     const Gap(4),
                     Text(
                       level.meaning,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: TextStyle(
+                        color: AppColors.textSecondary(context),
                         fontSize: 11,
                         height: 1.3,
                       ),
@@ -1234,11 +1264,11 @@ class _ReportUIState extends State<ReportUI> {
   List<SessionEvaluation> get _voiceEvals =>
       evaluations.where((e) => e.channel == 'voice').toList();
 
-  Widget _buildSessionAnalysisCard() {
+  Widget _buildSessionAnalysisCard(BuildContext context) {
     if (evaluations.isEmpty) {
-      return const Text(
+      return Text(
         'No customer scores available for analysis.',
-        style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+        style: TextStyle(color: AppColors.textSecondary(context), fontSize: 13),
       );
     }
 
@@ -1279,16 +1309,17 @@ class _ReportUIState extends State<ReportUI> {
     }
 
     final passBar = 7.0;
-    final passCount =
-        evaluations.where((e) => displayScore10(e.overallScore) >= passBar).length;
+    final passCount = evaluations
+        .where((e) => displayScore10(e.overallScore) >= passBar)
+        .length;
     final passRate = passCount / evaluations.length;
     final avg = _averageOverall;
 
     Color levelColor(double s) {
-      if (s >= 8.5) return const Color(0xFF70BD8A);
-      if (s >= 7) return const Color(0xFF3B82F6);
-      if (s >= 5) return const Color(0xFFF59E0B);
-      return const Color(0xFFEF4444);
+      if (s >= 8.5) return AppColors.primaryText();
+      if (s >= 7) return AppColors.secondaryText();
+      if (s >= 5) return AppColors.warningText();
+      return AppColors.errorStrongText();
     }
 
     Widget sideCard({
@@ -1301,9 +1332,9 @@ class _ReportUIState extends State<ReportUI> {
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF151515),
+            color: AppColors.listBase(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF2A2A2B)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1324,9 +1355,10 @@ class _ReportUIState extends State<ReportUI> {
               ),
               const Gap(10),
               if (items.isEmpty)
-                const Text(
+                Text(
                   'None logged for this session.',
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textMuted(context), fontSize: 12),
                 )
               else
                 ...items.take(4).map(
@@ -1343,8 +1375,8 @@ class _ReportUIState extends State<ReportUI> {
                             Expanded(
                               child: Text(
                                 text,
-                                style: const TextStyle(
-                                  color: Color(0xFFCBD5E1),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary(context),
                                   fontSize: 12,
                                   height: 1.35,
                                 ),
@@ -1364,17 +1396,17 @@ class _ReportUIState extends State<ReportUI> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'This session averaged ${avg.toStringAsFixed(1)} overall with ${(passRate * 100).toStringAsFixed(0)}% of customers at or above the 7.0 practice pass mark ($passCount of ${evaluations.length}).',
-            style: const TextStyle(
-              color: Color(0xFFCBD5E1),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 13,
               height: 1.4,
             ),
@@ -1386,9 +1418,9 @@ class _ReportUIState extends State<ReportUI> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF151515),
+                    color: AppColors.listBase(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2A2A2B)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Row(
                     children: [
@@ -1402,18 +1434,18 @@ class _ReportUIState extends State<ReportUI> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Strongest skill',
                               style: TextStyle(
-                                color: Color(0xFF64748B),
+                                color: AppColors.textMuted(context),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
                               strongest.key,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -1438,9 +1470,9 @@ class _ReportUIState extends State<ReportUI> {
                 child: Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF151515),
+                    color: AppColors.listBase(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2A2A2B)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Row(
                     children: [
@@ -1454,18 +1486,18 @@ class _ReportUIState extends State<ReportUI> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Focus skill',
                               style: TextStyle(
-                                color: Color(0xFF64748B),
+                                color: AppColors.textMuted(context),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             Text(
                               weakest.key,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -1492,14 +1524,14 @@ class _ReportUIState extends State<ReportUI> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               sideCard(
-                accent: const Color(0xFF70BD8A),
+                accent: AppColors.primaryText(),
                 icon: Icons.check_circle_outline_rounded,
                 title: 'What went well',
                 items: strengths.toList(),
               ),
               const Gap(10),
               sideCard(
-                accent: const Color(0xFFF59E0B),
+                accent: AppColors.warningText(),
                 icon: Icons.flag_outlined,
                 title: 'Focus next',
                 items: gaps.toList(),
@@ -1517,13 +1549,13 @@ class _ReportUIState extends State<ReportUI> {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 28, 28, 28),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+          border: Border.all(color: AppColors.border(context)),
         ),
-        child: const Text(
+        child: Text(
           'No customer evaluations recorded for this session.',
-          style: TextStyle(color: Colors.white54),
+          style: TextStyle(color: AppColors.textMuted(context)),
         ),
       );
     }
@@ -1558,8 +1590,8 @@ class _ReportUIState extends State<ReportUI> {
         if (showTitle) ...[
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF94A3B8),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -1578,15 +1610,14 @@ class _ReportUIState extends State<ReportUI> {
                       ? 'Developing'
                       : 'Needs work';
           final levelColor = score >= 8.5
-              ? const Color(0xFF70BD8A)
+              ? AppColors.primaryText()
               : score >= 7
-                  ? const Color(0xFF3B82F6)
+                  ? AppColors.secondaryText()
                   : score >= 5
-                      ? const Color(0xFFF59E0B)
-                      : const Color(0xFFEF4444);
-          final topStrength = e.strengths.isNotEmpty
-              ? friendlyEvalText(e.strengths.first)
-              : '';
+                      ? AppColors.warningText()
+                      : AppColors.errorStrongText();
+          final topStrength =
+              e.strengths.isNotEmpty ? friendlyEvalText(e.strengths.first) : '';
           final topGap = e.areasForImprovement.isNotEmpty
               ? friendlyEvalText(e.areasForImprovement.first)
               : '';
@@ -1605,8 +1636,7 @@ class _ReportUIState extends State<ReportUI> {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) =>
-                        CustomerReportDetailScreen(evaluation: e),
+                    builder: (_) => CustomerReportDetailScreen(evaluation: e),
                   ),
                 );
               },
@@ -1614,10 +1644,10 @@ class _ReportUIState extends State<ReportUI> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 21, 21, 21),
+                  color: AppColors.listBase(context),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 42, 42, 43),
+                    color: AppColors.border(context),
                   ),
                 ),
                 child: IntrinsicHeight(
@@ -1671,8 +1701,9 @@ class _ReportUIState extends State<ReportUI> {
                                       children: [
                                         Text(
                                           displayName,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color:
+                                                AppColors.textPrimary(context),
                                             fontWeight: FontWeight.w700,
                                             fontSize: 15,
                                           ),
@@ -1683,8 +1714,9 @@ class _ReportUIState extends State<ReportUI> {
                                             e.problem,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color: Color(0xFF94A3B8),
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary(
+                                                  context),
                                               fontSize: 12,
                                               height: 1.3,
                                             ),
@@ -1710,10 +1742,11 @@ class _ReportUIState extends State<ReportUI> {
                                             ),
                                           ),
                                           const Gap(2),
-                                          const Text(
+                                          Text(
                                             '/10',
                                             style: TextStyle(
-                                              color: Color(0xFF64748B),
+                                              color:
+                                                  AppColors.textMuted(context),
                                               fontSize: 11,
                                               fontWeight: FontWeight.w600,
                                             ),
@@ -1746,9 +1779,9 @@ class _ReportUIState extends State<ReportUI> {
                                     ],
                                   ),
                                   const Gap(6),
-                                  const Icon(
+                                  Icon(
                                     Icons.chevron_right,
-                                    color: Color(0xFF64748B),
+                                    color: AppColors.textMuted(context),
                                     size: 20,
                                   ),
                                 ],
@@ -1759,33 +1792,37 @@ class _ReportUIState extends State<ReportUI> {
                                 runSpacing: 6,
                                 children: [
                                   _iconBadge(
+                                    context,
                                     isVoice
                                         ? Icons.mic_rounded
                                         : Icons.chat_bubble_outline_rounded,
                                     isVoice ? 'VOICE' : 'CHAT',
                                     isVoice
-                                        ? const Color(0xFF70BD8A)
-                                        : const Color(0xFF3B82F6),
+                                        ? AppColors.primaryText()
+                                        : AppColors.secondaryText(),
                                   ),
                                   if (e.sector.isNotEmpty)
                                     _iconBadge(
+                                      context,
                                       Icons.category_outlined,
                                       e.sector,
-                                      const Color(0xFF9CA3AF),
+                                      AppColors.textMuted(context),
                                     ),
                                   if (e.ahtHandleSeconds != null)
                                     _iconBadge(
+                                      context,
                                       Icons.timer_outlined,
                                       e.ahtOverLimit ? 'AHT over' : 'AHT ok',
                                       e.ahtOverLimit
-                                          ? const Color(0xFFEF4444)
-                                          : const Color(0xFF70BD8A),
+                                          ? AppColors.errorStrongText()
+                                          : AppColors.primaryText(),
                                     ),
                                   if (e.customerRating != null)
                                     _iconBadge(
+                                      context,
                                       Icons.star_rounded,
                                       'CSAT ${e.customerRating}/5',
-                                      const Color(0xFFFBBF24),
+                                      AppColors.warningText(),
                                     ),
                                 ],
                               ),
@@ -1796,8 +1833,8 @@ class _ReportUIState extends State<ReportUI> {
                                   '"${e.customerComment}"',
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary(context),
                                     fontSize: 12,
                                     fontStyle: FontStyle.italic,
                                     height: 1.35,
@@ -1810,7 +1847,7 @@ class _ReportUIState extends State<ReportUI> {
                                 child: LinearProgressIndicator(
                                   value: (score / 10).clamp(0.0, 1.0),
                                   minHeight: 6,
-                                  backgroundColor: const Color(0xFF2A2A2A),
+                                  backgroundColor: AppColors.border(context),
                                   color: levelColor,
                                 ),
                               ),
@@ -1821,10 +1858,10 @@ class _ReportUIState extends State<ReportUI> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF151515),
+                                    color: AppColors.listBase(context),
                                     borderRadius: BorderRadius.circular(10),
                                     border: Border.all(
-                                      color: const Color(0xFF2A2A2B),
+                                      color: AppColors.border(context),
                                     ),
                                   ),
                                   child: Column(
@@ -1836,21 +1873,21 @@ class _ReportUIState extends State<ReportUI> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.check_circle_outline,
                                               size: 14,
-                                              color: Color(0xFF70BD8A),
+                                              color: AppColors.primaryText(),
                                             ),
                                             const Gap(6),
                                             Expanded(
                                               child: Text.rich(
                                                 TextSpan(
                                                   children: [
-                                                    const TextSpan(
+                                                    TextSpan(
                                                       text: 'Strength: ',
                                                       style: TextStyle(
-                                                        color:
-                                                            Color(0xFF70BD8A),
+                                                        color: AppColors
+                                                            .primaryText(),
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w700,
@@ -1859,9 +1896,9 @@ class _ReportUIState extends State<ReportUI> {
                                                     ),
                                                     TextSpan(
                                                       text: topStrength,
-                                                      style: const TextStyle(
-                                                        color:
-                                                            Color(0xFF70BD8A),
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .primaryText(),
                                                         fontSize: 12,
                                                         height: 1.35,
                                                       ),
@@ -1882,21 +1919,21 @@ class _ReportUIState extends State<ReportUI> {
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
-                                            const Icon(
+                                            Icon(
                                               Icons.flag_outlined,
                                               size: 14,
-                                              color: Color(0xFFF59E0B),
+                                              color: AppColors.warningText(),
                                             ),
                                             const Gap(6),
                                             Expanded(
                                               child: Text.rich(
                                                 TextSpan(
                                                   children: [
-                                                    const TextSpan(
+                                                    TextSpan(
                                                       text: 'Focus next: ',
                                                       style: TextStyle(
-                                                        color:
-                                                            Color(0xFFF59E0B),
+                                                        color: AppColors
+                                                            .warningText(),
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w700,
@@ -1905,9 +1942,9 @@ class _ReportUIState extends State<ReportUI> {
                                                     ),
                                                     TextSpan(
                                                       text: topGap,
-                                                      style: const TextStyle(
-                                                        color:
-                                                            Color(0xFFF59E0B),
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .warningText(),
                                                         fontSize: 12,
                                                         height: 1.35,
                                                       ),
@@ -1939,7 +1976,8 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _iconBadge(IconData icon, String label, Color color) {
+  Widget _iconBadge(
+      BuildContext context, IconData icon, String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -1965,13 +2003,15 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _scoreRing({
+  Widget _scoreRing(
+    BuildContext context, {
     required double score,
     required Color color,
     double size = 120,
     double stroke = 10,
   }) {
     return reportScoreRing(
+      context,
       score: score,
       color: color,
       size: size,
@@ -1979,19 +2019,20 @@ class _ReportUIState extends State<ReportUI> {
     );
   }
 
-  Widget _buildHeroOverallCard() {
+  Widget _buildHeroOverallCard(BuildContext context) {
     final avgScore = _averageOverall;
 
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [
           _scoreRing(
+            context,
             score: evaluations.isEmpty ? 0 : avgScore,
             color: _performanceColor,
             size: 124,
@@ -2034,13 +2075,13 @@ class _ReportUIState extends State<ReportUI> {
                       ),
                       decoration: BoxDecoration(
                         color: widget.guidedMode
-                            ? const Color(0xFF3B82F6).withValues(alpha: 0.12)
-                            : const Color(0xFFA78BFA).withValues(alpha: 0.12),
+                            ? AppColors.secondaryText().withValues(alpha: 0.12)
+                            : AppColors.secondaryText().withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: widget.guidedMode
-                              ? const Color(0xFF3B82F6)
-                              : const Color(0xFFA78BFA),
+                              ? AppColors.secondaryText()
+                              : AppColors.secondaryText(),
                         ),
                       ),
                       child: Row(
@@ -2052,16 +2093,16 @@ class _ReportUIState extends State<ReportUI> {
                                 : Icons.school_outlined,
                             size: 12,
                             color: widget.guidedMode
-                                ? const Color(0xFF3B82F6)
-                                : const Color(0xFFA78BFA),
+                                ? AppColors.secondaryText()
+                                : AppColors.secondaryText(),
                           ),
                           const Gap(4),
                           Text(
                             widget.guidedMode ? 'Guided' : 'Unguided',
                             style: TextStyle(
                               color: widget.guidedMode
-                                  ? const Color(0xFF3B82F6)
-                                  : const Color(0xFFA78BFA),
+                                  ? AppColors.secondaryText()
+                                  : AppColors.secondaryText(),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -2075,13 +2116,13 @@ class _ReportUIState extends State<ReportUI> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
+                        color: AppColors.elevated(context),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '${evaluations.length} Interaction${evaluations.length == 1 ? '' : 's'} Evaluated',
-                        style: const TextStyle(
-                          color: Color.fromARGB(255, 208, 209, 211),
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                         ),
                       ),
@@ -2089,19 +2130,19 @@ class _ReportUIState extends State<ReportUI> {
                   ],
                 ),
                 const Gap(10),
-                const Text(
+                Text(
                   'Overall Session Rating',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Gap(4),
-                const Text(
+                Text(
                   'Mean of the 10 skill averages this session. Open Scoring guide for the full formula.',
                   style: TextStyle(
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textMuted(context),
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -2138,19 +2179,19 @@ class _ReportUIState extends State<ReportUI> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Each skill starts at 10. Score = 10 minus observed gaps. Open a skill card for deductions, evidence, and a stronger line.',
           style: TextStyle(
-            color: Color(0xFF94A3B8),
+            color: AppColors.textSecondary(context),
             fontSize: 12,
             height: 1.35,
           ),
         ),
         const Gap(12),
         if (evaluations.isEmpty)
-          const Text(
+          Text(
             'No evaluations recorded for this session.',
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           )
         else
           LayoutBuilder(
@@ -2160,7 +2201,8 @@ class _ReportUIState extends State<ReportUI> {
                 final val = c.$2;
                 final level = ScoringTransparency.levelFor(val);
                 final dim = ScoringTransparency.byLabel(c.$1);
-                final color = Color(level.colorValue);
+                final color =
+                    AppColors.readable(Color(level.colorValue), context);
                 final meaning = dim?.criterionForScore(val) ?? level.meaning;
                 final evidence = _evidenceForDimension(c.$1);
                 final suggestions = _suggestionsForDimension(c.$1);
@@ -2304,7 +2346,7 @@ class _ReportUIState extends State<ReportUI> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
@@ -2328,8 +2370,8 @@ class _ReportUIState extends State<ReportUI> {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                      style: TextStyle(
+                        color: AppColors.textSecondary(context),
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2343,7 +2385,8 @@ class _ReportUIState extends State<ReportUI> {
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: color.withValues(alpha: 0.45)),
+                        border:
+                            Border.all(color: color.withValues(alpha: 0.45)),
                       ),
                       child: Text(
                         levelLabel,
@@ -2357,14 +2400,15 @@ class _ReportUIState extends State<ReportUI> {
                   ],
                 ),
               ),
-              _scoreRing(score: score, color: color, size: 54, stroke: 5),
+              _scoreRing(context,
+                  score: score, color: color, size: 54, stroke: 5),
             ],
           ),
           const Gap(8),
           Text(
             meaning,
-            style: const TextStyle(
-              color: Color(0xFFCBD5E1),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 12,
               height: 1.35,
             ),
@@ -2378,8 +2422,8 @@ class _ReportUIState extends State<ReportUI> {
                 : 'Started at 10.0 · removed ${deducted.toStringAsFixed(1)} for observed gaps · score ${score.toStringAsFixed(1)}',
             style: TextStyle(
               color: deducted < 0.05
-                  ? const Color(0xFF10B981)
-                  : const Color(0xFFE2E8F0),
+                  ? AppColors.primaryText()
+                  : AppColors.textSecondary(context),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -2390,17 +2434,17 @@ class _ReportUIState extends State<ReportUI> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF111827),
+                color: AppColors.scaffold(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF1F2937)),
+                border: Border.all(color: AppColors.chipBg(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Possible deductions for this skill',
                     style: TextStyle(
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.textSecondary(context),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                       height: 1.35,
@@ -2412,8 +2456,8 @@ class _ReportUIState extends State<ReportUI> {
                       padding: const EdgeInsets.only(bottom: 3),
                       child: Text(
                         a,
-                        style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 11,
                           height: 1.35,
                           fontWeight: FontWeight.w400,
@@ -2425,8 +2469,8 @@ class _ReportUIState extends State<ReportUI> {
                     const Gap(4),
                     Text(
                       'Source: $sourceNote',
-                      style: const TextStyle(
-                        color: Color(0xFF64748B),
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 10,
                         height: 1.35,
                         fontWeight: FontWeight.w400,
@@ -2443,18 +2487,18 @@ class _ReportUIState extends State<ReportUI> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
+                color: AppColors.elevated(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFF334155)),
+                border: Border.all(color: AppColors.borderStrong(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (evidenceNotes.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Why points were removed',
                       style: TextStyle(
-                        color: Color(0xFF93C5FD),
+                        color: AppColors.secondaryText(),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2465,8 +2509,8 @@ class _ReportUIState extends State<ReportUI> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           line,
-                          style: const TextStyle(
-                            color: Color(0xFFCBD5E1),
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
                             fontSize: 11,
                             height: 1.35,
                           ),
@@ -2476,10 +2520,10 @@ class _ReportUIState extends State<ReportUI> {
                   ],
                   if (suggestions.isNotEmpty) ...[
                     if (evidenceNotes.isNotEmpty) const Gap(8),
-                    const Text(
+                    Text(
                       'Try a stronger line',
                       style: TextStyle(
-                        color: Color(0xFF34D399),
+                        color: AppColors.successText(),
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
@@ -2490,8 +2534,8 @@ class _ReportUIState extends State<ReportUI> {
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           '"$line"',
-                          style: const TextStyle(
-                            color: Color(0xFFA7F3D0),
+                          style: TextStyle(
+                            color: AppColors.primaryText(),
                             fontSize: 12,
                             height: 1.35,
                             fontStyle: FontStyle.italic,
@@ -2509,8 +2553,8 @@ class _ReportUIState extends State<ReportUI> {
               gapExamples != null && gapExamples.isNotEmpty
                   ? 'No evaluator note was stored for this skill average. Typical gaps: $gapExamples Run a new session after this update to capture line-level evidence and a suggested rewrite.'
                   : 'No evaluator note was stored for this skill average. Run a new session after this update to capture evidence and a suggested rewrite.',
-              style: const TextStyle(
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                color: AppColors.textMuted(context),
                 fontSize: 11,
                 height: 1.35,
               ),
@@ -2547,8 +2591,8 @@ class _ReportUIState extends State<ReportUI> {
                           flex: 50,
                           child: Container(
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF7F1D1D),
+                            decoration: BoxDecoration(
+                              color: AppColors.errorStrongText(),
                               borderRadius: BorderRadius.horizontal(
                                 left: Radius.circular(5),
                               ),
@@ -2559,22 +2603,22 @@ class _ReportUIState extends State<ReportUI> {
                           flex: 20,
                           child: Container(
                             height: 10,
-                            color: const Color(0xFFB45309),
+                            color: AppColors.warningText(),
                           ),
                         ),
                         Expanded(
                           flex: 20,
                           child: Container(
                             height: 10,
-                            color: const Color(0xFF1D4ED8),
+                            color: AppColors.secondaryText(),
                           ),
                         ),
                         Expanded(
                           flex: 10,
                           child: Container(
                             height: 10,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF047857),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryText(),
                               borderRadius: BorderRadius.horizontal(
                                 right: Radius.circular(5),
                               ),
@@ -2590,7 +2634,8 @@ class _ReportUIState extends State<ReportUI> {
                     child: Container(
                       width: 2,
                       height: 22,
-                      color: Colors.white.withValues(alpha: 0.85),
+                      color: AppColors.textPrimary(context)
+                          .withValues(alpha: 0.85),
                     ),
                   ),
                   Positioned(
@@ -2602,7 +2647,8 @@ class _ReportUIState extends State<ReportUI> {
                       decoration: BoxDecoration(
                         color: color,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
+                        border: Border.all(
+                            color: AppColors.textPrimary(context), width: 2.5),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.55),
@@ -2618,8 +2664,8 @@ class _ReportUIState extends State<ReportUI> {
                       alignment: Alignment.center,
                       child: Text(
                         s.toStringAsFixed(s == s.roundToDouble() ? 0 : 1),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 8,
                           fontWeight: FontWeight.w800,
                           height: 1,
@@ -2631,14 +2677,24 @@ class _ReportUIState extends State<ReportUI> {
               ),
             ),
             const Gap(4),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('0', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
-                Text('5', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
-                Text('7', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
-                Text('9', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
-                Text('10', style: TextStyle(color: Color(0xFF64748B), fontSize: 10)),
+                Text('0',
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 10)),
+                Text('5',
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 10)),
+                Text('7',
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 10)),
+                Text('9',
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 10)),
+                Text('10',
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 10)),
               ],
             ),
           ],
@@ -2731,7 +2787,7 @@ class _ReportUIState extends State<ReportUI> {
         final val = displayScore10(score);
         final level = ScoringTransparency.levelFor(val);
         final dim = ScoringTransparency.byLabel(r.$1);
-        final color = Color(level.colorValue);
+        final color = AppColors.readable(Color(level.colorValue), context);
         final meaning = dim?.criterionForScore(val) ?? level.meaning;
         cards.add(
           _buildRubricDataRow(
@@ -2779,21 +2835,22 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.tune_rounded, color: Color(0xFFA78BFA), size: 20),
+              Icon(Icons.tune_rounded,
+                  color: AppColors.secondaryText(), size: 20),
               Gap(8),
               Text(
                 'Channel skill scores',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -2801,24 +2858,25 @@ class _ReportUIState extends State<ReportUI> {
             ],
           ),
           const Gap(8),
-          const Text(
-            'Separate from the 10 shared overall dimensions. Each card starts at 10 with deductions for observed gaps. Open a card for criteria, deductions, evidence, and a stronger line.',
+          Text(
+            'Separate from the 10 shared overall dimensions, so these channel scores do not change your overall. Each card starts at 10 with deductions for observed gaps. Open a card for criteria, deductions, evidence, and a stronger line.',
             style: TextStyle(
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontSize: 12,
               height: 1.4,
             ),
           ),
           if (showVoice) ...[
             const Gap(16),
-            const Row(
+            Row(
               children: [
-                Icon(Icons.mic_rounded, size: 16, color: Color(0xFF70BD8A)),
+                Icon(Icons.mic_rounded,
+                    size: 16, color: AppColors.primaryText()),
                 Gap(6),
                 Text(
                   'Voice delivery',
                   style: TextStyle(
-                    color: Color(0xFF70BD8A),
+                    color: AppColors.primaryText(),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -2830,18 +2888,18 @@ class _ReportUIState extends State<ReportUI> {
           ],
           if (showChat) ...[
             const Gap(16),
-            const Row(
+            Row(
               children: [
                 Icon(
                   Icons.chat_bubble_outline_rounded,
                   size: 16,
-                  color: Color(0xFF3B82F6),
+                  color: AppColors.secondaryText(),
                 ),
                 Gap(6),
                 Text(
                   'Non-Voice language',
                   style: TextStyle(
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.secondaryText(),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -2861,8 +2919,7 @@ class _ReportUIState extends State<ReportUI> {
     final showVoicePace = _hasVoiceChannel;
     final showTypingPace = _hasChatChannel;
     final showFillers = _hasVoiceChannel;
-    final hasAny =
-        showVoicePace ||
+    final hasAny = showVoicePace ||
         showTypingPace ||
         showFillers ||
         multitaskingScore != null;
@@ -2871,21 +2928,22 @@ class _ReportUIState extends State<ReportUI> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 22),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 47, 47, 47)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.speed_rounded, color: Color(0xFF0EA5E9), size: 20),
+              Icon(Icons.speed_rounded,
+                  color: AppColors.secondaryText(), size: 20),
               Gap(8),
               Text(
                 'Interaction Telemetry Stats',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
@@ -2893,7 +2951,7 @@ class _ReportUIState extends State<ReportUI> {
             ],
           ),
           const Gap(16),
-          const Divider(height: 1, color: Color.fromARGB(255, 75, 75, 75)),
+          Divider(height: 1, color: AppColors.borderStrong(context)),
           const Gap(16),
           if (showVoicePace) ...[
             _buildStatTile(
@@ -2909,17 +2967,17 @@ class _ReportUIState extends State<ReportUI> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF151515),
+                color: AppColors.listBase(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2A2A2B)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Text(
                 averageWpm == null
                     ? 'Formula: WPM = (words spoken / speaking seconds) x 60, averaged across turns. Recommended band 130-160.'
                     : 'Formula: WPM = (words spoken / speaking seconds) x 60, averaged across turns.\n'
                         'This session average: ${averageWpm!.toStringAsFixed(0)} WPM (recommended 130-160).',
-                style: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                style: TextStyle(
+                  color: AppColors.textSecondary(context),
                   fontSize: 11,
                   height: 1.4,
                 ),
@@ -2941,9 +2999,9 @@ class _ReportUIState extends State<ReportUI> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFF151515),
+                color: AppColors.listBase(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF2A2A2B)),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Text(
                 averageTypingWpm == null
@@ -2951,8 +3009,8 @@ class _ReportUIState extends State<ReportUI> {
                     : 'Formula: WPM = (words in message / seconds typing) x 60, then average across typed messages.\n'
                         'This session average: ${averageTypingWpm!.toStringAsFixed(0)} WPM.\n'
                         'Paste and single inserts of 12+ characters are treated as paste; samples above 120 WPM are excluded from the average.',
-                style: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                style: TextStyle(
+                  color: AppColors.textSecondary(context),
                   fontSize: 11,
                   height: 1.4,
                 ),
@@ -2985,17 +3043,17 @@ class _ReportUIState extends State<ReportUI> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF151515),
+              color: AppColors.listBase(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2A2A2B)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   AttentivenessBreakdown.formulaLine,
-                  style: const TextStyle(
-                    color: Color(0xFF94A3B8),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 11,
                     height: 1.4,
                   ),
@@ -3004,8 +3062,8 @@ class _ReportUIState extends State<ReportUI> {
                   const Gap(8),
                   Text(
                     'This session: ${attentivenessBreakdown!.earnedPoints.toStringAsFixed(1)} / ${attentivenessBreakdown!.maxPoints.toStringAsFixed(1)} points = ${attentivenessBreakdown!.percent.toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      color: Color(0xFFE2E8F0),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -3013,8 +3071,8 @@ class _ReportUIState extends State<ReportUI> {
                   const Gap(10),
                   ...attentivenessBreakdown!.items.map((item) {
                     final color = item.earned
-                        ? const Color(0xFF34D399)
-                        : const Color(0xFFF87171);
+                        ? AppColors.successText()
+                        : AppColors.errorText();
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Row(
@@ -3040,8 +3098,8 @@ class _ReportUIState extends State<ReportUI> {
                                 ),
                                 Text(
                                   item.detail,
-                                  style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary(context),
                                     fontSize: 11,
                                     height: 1.35,
                                   ),
@@ -3055,10 +3113,10 @@ class _ReportUIState extends State<ReportUI> {
                   }),
                 ] else if (multitaskingScore != null) ...[
                   const Gap(6),
-                  const Text(
+                  Text(
                     'Detailed step list was not retained for this session. Percentage still reflects tools, completion, and optional notes.',
                     style: TextStyle(
-                      color: Color(0xFF64748B),
+                      color: AppColors.textMuted(context),
                       fontSize: 11,
                       height: 1.35,
                     ),
@@ -3082,9 +3140,9 @@ class _ReportUIState extends State<ReportUI> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        border: Border.all(color: AppColors.elevated(context)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3092,10 +3150,10 @@ class _ReportUIState extends State<ReportUI> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B82F6), size: 20),
+            child: Icon(icon, color: AppColors.secondaryText(), size: 20),
           ),
           const Gap(12),
           Expanded(
@@ -3104,8 +3162,8 @@ class _ReportUIState extends State<ReportUI> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -3113,8 +3171,8 @@ class _ReportUIState extends State<ReportUI> {
                 const Gap(2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontSize: 15,
                     fontWeight: FontWeight.bold,
                   ),
@@ -3122,8 +3180,8 @@ class _ReportUIState extends State<ReportUI> {
                 const Gap(4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                    color: Color.fromARGB(255, 119, 130, 145),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 11,
                     height: 1.35,
                   ),
@@ -3151,11 +3209,12 @@ class _ReportUIState extends State<ReportUI> {
             }
           },
           icon: const Icon(Icons.arrow_back_rounded, size: 18),
-          label: const Text('Back to Menu'),
+          label: Text('Back to Menu'),
           style: OutlinedButton.styleFrom(
             enabledMouseCursor: SystemMouseCursors.click,
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Color(0xFF334155)),
+            foregroundColor: AppColors.textPrimary(context),
+            side:
+                BorderSide(color: AppColors.borderStrong(context), width: 1.2),
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -3184,9 +3243,9 @@ class _ReportUIState extends State<ReportUI> {
           icon: const Icon(Icons.play_arrow_rounded, size: 20),
           label: const Text('Start Another Session'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2563EB),
+            backgroundColor: AppColors.secondaryText(),
             enabledMouseCursor: SystemMouseCursors.click,
-            foregroundColor: Colors.white,
+            foregroundColor: AppColors.onPrimary(context),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 19),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -3199,7 +3258,8 @@ class _ReportUIState extends State<ReportUI> {
   }
 }
 
-Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
+Widget _buildCustomerGeneralAnalysis(
+    BuildContext context, SessionEvaluation e) {
   final score = displayScore10(e.overallScore);
   final level = score >= 8.5
       ? 'Excellent'
@@ -3234,21 +3294,22 @@ Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
     width: double.infinity,
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: const Color.fromARGB(255, 21, 21, 21),
+      color: AppColors.listBase(context),
       borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+      border: Border.all(color: AppColors.border(context)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.psychology_outlined, size: 18, color: Color(0xFF0EA5E9)),
+            Icon(Icons.psychology_outlined,
+                size: 18, color: AppColors.secondaryText()),
             Gap(8),
             Text(
               'General analysis',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -3258,8 +3319,8 @@ Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
         const Gap(8),
         Text(
           summary,
-          style: const TextStyle(
-            color: Color(0xFFCBD5E1),
+          style: TextStyle(
+            color: AppColors.textSecondary(context),
             fontSize: 13,
             height: 1.4,
           ),
@@ -3270,14 +3331,14 @@ Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
             Icon(
               ScoringTransparency.iconFor(strongest.$1),
               size: 16,
-              color: const Color(0xFF70BD8A),
+              color: AppColors.primaryText(),
             ),
             const Gap(6),
             Expanded(
               child: Text(
                 'Strongest: ${strongest.$1} (${strongest.$2.toStringAsFixed(1)})',
-                style: const TextStyle(
-                  color: Color(0xFF70BD8A),
+                style: TextStyle(
+                  color: AppColors.primaryText(),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -3286,14 +3347,14 @@ Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
             Icon(
               ScoringTransparency.iconFor(weakest.$1),
               size: 16,
-              color: const Color(0xFFF59E0B),
+              color: AppColors.warningText(),
             ),
             const Gap(6),
             Expanded(
               child: Text(
                 'Focus: ${weakest.$1} (${weakest.$2.toStringAsFixed(1)})',
-                style: const TextStyle(
-                  color: Color(0xFFF59E0B),
+                style: TextStyle(
+                  color: AppColors.warningText(),
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -3306,11 +3367,9 @@ Widget _buildCustomerGeneralAnalysis(SessionEvaluation e) {
   );
 }
 
-Widget _buildDetailFocusRow(SessionEvaluation e) {
-  final strengths = e.strengths
-      .map(friendlyEvalText)
-      .where((s) => s.isNotEmpty)
-      .toList();
+Widget _buildDetailFocusRow(BuildContext context, SessionEvaluation e) {
+  final strengths =
+      e.strengths.map(friendlyEvalText).where((s) => s.isNotEmpty).toList();
   final gaps = e.areasForImprovement
       .map(friendlyEvalText)
       .where((s) => s.isNotEmpty)
@@ -3329,9 +3388,9 @@ Widget _buildDetailFocusRow(SessionEvaluation e) {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 21, 21, 21),
+          color: AppColors.listBase(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3361,10 +3420,10 @@ Widget _buildDetailFocusRow(SessionEvaluation e) {
             ),
             const Gap(10),
             if (items.isEmpty)
-              const Text(
+              Text(
                 'None highlighted for this customer.',
                 style: TextStyle(
-                  color: Color(0xFF64748B),
+                  color: AppColors.textMuted(context),
                   fontSize: 12,
                   height: 1.35,
                 ),
@@ -3388,8 +3447,8 @@ Widget _buildDetailFocusRow(SessionEvaluation e) {
                           Expanded(
                             child: Text(
                               text,
-                              style: const TextStyle(
-                                color: Color(0xFFCBD5E1),
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                                 height: 1.4,
                               ),
@@ -3409,14 +3468,14 @@ Widget _buildDetailFocusRow(SessionEvaluation e) {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       card(
-        accent: const Color(0xFF70BD8A),
+        accent: AppColors.primaryText(),
         icon: Icons.check_circle_outline_rounded,
         title: 'What went well',
         items: strengths,
       ),
       const Gap(12),
       card(
-        accent: const Color(0xFFF59E0B),
+        accent: AppColors.warningText(),
         icon: Icons.flag_outlined,
         title: 'Focus next',
         items: gaps,
@@ -3507,16 +3566,16 @@ class CustomerReportDetailScreen extends StatelessWidget {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F17),
+      backgroundColor: AppColors.scaffold(context),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0B0F17),
+        backgroundColor: AppColors.scaffold(context),
         title: Text(
           e.customerName.isEmpty
               ? 'Customer detail'
               : friendlyCustomerName(e.customerName),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.textPrimary(context)),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: AppColors.textPrimary(context)),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -3527,263 +3586,675 @@ class CustomerReportDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-          Builder(
-            builder: (context) {
-              final score = displayScore10(e.overallScore);
-              final level = score >= 8.5
-                  ? 'Excellent'
-                  : score >= 7
-                      ? 'Good'
-                      : score >= 5
-                          ? 'Developing'
-                          : 'Needs work';
-              final levelColor = score >= 8.5
-                  ? const Color(0xFF70BD8A)
-                  : score >= 7
-                      ? const Color(0xFF3B82F6)
-                      : score >= 5
-                          ? const Color(0xFFF59E0B)
-                          : const Color(0xFFEF4444);
-              final isVoice = e.channel.toLowerCase() == 'voice';
-              return Container(
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 21, 21, 21),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color.fromARGB(255, 42, 42, 43),
-                  ),
-                ),
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Container(
-                        width: 5,
+                  Builder(
+                    builder: (context) {
+                      final score = displayScore10(e.overallScore);
+                      final level = score >= 8.5
+                          ? 'Excellent'
+                          : score >= 7
+                              ? 'Good'
+                              : score >= 5
+                                  ? 'Developing'
+                                  : 'Needs work';
+                      final levelColor = score >= 8.5
+                          ? AppColors.primaryText()
+                          : score >= 7
+                              ? AppColors.secondaryText()
+                              : score >= 5
+                                  ? AppColors.warningText()
+                                  : AppColors.errorStrongText();
+                      final isVoice = e.channel.toLowerCase() == 'voice';
+                      return Container(
                         decoration: BoxDecoration(
-                          color: levelColor,
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(15),
-                            bottomLeft: Radius.circular(15),
+                          color: AppColors.listBase(context),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: AppColors.border(context),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  reportScoreRing(
-                                    score: score,
-                                    color: levelColor,
-                                    size: 72,
-                                    stroke: 7,
-                                  ),
-                                  const Gap(14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal: 10,
-                                                vertical: 3,
-                                              ),
-                                              decoration: BoxDecoration(
-                                                color: levelColor.withValues(
-                                                  alpha: 0.15,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                                border: Border.all(
-                                                  color: levelColor,
-                                                ),
-                                              ),
-                                              child: Text(
-                                                level.toUpperCase(),
-                                                style: TextStyle(
-                                                  color: levelColor,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                  letterSpacing: 0.6,
-                                                ),
-                                              ),
-                                            ),
-                                            const Gap(8),
-                                            const Text(
-                                              'This customer',
-                                              style: TextStyle(
-                                                color: Color(0xFF64748B),
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const Gap(8),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.analytics_outlined,
-                                              size: 18,
-                                              color: levelColor,
-                                            ),
-                                            const Gap(8),
-                                            Text(
-                                              'Overall',
-                                              style: TextStyle(
-                                                color: Color(0xFF94A3B8),
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const Gap(8),
-                                            Text(
-                                              score.toStringAsFixed(1),
-                                              style: TextStyle(
-                                                color: levelColor,
-                                                fontSize: 26,
-                                                fontWeight: FontWeight.w800,
-                                                height: 1,
-                                              ),
-                                            ),
-                                            const Text(
-                                              ' / 10',
-                                              style: TextStyle(
-                                                color: Color(0xFF64748B),
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            if (e.customerRating != null) ...[
-                                              const Gap(14),
-                                              Container(
-                                                width: 1,
-                                                height: 22,
-                                                color: const Color(0xFF2A2A2B),
-                                              ),
-                                              const Gap(14),
-                                              const Icon(
-                                                Icons.star_rounded,
-                                                size: 20,
-                                                color: Color(0xFFFBBF24),
-                                              ),
-                                              const Gap(6),
-                                              const Text(
-                                                'CSAT',
-                                                style: TextStyle(
-                                                  color: Color(0xFF94A3B8),
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const Gap(6),
-                                              Text(
-                                                '${e.customerRating}/5',
-                                                style: const TextStyle(
-                                                  color: Color(0xFFFBBF24),
-                                                  fontSize: 20,
-                                                  fontWeight: FontWeight.w800,
-                                                  height: 1,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                        const Gap(14),
-                                        Wrap(
-                                          spacing: 8,
-                                          runSpacing: 6,
-                                          children: [
-                                            _DetailIconBadge(
-                                              icon: isVoice
-                                                  ? Icons.mic_rounded
-                                                  : Icons
-                                                      .chat_bubble_outline_rounded,
-                                              label: isVoice ? 'VOICE' : 'CHAT',
-                                              color: isVoice
-                                                  ? const Color(0xFF70BD8A)
-                                                  : const Color(0xFF3B82F6),
-                                            ),
-                                            if (e.sector.isNotEmpty)
-                                              _DetailIconBadge(
-                                                icon: Icons.category_outlined,
-                                                label: e.sector,
-                                                color: const Color(0xFF9CA3AF),
-                                              ),
-                                            if (e.ahtHandleSeconds != null)
-                                              _DetailIconBadge(
-                                                icon: Icons.timer_outlined,
-                                                label: e.ahtOverLimit
-                                                    ? 'AHT over'
-                                                    : 'AHT ok',
-                                                color: e.ahtOverLimit
-                                                    ? const Color(0xFFEF4444)
-                                                    : const Color(0xFF70BD8A),
-                                              ),
-                                            if (e.customerRating != null)
-                                              _DetailIconBadge(
-                                                icon: Icons.star_rounded,
-                                                label:
-                                                    'CSAT ${e.customerRating}/5',
-                                                color: const Color(0xFFFBBF24),
-                                              ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              if (e.problem.isNotEmpty) ...[
-                                const Gap(14),
-                                Text(
-                                  e.problem,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
-                                    fontSize: 13,
-                                    height: 1.35,
+                              Container(
+                                width: 5,
+                                decoration: BoxDecoration(
+                                  color: levelColor,
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(15),
+                                    bottomLeft: Radius.circular(15),
                                   ),
                                 ),
-                              ],
-                              if (e.customerComment != null &&
-                                  e.customerComment!.isNotEmpty) ...[
-                                const Gap(12),
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF151515),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(
-                                      color: const Color(0xFF2A2A2B),
-                                    ),
-                                  ),
-                                  child: Row(
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                                  child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      const Icon(
-                                        Icons.format_quote_rounded,
-                                        size: 18,
-                                        color: Color(0xFFFBBF24),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          reportScoreRing(
+                                            context,
+                                            score: score,
+                                            color: levelColor,
+                                            size: 72,
+                                            stroke: 7,
+                                          ),
+                                          const Gap(14),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                        horizontal: 10,
+                                                        vertical: 3,
+                                                      ),
+                                                      decoration: BoxDecoration(
+                                                        color: levelColor
+                                                            .withValues(
+                                                          alpha: 0.15,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                        border: Border.all(
+                                                          color: levelColor,
+                                                        ),
+                                                      ),
+                                                      child: Text(
+                                                        level.toUpperCase(),
+                                                        style: TextStyle(
+                                                          color: levelColor,
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          letterSpacing: 0.6,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const Gap(8),
+                                                    Text(
+                                                      'This customer',
+                                                      style: TextStyle(
+                                                        color:
+                                                            AppColors.textMuted(
+                                                                context),
+                                                        fontSize: 12,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const Gap(8),
+                                                Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.analytics_outlined,
+                                                      size: 18,
+                                                      color: levelColor,
+                                                    ),
+                                                    const Gap(8),
+                                                    Text(
+                                                      'Overall',
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .textSecondary(
+                                                                context),
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    const Gap(8),
+                                                    Text(
+                                                      score.toStringAsFixed(1),
+                                                      style: TextStyle(
+                                                        color: levelColor,
+                                                        fontSize: 26,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        height: 1,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      ' / 10',
+                                                      style: TextStyle(
+                                                        color:
+                                                            AppColors.textMuted(
+                                                                context),
+                                                        fontSize: 13,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    if (e.customerRating !=
+                                                        null) ...[
+                                                      const Gap(14),
+                                                      Container(
+                                                        width: 1,
+                                                        height: 22,
+                                                        color: AppColors.border(
+                                                            context),
+                                                      ),
+                                                      const Gap(14),
+                                                      Icon(
+                                                        Icons.star_rounded,
+                                                        size: 20,
+                                                        color: AppColors
+                                                            .warningText(),
+                                                      ),
+                                                      const Gap(6),
+                                                      Text(
+                                                        'CSAT',
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .textSecondary(
+                                                                  context),
+                                                          fontSize: 13,
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                        ),
+                                                      ),
+                                                      const Gap(6),
+                                                      Text(
+                                                        '${e.customerRating}/5',
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .warningText(),
+                                                          fontSize: 20,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          height: 1,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ],
+                                                ),
+                                                const Gap(14),
+                                                Wrap(
+                                                  spacing: 8,
+                                                  runSpacing: 6,
+                                                  children: [
+                                                    _DetailIconBadge(
+                                                      icon: isVoice
+                                                          ? Icons.mic_rounded
+                                                          : Icons
+                                                              .chat_bubble_outline_rounded,
+                                                      label: isVoice
+                                                          ? 'VOICE'
+                                                          : 'CHAT',
+                                                      color: isVoice
+                                                          ? AppColors
+                                                              .primaryText()
+                                                          : AppColors
+                                                              .secondaryText(),
+                                                    ),
+                                                    if (e.sector.isNotEmpty)
+                                                      _DetailIconBadge(
+                                                        icon: Icons
+                                                            .category_outlined,
+                                                        label: e.sector,
+                                                        color:
+                                                            AppColors.textMuted(
+                                                                context),
+                                                      ),
+                                                    if (e.ahtHandleSeconds !=
+                                                        null)
+                                                      _DetailIconBadge(
+                                                        icon: Icons
+                                                            .timer_outlined,
+                                                        label: e.ahtOverLimit
+                                                            ? 'AHT over'
+                                                            : 'AHT ok',
+                                                        color: e.ahtOverLimit
+                                                            ? AppColors
+                                                                .errorStrongText()
+                                                            : AppColors
+                                                                .primaryText(),
+                                                      ),
+                                                    if (e.customerRating !=
+                                                        null)
+                                                      _DetailIconBadge(
+                                                        icon:
+                                                            Icons.star_rounded,
+                                                        label:
+                                                            'CSAT ${e.customerRating}/5',
+                                                        color: AppColors
+                                                            .warningText(),
+                                                      ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const Gap(8),
-                                      Expanded(
-                                        child: Text(
-                                          e.customerComment!,
-                                          style: const TextStyle(
-                                            color: Color(0xFFFBBF24),
+                                      if (e.problem.isNotEmpty) ...[
+                                        const Gap(14),
+                                        Text(
+                                          e.problem,
+                                          style: TextStyle(
+                                            color: AppColors.textSecondary(
+                                                context),
                                             fontSize: 13,
-                                            fontStyle: FontStyle.italic,
-                                            height: 1.4,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ],
+                                      if (e.customerComment != null &&
+                                          e.customerComment!.isNotEmpty) ...[
+                                        const Gap(12),
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.listBase(context),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
+                                            border: Border.all(
+                                              color: AppColors.border(context),
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.format_quote_rounded,
+                                                size: 18,
+                                                color: AppColors.warningText(),
+                                              ),
+                                              const Gap(8),
+                                              Expanded(
+                                                child: Text(
+                                                  e.customerComment!,
+                                                  style: TextStyle(
+                                                    color:
+                                                        AppColors.warningText(),
+                                                    fontSize: 13,
+                                                    fontStyle: FontStyle.italic,
+                                                    height: 1.4,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      if (e.feedback.isNotEmpty) ...[
+                                        const Gap(12),
+                                        Text(
+                                          friendlyEvalText(e.feedback),
+                                          style: TextStyle(
+                                            color:
+                                                AppColors.textPrimary(context),
+                                            height: 1.45,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ],
+                                      const Gap(14),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color:
+                                                    AppColors.listBase(context),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                border: Border.all(
+                                                  color:
+                                                      AppColors.border(context),
+                                                ),
+                                              ),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                        Icons.star_rate_rounded,
+                                                        size: 15,
+                                                        color: AppColors
+                                                            .warningText(),
+                                                      ),
+                                                      Gap(6),
+                                                      Text(
+                                                        'CSAT formula',
+                                                        style: TextStyle(
+                                                          color: AppColors
+                                                              .warningText(),
+                                                          fontSize: 11,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const Gap(6),
+                                                  Text(
+                                                    ScoringTransparency
+                                                        .csatFormulaLine,
+                                                    style: TextStyle(
+                                                      color: AppColors
+                                                          .textSecondary(
+                                                              context),
+                                                      fontSize: 11,
+                                                      height: 1.35,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          if (e.ahtHandleSeconds != null) ...[
+                                            const Gap(10),
+                                            Expanded(
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.all(12),
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.listBase(
+                                                      context),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
+                                                  border: Border.all(
+                                                    color: AppColors.border(
+                                                        context),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.timer_outlined,
+                                                          size: 15,
+                                                          color: e.ahtOverLimit
+                                                              ? AppColors
+                                                                  .errorStrongText()
+                                                              : AppColors
+                                                                  .secondaryText(),
+                                                        ),
+                                                        const Gap(6),
+                                                        Text(
+                                                          'AHT for this customer',
+                                                          style: TextStyle(
+                                                            color: e.ahtOverLimit
+                                                                ? AppColors
+                                                                    .errorStrongText()
+                                                                : AppColors
+                                                                    .secondaryText(),
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const Gap(6),
+                                                    Text(
+                                                      '${e.ahtHandleSeconds!.toStringAsFixed(0)}s handle time · target ${ScoringTransparency.ahtTargetSeconds}s · ${e.ahtOverLimit ? "over target (can lower CSAT by 1 star)" : "within target"}.\n${ScoringTransparency.ahtFormulaLine}',
+                                                      style: TextStyle(
+                                                        color: AppColors
+                                                            .textSecondary(
+                                                                context),
+                                                        fontSize: 11,
+                                                        height: 1.35,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const Gap(14),
+                  _buildCustomerGeneralAnalysis(context, e),
+                  const Gap(12),
+                  _buildDetailFocusRow(context, e),
+                  const Gap(14),
+                  Row(
+                    children: [
+                      Icon(Icons.grid_view_rounded,
+                          color: AppColors.secondaryText(), size: 18),
+                      Gap(8),
+                      Text(
+                        'Skill scores',
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                      Gap(8),
+                      Text(
+                        'Tap a skill for details',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(8),
+                  ...categories.map((c) {
+                    final note = pickNote(c.key);
+                    final quote = pickQuote(c.key);
+                    final suggest = pickSuggest(c.key);
+                    final dim = ScoringTransparency.byLabel(c.key);
+                    final scoreLevel = ScoringTransparency.levelFor(c.value);
+                    final color = AppColors.readable(
+                        Color(scoreLevel.colorValue), context);
+                    final level = scoreLevel.label;
+                    final fallback =
+                        dim?.criterionForScore(c.value) ?? scoreLevel.meaning;
+                    final hasDetail = note.isNotEmpty ||
+                        quote.isNotEmpty ||
+                        suggest.isNotEmpty ||
+                        (dim != null && dim.deductionAnchors.isNotEmpty);
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.listBase(context),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.border(context),
+                        ),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Theme(
+                          data: ThemeData(
+                            dividerColor: Colors.transparent,
+                            splashColor: color.withValues(alpha: 0.08),
+                            highlightColor: color.withValues(alpha: 0.05),
+                          ),
+                          child: ExpansionTile(
+                            tilePadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            childrenPadding:
+                                const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                            iconColor: AppColors.textMuted(context),
+                            collapsedIconColor: AppColors.textMuted(context),
+                            initiallyExpanded: true,
+                            title: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: color.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    ScoringTransparency.iconFor(c.key),
+                                    color: color,
+                                    size: 16,
+                                  ),
+                                ),
+                                const Gap(10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        c.key,
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary(context),
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      const Gap(2),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 1,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: color.withValues(alpha: 0.15),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                          border: Border.all(color: color),
+                                        ),
+                                        child: Text(
+                                          level,
+                                          style: TextStyle(
+                                            color: color,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const Gap(8),
+                                Text(
+                                  c.value.toStringAsFixed(1),
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  ' /10',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted(context),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(3),
+                                child: LinearProgressIndicator(
+                                  value: (c.value / 10).clamp(0.0, 1.0),
+                                  minHeight: 5,
+                                  backgroundColor: AppColors.border(context),
+                                  color: color,
+                                ),
+                              ),
+                            ),
+                            children: [
+                              if (dim != null) ...[
+                                Text(
+                                  dim.short,
+                                  style: TextStyle(
+                                    color: AppColors.textMuted(context),
+                                    fontSize: 11,
+                                    height: 1.3,
+                                  ),
+                                ),
+                                const Gap(8),
+                              ],
+                              Text(
+                                friendlyEvalText(
+                                    note.isNotEmpty ? note : fallback),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary(context),
+                                  fontSize: 12,
+                                  height: 1.4,
+                                ),
+                              ),
+                              if (dim != null &&
+                                  dim.deductionAnchors.isNotEmpty) ...[
+                                const Gap(10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.scaffold(context),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                        color: AppColors.chipBg(context)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Possible deductions for this skill',
+                                        style: TextStyle(
+                                          color:
+                                              AppColors.textSecondary(context),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          height: 1.35,
+                                        ),
+                                      ),
+                                      const Gap(6),
+                                      ...dim.deductionAnchors.map(
+                                        (a) => Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 3),
+                                          child: Text(
+                                            a,
+                                            style: TextStyle(
+                                              color: AppColors.textSecondary(
+                                                  context),
+                                              fontSize: 11,
+                                              height: 1.35,
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -3791,518 +4262,195 @@ class CustomerReportDetailScreen extends StatelessWidget {
                                   ),
                                 ),
                               ],
-                              if (e.feedback.isNotEmpty) ...[
-                                const Gap(12),
+                              if (quote.isNotEmpty) ...[
+                                const Gap(8),
                                 Text(
-                                  friendlyEvalText(e.feedback),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    height: 1.45,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                              const Gap(14),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF151515),
-                                        borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: const Color(0xFF2A2A2B),
-                                        ),
-                                      ),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          const Row(
-                                            children: [
-                                              Icon(
-                                                Icons.star_rate_rounded,
-                                                size: 15,
-                                                color: Color(0xFFFBBF24),
-                                              ),
-                                              Gap(6),
-                                              Text(
-                                                'CSAT formula',
-                                                style: TextStyle(
-                                                  color: Color(0xFFFBBF24),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const Gap(6),
-                                          Text(
-                                            ScoringTransparency.csatFormulaLine,
-                                            style: const TextStyle(
-                                              color: Color(0xFF94A3B8),
-                                              fontSize: 11,
-                                              height: 1.35,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  if (e.ahtHandleSeconds != null) ...[
-                                    const Gap(10),
-                                    Expanded(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF151515),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                          border: Border.all(
-                                            color: const Color(0xFF2A2A2B),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.timer_outlined,
-                                                  size: 15,
-                                                  color: e.ahtOverLimit
-                                                      ? const Color(0xFFEF4444)
-                                                      : const Color(0xFF60A5FA),
-                                                ),
-                                                const Gap(6),
-                                                Text(
-                                                  'AHT for this customer',
-                                                  style: TextStyle(
-                                                    color: e.ahtOverLimit
-                                                        ? const Color(
-                                                            0xFFEF4444)
-                                                        : const Color(
-                                                            0xFF60A5FA),
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                            const Gap(6),
-                                            Text(
-                                              '${e.ahtHandleSeconds!.toStringAsFixed(0)}s handle time · target ${ScoringTransparency.ahtTargetSeconds}s · ${e.ahtOverLimit ? "over target (can lower CSAT by 1 star)" : "within target"}.\n${ScoringTransparency.ahtFormulaLine}',
-                                              style: const TextStyle(
-                                                color: Color(0xFF94A3B8),
-                                                fontSize: 11,
-                                                height: 1.35,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const Gap(14),
-          _buildCustomerGeneralAnalysis(e),
-          const Gap(12),
-          _buildDetailFocusRow(e),
-          const Gap(14),
-          const Row(
-            children: [
-              Icon(Icons.grid_view_rounded, color: Color(0xFFA78BFA), size: 18),
-              Gap(8),
-              Text(
-                'Skill scores',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-              Gap(8),
-              Text(
-                'Tap a skill for details',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-          const Gap(8),
-          ...categories.map((c) {
-            final note = pickNote(c.key);
-            final quote = pickQuote(c.key);
-            final suggest = pickSuggest(c.key);
-            final dim = ScoringTransparency.byLabel(c.key);
-            final scoreLevel = ScoringTransparency.levelFor(c.value);
-            final color = Color(scoreLevel.colorValue);
-            final level = scoreLevel.label;
-            final fallback =
-                dim?.criterionForScore(c.value) ?? scoreLevel.meaning;
-            final hasDetail = note.isNotEmpty ||
-                quote.isNotEmpty ||
-                suggest.isNotEmpty ||
-                (dim != null && dim.deductionAnchors.isNotEmpty);
-            return Container(
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: const Color.fromARGB(255, 21, 21, 21),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color.fromARGB(255, 42, 42, 43),
-                ),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Theme(
-                  data: ThemeData(
-                    dividerColor: Colors.transparent,
-                    splashColor: color.withValues(alpha: 0.08),
-                    highlightColor: color.withValues(alpha: 0.05),
-                  ),
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 2,
-                    ),
-                    childrenPadding:
-                        const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                    iconColor: const Color(0xFF64748B),
-                    collapsedIconColor: const Color(0xFF64748B),
-                    initiallyExpanded: true,
-                  title: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          ScoringTransparency.iconFor(c.key),
-                          color: color,
-                          size: 16,
-                        ),
-                      ),
-                      const Gap(10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              c.key,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const Gap(2),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: color),
-                              ),
-                              child: Text(
-                                level,
-                                style: TextStyle(
-                                  color: color,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Gap(8),
-                      Text(
-                        c.value.toStringAsFixed(1),
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const Text(
-                        ' /10',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(3),
-                      child: LinearProgressIndicator(
-                        value: (c.value / 10).clamp(0.0, 1.0),
-                        minHeight: 5,
-                        backgroundColor: const Color(0xFF2A2A2A),
-                        color: color,
-                      ),
-                    ),
-                  ),
-                  children: [
-                    if (dim != null) ...[
-                      Text(
-                        dim.short,
-                        style: const TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 11,
-                          height: 1.3,
-                        ),
-                      ),
-                      const Gap(8),
-                    ],
-                    Text(
-                      friendlyEvalText(note.isNotEmpty ? note : fallback),
-                      style: const TextStyle(
-                        color: Color(0xFFCBD5E1),
-                        fontSize: 12,
-                        height: 1.4,
-                      ),
-                    ),
-                    if (dim != null && dim.deductionAnchors.isNotEmpty) ...[
-                      const Gap(10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF111827),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFF1F2937)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Possible deductions for this skill',
-                              style: TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                height: 1.35,
-                              ),
-                            ),
-                            const Gap(6),
-                            ...dim.deductionAnchors.map(
-                              (a) => Padding(
-                                padding: const EdgeInsets.only(bottom: 3),
-                                child: Text(
-                                  a,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
-                                    fontSize: 11,
+                                  'From the conversation: "$quote"',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary(context),
+                                    fontSize: 12,
+                                    fontStyle: FontStyle.italic,
                                     height: 1.35,
                                   ),
                                 ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (quote.isNotEmpty) ...[
-                      const Gap(8),
-                      Text(
-                        'From the conversation: "$quote"',
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                    if (suggest.isNotEmpty) ...[
-                      const Gap(8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10241A),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF166534)),
-                        ),
-                        child: Text(
-                          'Try a stronger line: "$suggest"',
-                          style: const TextStyle(
-                            color: Color(0xFFA7F3D0),
-                            fontSize: 12,
-                            height: 1.35,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (!hasDetail && dim == null)
-                      const Text(
-                        'No extra notes for this skill.',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 12,
-                        ),
-                      ),
-                  ],
-                ),
-                ),
-              ),
-            );
-          }),
-          const Gap(16),
-          const Row(
-            children: [
-              Icon(Icons.forum_outlined, color: Color(0xFF60A5FA), size: 18),
-              Gap(8),
-              Text(
-                'Conversation',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-          const Gap(10),
-          if (e.conversation.isEmpty)
-            const Text(
-              'No messages were saved for this customer.',
-              style: TextStyle(color: Colors.white54),
-            )
-          else
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F1419),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF1F2937)),
-              ),
-              child: Column(
-                children: e.conversation.map((turn) {
-                  final isAgent = turn['role'] == 'agent';
-                  final label = isAgent ? 'You' : 'Customer';
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: isAgent
-                          ? MainAxisAlignment.end
-                          : MainAxisAlignment.start,
-                      children: [
-                        if (!isAgent) ...[
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: const Color(0xFF374151),
-                            child: Text(
-                              label[0],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: isAgent
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                label,
-                                style: const TextStyle(
-                                  color: Color(0xFF9CA3AF),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isAgent
-                                      ? const Color(0xFF1D4ED8)
-                                      : const Color(0xFF1F2937),
-                                  borderRadius: BorderRadius.only(
-                                    topLeft: const Radius.circular(12),
-                                    topRight: const Radius.circular(12),
-                                    bottomLeft: Radius.circular(
-                                      isAgent ? 12 : 4,
-                                    ),
-                                    bottomRight: Radius.circular(
-                                      isAgent ? 4 : 12,
+                              ],
+                              if (suggest.isNotEmpty) ...[
+                                const Gap(8),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.nextTint(context),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: AppColors.nextTint(context)),
+                                  ),
+                                  child: Text(
+                                    'Try a stronger line: "$suggest"',
+                                    style: TextStyle(
+                                      color: AppColors.primaryText(),
+                                      fontSize: 12,
+                                      height: 1.35,
                                     ),
                                   ),
                                 ),
-                                child: Text(
-                                  turn['text'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    height: 1.4,
-                                    fontSize: 13,
+                              ],
+                              if (!hasDetail && dim == null)
+                                Text(
+                                  'No extra notes for this skill.',
+                                  style: TextStyle(
+                                    color: AppColors.textMuted(context),
+                                    fontSize: 12,
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
-                        if (isAgent) ...[
-                          const SizedBox(width: 8),
-                          const CircleAvatar(
-                            radius: 14,
-                            backgroundColor: Color(0xFF1D4ED8),
-                            child: Text(
-                              'Y',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      ),
+                    );
+                  }),
+                  const Gap(16),
+                  Row(
+                    children: [
+                      Icon(Icons.forum_outlined,
+                          color: AppColors.secondaryText(), size: 18),
+                      Gap(8),
+                      Text(
+                        'Conversation',
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(10),
+                  if (e.conversation.isEmpty)
+                    Text(
+                      'No messages were saved for this customer.',
+                      style: TextStyle(color: AppColors.textMuted(context)),
+                    )
+                  else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.panel(context),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.borderIdle(context),
+                          width: 0.8,
+                        ),
+                        boxShadow: AppColors.cardShadow(context),
+                      ),
+                      child: Column(
+                        children: e.conversation.map((turn) {
+                          final isAgent = turn['role'] == 'agent';
+                          final label = isAgent ? 'You' : 'Customer';
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: isAgent
+                                  ? MainAxisAlignment.end
+                                  : MainAxisAlignment.start,
+                              children: [
+                                if (!isAgent) ...[
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: AppColors.chipBg(context),
+                                    child: Text(
+                                      label[0],
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary(context),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                ],
+                                Flexible(
+                                  child: Column(
+                                    crossAxisAlignment: isAgent
+                                        ? CrossAxisAlignment.end
+                                        : CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        label,
+                                        style: TextStyle(
+                                          color: AppColors.textMuted(context),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4),
+                                      Container(
+                                        constraints: const BoxConstraints(
+                                          maxWidth: 460,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 11,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isAgent
+                                              ? AppColors.nextTint(context)
+                                              : AppColors.card(context),
+                                          border: Border.all(
+                                            color: isAgent
+                                                ? AppColors.primaryText()
+                                                    .withValues(alpha: 0.35)
+                                                : AppColors.borderIdle(context),
+                                            width: 0.8,
+                                          ),
+                                          borderRadius: BorderRadius.only(
+                                            topLeft: const Radius.circular(12),
+                                            topRight: const Radius.circular(12),
+                                            bottomLeft: Radius.circular(
+                                              isAgent ? 12 : 4,
+                                            ),
+                                            bottomRight: Radius.circular(
+                                              isAgent ? 4 : 12,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          turn['text'] ?? '',
+                                          style: TextStyle(
+                                            color:
+                                                AppColors.textPrimary(context),
+                                            height: 1.4,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (isAgent) ...[
+                                  const SizedBox(width: 8),
+                                  CircleAvatar(
+                                    radius: 14,
+                                    backgroundColor: AppColors.primaryText(),
+                                    child: Text(
+                                      'Y',
+                                      style: TextStyle(
+                                        color: AppColors.onPrimary(context),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ),
-                        ],
-                      ],
+                          );
+                        }).toList(),
+                      ),
                     ),
-                  );
-                }).toList(),
-              ),
-            ),
-          const Gap(24),
+                  const Gap(24),
                 ],
               ),
             ),

@@ -86,6 +86,10 @@ class VoiceDeliveryScorer {
       contentNotes: contentResult.contentNotes,
       deliveryNotes: deliveryNotes,
       deliveryEvaluated: true,
+      clarityScore: clarity,
+      paceScore: pace,
+      toneScore: tone,
+      confidenceScore: confidence,
     );
   }
 
@@ -98,8 +102,7 @@ class VoiceDeliveryScorer {
 
     final parts = <Map<String, dynamic>>[
       {
-        "text":
-            '''You are scoring a trainee contact-center voice practice line.
+        "text": '''You are scoring a trainee contact-center voice practice line.
 
 Score ONLY delivery quality using this fixed rubric:
 - CLARITY max 15 (words easy to understand)

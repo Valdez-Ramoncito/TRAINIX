@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/trainee_next_step.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 
@@ -68,10 +69,10 @@ class NextStepBanner extends StatelessWidget {
           margin: margin,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1F26),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: const Color(0xFF70BD8A).withValues(alpha: 0.55),
+              color: AppColors.primary(context).withValues(alpha: 0.55),
               width: 1.2,
             ),
           ),
@@ -82,7 +83,7 @@ class NextStepBanner extends StatelessWidget {
                 width: 4,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF70BD8A),
+                  color: AppColors.primary(context),
                   borderRadius: BorderRadius.circular(4),
                 ),
               ),
@@ -93,8 +94,8 @@ class NextStepBanner extends StatelessWidget {
                   children: [
                     Text(
                       'Guide: ${next.title}',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.textPrimary(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
                       ),
@@ -102,16 +103,16 @@ class NextStepBanner extends StatelessWidget {
                     const Gap(4),
                     Text(
                       next.reason,
-                      style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 13,
                       ),
                     ),
                     const Gap(4),
                     Text(
                       onTarget ? _onScreenHint(next) : (contextLine ?? ''),
-                      style: const TextStyle(
-                        color: Color(0xFF70BD8A),
+                      style: TextStyle(
+                        color: AppColors.primary(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -122,8 +123,8 @@ class NextStepBanner extends StatelessWidget {
                       const Gap(4),
                       Text(
                         next.carouselHint!,
-                        style: const TextStyle(
-                          color: Color(0xFF70BD8A),
+                        style: TextStyle(
+                          color: AppColors.primary(context),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -141,7 +142,7 @@ class NextStepBanner extends StatelessWidget {
                       onPressed: () {
                         MiniTrainingProgress.setPreferMinimalGuidance(true);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
                               'Guide dismissed. Progress locks still apply. Turn the guide on again from Help.',
                             ),
@@ -149,8 +150,8 @@ class NextStepBanner extends StatelessWidget {
                         );
                       },
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFF70BD8A),
-                        foregroundColor: const Color(0xFF0F1419),
+                        backgroundColor: AppColors.primary(context),
+                        foregroundColor: AppColors.onPrimary(context),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 10,
@@ -161,7 +162,7 @@ class NextStepBanner extends StatelessWidget {
                       ),
                       child: Text(
                         next.actionLabel,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                        style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                     )
                   else if (!onTarget)
@@ -173,8 +174,8 @@ class NextStepBanner extends StatelessWidget {
                         next.open(context);
                       },
                       style: TextButton.styleFrom(
-                        backgroundColor: const Color(0xFF70BD8A),
-                        foregroundColor: const Color(0xFF0F1419),
+                        backgroundColor: AppColors.primary(context),
+                        foregroundColor: AppColors.onPrimary(context),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
                           vertical: 10,
@@ -195,17 +196,17 @@ class NextStepBanner extends StatelessWidget {
                       onPressed: () {
                         MiniTrainingProgress.setPreferMinimalGuidance(true);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(
                             content: Text(
                               'Guide hidden. Progress locks still apply. Turn the guide on again from Help.',
                             ),
                           ),
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Skip guide',
                         style: TextStyle(
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                         ),
                       ),

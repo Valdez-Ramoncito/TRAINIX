@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
@@ -46,9 +47,7 @@ class ScenarioGuideView extends StatefulWidget {
     this.traineeTurnCount = 0,
     this.lastCustomerMessage = '',
     this.lastTraineeMessage = '',
-
     this.onEscalationSubmit,
-
     this.reminders = const [],
     this.coachVm,
   });
@@ -110,17 +109,14 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
       setState(() => _subTab = 1);
     }
 
-    final tipChanged =
-        (widget.coachTip ?? '') != (oldWidget.coachTip ?? '') ||
+    final tipChanged = (widget.coachTip ?? '') != (oldWidget.coachTip ?? '') ||
         (widget.coachVm?.tip ?? '') != (oldWidget.coachVm?.tip ?? '');
-    final stepChanged =
-        (widget.coachVm?.currentObjectiveLabel ?? '') !=
+    final stepChanged = (widget.coachVm?.currentObjectiveLabel ?? '') !=
         (oldWidget.coachVm?.currentObjectiveLabel ?? '');
     final turnChanged = widget.traineeTurnCount != oldWidget.traineeTurnCount;
     final oldEx = oldWidget.coachVm?.examples ?? const [];
     final newEx = widget.coachVm?.examples ?? const [];
-    final examplesChanged =
-        oldEx.length != newEx.length ||
+    final examplesChanged = oldEx.length != newEx.length ||
         (oldEx.isNotEmpty &&
             newEx.isNotEmpty &&
             oldEx.first.text != newEx.first.text);
@@ -137,13 +133,13 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
   Widget build(BuildContext context) {
     final sector = widget.sector;
     if (sector == null || sector.isEmpty || !widget.hasCustomerSpoken) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
             'Waiting for the customer.\nScript Guide, tips, and details appear after their first message.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, height: 1.4),
+            style: TextStyle(color: AppColors.textMuted(context), height: 1.4),
           ),
         ),
       );
@@ -161,12 +157,13 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _subChip('Script Guide', 0),
+                _subChip(context, 'Script Guide', 0),
                 const Gap(8),
-                _subChip('Reminders', 1, badge: widget.reminders.length),
+                _subChip(context, 'Reminders', 1,
+                    badge: widget.reminders.length),
                 if (widget.showEscalationTab) ...[
                   const Gap(8),
-                  _subChip('Escalation', 2),
+                  _subChip(context, 'Escalation', 2),
                 ],
               ],
             ),
@@ -175,30 +172,32 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
         const Gap(8),
         Expanded(
           child: _subTab == 1
-              ? _buildReminders()
+              ? _buildReminders(
+                  context,
+                )
               : _subTab == 2 && widget.showEscalationTab
-              ? _buildEscalation(sector)
-              : _buildScript(sector),
+                  ? _buildEscalation(context, sector)
+                  : _buildScript(sector),
         ),
       ],
     );
   }
 
-  Widget _subChip(String label, int index, {int badge = 0}) {
+  Widget _subChip(BuildContext context, String label, int index,
+      {int badge = 0}) {
     final selected = _subTab == index;
     return GestureDetector(
       onTap: () => setState(() => _subTab = index),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: selected
-              ? const Color.fromARGB(255, 12, 67, 30)
-              : const Color.fromARGB(180, 21, 21, 21),
+          color:
+              selected ? AppColors.nextTint(context) : AppColors.panel(context),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: selected
-                ? const Color.fromARGB(255, 112, 189, 138)
-                : const Color.fromARGB(255, 49, 48, 48),
+                ? AppColors.primaryText()
+                : AppColors.borderIdle(context),
           ),
         ),
         child: Row(
@@ -209,7 +208,9 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF9CA3AF),
+                color: selected
+                    ? AppColors.textPrimary(context)
+                    : AppColors.textMuted(context),
               ),
             ),
             if (badge > 0) ...[
@@ -217,12 +218,15 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEF4444),
+                  color: AppColors.errorStrongText(),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   '$badge',
-                  style: const TextStyle(fontSize: 10, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: AppColors.onPrimary(context),
+                  ),
                 ),
               ),
             ],
@@ -244,10 +248,10 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     final state = widget.awaitingClosing
         ? 'Awaiting your closing spiel'
         : widget.customerConfirmed
-        ? 'Customer confirmed resolution'
-        : !widget.hasTraineeSpoken
-        ? 'Deliver opening spiel'
-        : 'Active handling';
+            ? 'Customer confirmed resolution'
+            : !widget.hasTraineeSpoken
+                ? 'Deliver opening spiel'
+                : 'Active handling';
 
     List<String> actionTips = [];
     var lines = SimulationCoach.scriptLines(
@@ -276,8 +280,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
       ].where((e) => e.trim().isNotEmpty).join(' ');
       final matched = SectorIssueCatalog.matchedIssue(sector, matchText);
       final tipLower = (tip ?? '').toLowerCase();
-      final forceEscalate =
-          tipLower.contains('escalat') ||
+      final forceEscalate = tipLower.contains('escalat') ||
           tipLower.contains('handoff') ||
           tipLower.contains('specialist');
       if (matched != null && !forceEscalate) {
@@ -458,32 +461,33 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E293B),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF3B82F6)),
+              border: Border.all(color: AppColors.secondaryText()),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Customer terms to notice',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF93C5FD),
+                    color: AppColors.secondaryText(),
                   ),
                 ),
                 const Gap(6),
                 Text(
                   termHits.map((e) => e['term']).join(' · '),
-                  style: const TextStyle(fontSize: 12, color: Colors.white),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textPrimary(context)),
                 ),
                 const Gap(4),
                 Text(
                   'Open ${SimulationCoach.sectorGuideTabLabel(sector)} for meanings and related steps.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textMuted(context),
                   ),
                 ),
               ],
@@ -496,16 +500,16 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           padding: const EdgeInsets.all(10),
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
-            color: const Color(0xFF15201A),
+            color: AppColors.nextTint(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF2E4A38)),
+            border: Border.all(color: AppColors.nextTint(context)),
           ),
-          child: const Text(
+          child: Text(
             'How to use this panel: blue = what to think about. Amber = actions to take in the tools. Green cards = example words you may type (use your own wording).',
             style: TextStyle(
               fontSize: 11,
               height: 1.35,
-              color: Color(0xFFD7E8DB),
+              color: AppColors.primaryText(),
             ),
           ),
         ),
@@ -516,7 +520,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const Gap(6),
@@ -538,10 +542,10 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             const Gap(8),
             Text(
               'NOW: ${widget.coachVm!.currentObjectiveLabel}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
-                color: Color(0xFFE2E8F0),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],
@@ -551,13 +555,14 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A5F),
+                color: AppColors.completeTint(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF3B82F6)),
+                border: Border.all(color: AppColors.secondaryText()),
               ),
               child: Text(
                 tip,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF93C5FD)),
+                style:
+                    TextStyle(fontSize: 12, color: AppColors.secondaryText()),
               ),
             ),
           ],
@@ -572,7 +577,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: AppColors.textSecondary(context),
             ),
           ),
           const Gap(6),
@@ -580,19 +585,19 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1E3A5F),
+              color: AppColors.completeTint(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF3B82F6)),
+              border: Border.all(color: AppColors.secondaryText()),
             ),
             child: Text(
               tip,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF93C5FD)),
+              style: TextStyle(fontSize: 12, color: AppColors.secondaryText()),
             ),
           ),
           const Gap(14),
         ],
         if (actionTips.isNotEmpty) ...[
-          const Text(
+          Text(
             'Use the tools panel for this step',
             style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
           ),
@@ -603,15 +608,15 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
+                color: AppColors.elevated(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFF59E0B)),
+                border: Border.all(color: AppColors.warningText()),
               ),
               child: Text(
                 t,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFFFBBF24),
+                  color: AppColors.warningText(),
                   height: 1.35,
                 ),
               ),
@@ -631,8 +636,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           return typeable.toList().asMap().entries.map((entry) {
             final i = entry.key;
             final line = entry.value;
-            final active =
-                highlight.isNotEmpty &&
+            final active = highlight.isNotEmpty &&
                 (line.tag == highlight ||
                     (highlight == 'opening' && line.tag == 'opening') ||
                     (highlight == 'closing' &&
@@ -640,7 +644,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
                     (highlight == 'say' && line.tag == 'say') ||
                     (highlight == 'step' && line.tag == 'step') ||
                     (highlight == 'guide' && line.tag == 'guide'));
-            final card = _lineCard(line, active || i == 0);
+            final card = _lineCard(context, line, active || i == 0);
             if (!keyed && (active || i == 0)) {
               keyed = true;
               return KeyedSubtree(key: _highlightKey, child: card);
@@ -663,28 +667,28 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(180, 21, 21, 21),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+        border: Border.all(color: AppColors.borderIdle(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _metaRow('Company', SimulationCoach.companyName),
-          _metaRow('Agent', SimulationCoach.agentName),
-          _metaRow('Customer', name),
-          _metaRow('Sector', sector),
-          _metaRow('Emotion', emotion),
-          _metaRow('Problem', problem),
+          _metaRow(context, 'Company', SimulationCoach.companyName),
+          _metaRow(context, 'Agent', SimulationCoach.agentName),
+          _metaRow(context, 'Customer', name),
+          _metaRow(context, 'Sector', sector),
+          _metaRow(context, 'Emotion', emotion),
+          _metaRow(context, 'Problem', problem),
           if (widget.accountId != null && widget.accountId!.isNotEmpty)
-            _metaRow('Account', widget.accountId!),
-          _metaRow('Current state', state),
+            _metaRow(context, 'Account', widget.accountId!),
+          _metaRow(context, 'Current state', state),
         ],
       ),
     );
   }
 
-  Widget _metaRow(String label, String value) {
+  Widget _metaRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: RichText(
@@ -692,15 +696,16 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           children: [
             TextSpan(
               text: '$label: ',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textMuted(context),
               ),
             ),
             TextSpan(
               text: value,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: TextStyle(
+                  fontSize: 12, color: AppColors.textSecondary(context)),
             ),
           ],
         ),
@@ -708,31 +713,23 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     );
   }
 
-  Widget _lineCard(ScriptLine line, bool active) {
+  Widget _lineCard(BuildContext context, ScriptLine line, bool active) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: active
-            ? const Color.fromARGB(255, 12, 67, 30)
-            : const Color.fromARGB(180, 21, 21, 21),
+        color: active ? AppColors.nextTint(context) : AppColors.panel(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: active
-              ? const Color.fromARGB(255, 112, 189, 138)
-              : const Color.fromARGB(255, 49, 48, 48),
+          color:
+              active ? AppColors.primaryText() : AppColors.borderIdle(context),
           width: active ? 1.2 : 0.5,
         ),
         boxShadow: active
             ? [
                 BoxShadow(
-                  color: const Color.fromARGB(
-                    255,
-                    112,
-                    189,
-                    138,
-                  ).withValues(alpha: 0.35),
+                  color: AppColors.primaryText().withValues(alpha: 0.35),
                   blurRadius: 10,
                   spreadRadius: 0.5,
                 ),
@@ -750,16 +747,16 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               fontSize: 11,
               fontWeight: FontWeight.w700,
               color: active
-                  ? const Color.fromARGB(255, 112, 189, 138)
-                  : const Color(0xFF9CA3AF),
+                  ? AppColors.primaryText()
+                  : AppColors.textMuted(context),
             ),
           ),
           const Gap(6),
           Text(
             line.text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               height: 1.35,
             ),
           ),
@@ -783,7 +780,7 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     super.dispose();
   }
 
-  Widget _buildEscalation(String sector) {
+  Widget _buildEscalation(BuildContext context, String sector) {
     final problem = widget.problem ?? 'Unknown';
     final name = widget.customerName ?? 'Customer';
     final depts = SimulationCoach.escalationDepartments(sector);
@@ -807,15 +804,15 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           width: double.infinity,
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF3B2F14),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFF59E0B)),
+            border: Border.all(color: AppColors.warningText()),
           ),
-          child: const Text(
+          child: Text(
             'Use this when first-line steps are not enough. Pick a team, review the summary fields, then submit. After submit, tell the customer the case is with a specialist, then close.',
             style: TextStyle(
               fontSize: 12,
-              color: Color(0xFFFBBF24),
+              color: AppColors.warningText(),
               height: 1.35,
             ),
           ),
@@ -836,13 +833,13 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: selected
-                    ? const Color.fromARGB(255, 12, 67, 30)
-                    : const Color.fromARGB(180, 21, 21, 21),
+                    ? AppColors.nextTint(context)
+                    : AppColors.panel(context),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: selected
-                      ? const Color.fromARGB(255, 112, 189, 138)
-                      : const Color.fromARGB(255, 49, 48, 48),
+                      ? AppColors.primaryText()
+                      : AppColors.borderIdle(context),
                 ),
               ),
               child: Column(
@@ -850,27 +847,27 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
                 children: [
                   Text(
                     d['label'] ?? '',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const Gap(4),
                   Text(
                     'When: ${d['when']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF9CA3AF),
+                      color: AppColors.textMuted(context),
                       height: 1.3,
                     ),
                   ),
                   const Gap(2),
                   Text(
                     'Means: ${d['means']}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF9CA3AF),
+                      color: AppColors.textMuted(context),
                       height: 1.3,
                     ),
                   ),
@@ -888,73 +885,77 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children:
-              [
-                'Data / access loss',
-                'Service not working',
-                'Billing dispute',
-                'Security concern',
-                'Policy exception',
-                'Complex unresolved issue',
-              ].map((label) {
-                final selected = _problemType == label;
-                return GestureDetector(
-                  onTap: () => setState(() => _problemType = label),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xFF1E3A5F)
-                          : const Color.fromARGB(180, 21, 21, 21),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: selected
-                            ? const Color(0xFF3B82F6)
-                            : const Color.fromARGB(255, 49, 48, 48),
-                      ),
-                    ),
-                    child: Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: selected
-                            ? const Color(0xFF93C5FD)
-                            : Colors.white70,
-                      ),
-                    ),
+          children: [
+            'Data / access loss',
+            'Service not working',
+            'Billing dispute',
+            'Security concern',
+            'Policy exception',
+            'Complex unresolved issue',
+          ].map((label) {
+            final selected = _problemType == label;
+            return GestureDetector(
+              onTap: () => setState(() => _problemType = label),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.completeTint(context)
+                      : AppColors.panel(context),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.secondaryText()
+                        : AppColors.borderIdle(context),
                   ),
-                );
-              }).toList(),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: selected
+                        ? AppColors.secondaryText()
+                        : AppColors.textSecondary(context),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
         const Gap(12),
         Text(
           'Customer: $name',
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
+          style:
+              TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
         ),
         if (widget.accountId != null && widget.accountId!.isNotEmpty)
           Text(
             'Account: ${widget.accountId}',
-            style: const TextStyle(fontSize: 12, color: Colors.white70),
+            style: TextStyle(
+                fontSize: 12, color: AppColors.textSecondary(context)),
           ),
         Text(
           'Issue: $problem',
-          style: const TextStyle(fontSize: 12, color: Colors.white70),
+          style:
+              TextStyle(fontSize: 12, color: AppColors.textSecondary(context)),
         ),
         const Gap(10),
         _escField(
+          context,
           _impactCtrl,
           'Impact (example: behind on 2 payments, risk of default)',
         ),
         const Gap(8),
         _escField(
+          context,
           _triedCtrl,
           'Already tried (example: reviewed payment history, offered due-date change)',
         ),
         const Gap(8),
-        _escField(_callbackCtrl, 'Callback number or best contact'),
+        _escField(context, _callbackCtrl, 'Callback number or best contact'),
         const Gap(14),
         SizedBox(
           width: double.infinity,
@@ -980,8 +981,8 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
                     setState(() => _subTab = 0);
                   },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF166534),
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.nextTint(context),
+              foregroundColor: AppColors.textPrimary(context),
               padding: const EdgeInsets.symmetric(vertical: 12),
             ),
             child: const Text('Submit escalation handoff'),
@@ -991,36 +992,39 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
     );
   }
 
-  Widget _escField(TextEditingController controller, String hint) {
+  Widget _escField(
+      BuildContext context, TextEditingController controller, String hint) {
     return TextField(
       controller: controller,
-      style: const TextStyle(color: Colors.white, fontSize: 13),
+      style: TextStyle(color: AppColors.textPrimary(context), fontSize: 13),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFF6B7280), fontSize: 12),
+        hintStyle: TextStyle(color: AppColors.textMuted(context), fontSize: 12),
         filled: true,
-        fillColor: const Color.fromARGB(180, 21, 21, 21),
+        fillColor: AppColors.panel(context),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+          borderSide: BorderSide(color: AppColors.borderIdle(context)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+          borderSide: BorderSide(color: AppColors.borderIdle(context)),
         ),
       ),
     );
   }
 
-  Widget _buildReminders() {
+  Widget _buildReminders(
+    BuildContext context,
+  ) {
     if (widget.reminders.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(
             'No reminders yet.\nRisky or weak replies will appear here with better options.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, height: 1.4),
+            style: TextStyle(color: AppColors.textMuted(context), height: 1.4),
           ),
         ),
       );
@@ -1034,17 +1038,17 @@ class _ScenarioGuideViewState extends State<ScenarioGuideView> {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF3F1D1D),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+              color: AppColors.errorStrongText().withValues(alpha: 0.5),
             ),
           ),
           child: Text(
             item,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               height: 1.4,
             ),
           ),
@@ -1091,13 +1095,12 @@ class _CollapsibleScriptGuideState extends State<CollapsibleScriptGuide> {
           Align(
             alignment: Alignment.centerRight,
             child: IconButton(
-              tooltip: _expanded
-                  ? 'Collapse Script Guide'
-                  : 'Expand Script Guide',
+              tooltip:
+                  _expanded ? 'Collapse Script Guide' : 'Expand Script Guide',
               onPressed: () => setState(() => _expanded = !_expanded),
               icon: Icon(
                 _expanded ? Icons.chevron_right : Icons.chevron_left,
-                color: Colors.white70,
+                color: AppColors.textSecondary(context),
                 size: 20,
               ),
             ),
@@ -1132,25 +1135,25 @@ class _ObjectiveChip extends StatelessWidget {
     final done = status == 'done';
     final current = status == 'current';
     final bg = done
-        ? const Color(0xFF14532D)
+        ? AppColors.nextTint(context)
         : current
-        ? const Color(0xFF1E3A5F)
-        : const Color(0xFF1F2937);
+            ? AppColors.completeTint(context)
+            : AppColors.chipBg(context);
     final border = done
-        ? const Color(0xFF22C55E)
+        ? AppColors.primaryText()
         : current
-        ? const Color(0xFF3B82F6)
-        : const Color(0xFF374151);
+            ? AppColors.secondaryText()
+            : AppColors.borderStrong(context);
     final fg = done
-        ? const Color(0xFFBBF7D0)
+        ? AppColors.primaryText()
         : current
-        ? const Color(0xFF93C5FD)
-        : const Color(0xFF9CA3AF);
+            ? AppColors.secondaryText()
+            : AppColors.textMuted(context);
     final prefix = done
         ? 'x '
         : current
-        ? '> '
-        : '';
+            ? '> '
+            : '';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

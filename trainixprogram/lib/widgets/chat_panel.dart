@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
@@ -328,9 +329,7 @@ class _ChatPanelState extends State<ChatPanel> {
     final softCoachAt = _agentAdvisedWait ? 55 : 30;
     final customerNudgeAt = _agentAdvisedWait ? 90 : 45;
 
-    if (!_toolWaitCoachNudged &&
-        seconds >= softCoachAt &&
-        widget.guidedMode) {
+    if (!_toolWaitCoachNudged && seconds >= softCoachAt && widget.guidedMode) {
       _toolWaitCoachNudged = true;
       final tip = _agentAdvisedWait
           ? 'Customer has been waiting while you use tools. Finish the lookup and return to the chat soon.'
@@ -363,8 +362,7 @@ class _ChatPanelState extends State<ChatPanel> {
       'Just checking in. Are you still working on my request?',
       'I am still here whenever you have an update for me.',
     ];
-    final emotion =
-        openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+    final emotion = openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
     final line = CustomerEmotionStyle.apply(
       lines[Random().nextInt(lines.length)],
       emotion,
@@ -420,8 +418,7 @@ class _ChatPanelState extends State<ChatPanel> {
         casePackSession: casePack,
       );
       if (needsAccount && accountProvider.accounts.isEmpty) {
-        final targetId =
-            response.accountId ??
+        final targetId = response.accountId ??
             'ACC-${(openRouterAPI.chosenSimulation['name'] ?? 'C').hashCode.abs() % 90000 + 10000}';
         accountProvider.generateAccounts(
           sector: widget.sector,
@@ -698,11 +695,11 @@ class _ChatPanelState extends State<ChatPanel> {
       } else if (!SimulationSessionController.useMissionGuide) {
         final escalateFromStart =
             (openRouterAPI.chosenSimulation['escalateFromStart'] == true) ||
-            (openRouterAPI.chosenSimulation['escalateFromStart'] == 'true');
+                (openRouterAPI.chosenSimulation['escalateFromStart'] == 'true');
         final needsAccount =
             openRouterAPI.chosenSimulation['needsAccount'] == true ||
-            openRouterAPI.chosenSimulation['needsAccount'] == 'true' ||
-            SimulationCoach.needsAccountLookup(problem, sector: sector);
+                openRouterAPI.chosenSimulation['needsAccount'] == 'true' ||
+                SimulationCoach.needsAccountLookup(problem, sector: sector);
         String lastCust = '';
         for (var i = messages.length - 1; i >= 0; i--) {
           if (messages[i].role == 'assistant') {
@@ -731,14 +728,13 @@ class _ChatPanelState extends State<ChatPanel> {
     ];
     final needsAccount =
         ProblemFamilyClassifier.defaultNeedsAccount(_problemFamily!) ||
-        openRouterAPI.chosenSimulation['needsAccount'] == true ||
-        openRouterAPI.chosenSimulation['needsAccount'] == 'true';
+            openRouterAPI.chosenSimulation['needsAccount'] == true ||
+            openRouterAPI.chosenSimulation['needsAccount'] == 'true';
     final acc = accountProvider.selectedAccount;
     final details = acc == null
         ? <String, String>{}
         : Map<String, String>.from(acc.details);
-    final statusLabel =
-        details['Coverage'] ??
+    final statusLabel = details['Coverage'] ??
         details['Status'] ??
         details['Claim Status'] ??
         details['Plan Status'] ??
@@ -750,7 +746,7 @@ class _ChatPanelState extends State<ChatPanel> {
       needsAccount: needsAccount,
       escalateFromStart:
           openRouterAPI.chosenSimulation['escalateFromStart'] == true ||
-          openRouterAPI.chosenSimulation['escalateFromStart'] == 'true',
+              openRouterAPI.chosenSimulation['escalateFromStart'] == 'true',
       messages: coachMessages,
       identityVerified: identityVerified,
       toolWorkDone: toolWorkDone,
@@ -828,10 +824,10 @@ class _ChatPanelState extends State<ChatPanel> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
+              Icon(
                 Icons.wifi_off_rounded,
                 size: 40,
-                color: Colors.white54,
+                color: AppColors.textMuted(context),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -839,11 +835,11 @@ class _ChatPanelState extends State<ChatPanel> {
                 style: TextStyle(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Connection problem. Check your network and try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white54,
+                  color: AppColors.textMuted(context),
                   fontSize: 12,
                   height: 1.35,
                 ),
@@ -897,25 +893,22 @@ class _ChatPanelState extends State<ChatPanel> {
       customerName: hasCustomerMessage
           ? (openRouterAPI.chosenSimulation['name'] ?? 'New Customer')
           : 'Waiting for customer',
-      customerProblem: hasCustomerMessage
-          ? openRouterAPI.chosenSimulation['problem']
-          : null,
-      customerEmotion: hasCustomerMessage
-          ? openRouterAPI.chosenSimulation['emotion']
-          : null,
+      customerProblem:
+          hasCustomerMessage ? openRouterAPI.chosenSimulation['problem'] : null,
+      customerEmotion:
+          hasCustomerMessage ? openRouterAPI.chosenSimulation['emotion'] : null,
       selectedTab: _selectedTab,
-      highlightToolTab: widget.guidedMode &&
-              SimulationSessionController.useBlueprintGuide
-          ? _sessionController.highlightToolTab
-          : null,
+      highlightToolTab:
+          widget.guidedMode && SimulationSessionController.useBlueprintGuide
+              ? _sessionController.highlightToolTab
+              : null,
       onTabChanged: _onToolsTabSelected,
       onSectorGuideIssueOpened: () {
         _sessionController.markSectorGuideIssueOpened();
         if (mounted) setState(() {});
       },
-      customerWaitSeconds: (_selectedTab == 1 || _selectedTab == 2)
-          ? _customerWaitSeconds
-          : 0,
+      customerWaitSeconds:
+          (_selectedTab == 1 || _selectedTab == 2) ? _customerWaitSeconds : 0,
       agentAdvisedWait: _agentAdvisedWait,
       inputController: _inputController,
       inputFocusNode: _inputFocusNode,
@@ -923,9 +916,8 @@ class _ChatPanelState extends State<ChatPanel> {
       isSending: _isSending || _waitingForCustomer,
       waitingForCustomer: _waitingForCustomer,
       customerHasSpoken: hasCustomerMessage || awaitingClosing,
-      customerNameForGuide: hasCustomerMessage
-          ? openRouterAPI.chosenSimulation['name']
-          : null,
+      customerNameForGuide:
+          hasCustomerMessage ? openRouterAPI.chosenSimulation['name'] : null,
       accountId: openRouterAPI.chosenSimulation['accountId'],
       coachTip: widget.guidedMode && AppSettings.coachTipsEnabled
           ? coachVm.tip
@@ -982,8 +974,8 @@ class _ChatPanelState extends State<ChatPanel> {
       },
       inputHint: awaitingClosing
           ? (_sessionEscalated
-                ? 'Type your escalation closing...'
-                : 'Type your closing spiel...')
+              ? 'Type your escalation closing...'
+              : 'Type your closing spiel...')
           : null,
       onInputChanged: (value) {
         final delta = value.length - _previousInputLength;
@@ -1016,8 +1008,7 @@ class _ChatPanelState extends State<ChatPanel> {
               hasTraineeSpoken: _traineeHasSpoken,
               hasCustomerSpoken: hasCustomerMessage,
               problem: problem,
-              sector:
-                  openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
+              sector: openRouterAPI.chosenSimulation['sector'] ?? widget.sector,
               traineeTurnCount: _interactionWpmSamples.length,
               toolWorkDone: toolWorkDone,
               isEscalating: _sessionEscalated,
@@ -1113,31 +1104,31 @@ class _ChatPanelState extends State<ChatPanel> {
                 width: 50,
                 height: 50,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF191919),
+                  color: AppColors.card(context),
                   shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFF303030)),
+                  border: Border.all(color: AppColors.borderStrong(context)),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.edit_note,
                   size: 32,
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                 ),
               ),
               const Gap(20),
-              const Text(
+              Text(
                 'After Chat Work',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 'Use the suggested disposition and note from this case. Edit if needed, then submit.',
                 style: textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFFF4F3F3),
+                  color: AppColors.textPrimary(context),
                   fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
@@ -1146,32 +1137,34 @@ class _ChatPanelState extends State<ChatPanel> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF15201A),
+                  color: AppColors.nextTint(context),
                   borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF2E4A38)),
+                  border: Border.all(color: AppColors.nextTint(context)),
                 ),
                 child: Text(
                   'Suggested from this case: ${_acwSuggestedDisposition()}. $suggested',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: Color(0xFFD7E8DB),
+                    color: AppColors.primaryText(),
                   ),
                 ),
               ),
               const Gap(24),
-              const Text(
+              Text(
                 'Disposition',
-                style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(8),
               DropdownButtonFormField<String>(
                 value: _acwDisposition,
-                dropdownColor: const Color(0xFF1A1F26),
-                style: const TextStyle(color: Colors.white, fontSize: 14),
+                dropdownColor: AppColors.card(context),
+                style: TextStyle(
+                    color: AppColors.textPrimary(context), fontSize: 14),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF1A1A1A),
+                  fillColor: AppColors.elevated(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -1199,23 +1192,25 @@ class _ChatPanelState extends State<ChatPanel> {
               TextField(
                 controller: _reportController,
                 maxLines: 4,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
                 decoration: InputDecoration(
                   hintText: 'Summary, next action, account notes...',
                   hintStyle: textTheme.bodyMedium?.copyWith(
                     fontSize: 12,
-                    color: const Color(0xFFBBBBBB),
+                    color: AppColors.textMuted(context),
                   ),
-                  border: const OutlineInputBorder(
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(10)),
                   ),
-                  enabledBorder: const OutlineInputBorder(
+                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(10)),
-                    borderSide: BorderSide(color: Color(0xFFBBBBBB), width: .5),
+                    borderSide: BorderSide(
+                        color: AppColors.textMuted(context), width: .5),
                   ),
-                  focusedBorder: const OutlineInputBorder(
+                  focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.all(Radius.circular(10)),
-                    borderSide: BorderSide(color: Colors.white, width: 1),
+                    borderSide: BorderSide(
+                        color: AppColors.textPrimary(context), width: 1),
                   ),
                 ),
               ),
@@ -1227,8 +1222,8 @@ class _ChatPanelState extends State<ChatPanel> {
                   _startGracePeriod();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.secondaryText(),
+                  foregroundColor: AppColors.onPrimary(context),
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -1263,10 +1258,11 @@ class _ChatPanelState extends State<ChatPanel> {
   }
 
   Widget _buildWaitingToEndScreen() {
-    return const Column(
+    return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.check_circle_outline, size: 56, color: Color(0xFF34D399)),
+        Icon(Icons.check_circle_outline,
+            size: 56, color: AppColors.successText()),
         SizedBox(height: 16),
         Text(
           'Wrapping Up',
@@ -1296,7 +1292,7 @@ class _ChatPanelState extends State<ChatPanel> {
     final avgWpm = _interactionWpmSamples.isEmpty
         ? 0.0
         : _interactionWpmSamples.reduce((a, b) => a + b) /
-              _interactionWpmSamples.length;
+            _interactionWpmSamples.length;
 
     //keystroke accuracy - characters that survived to being sent,
     //divided by total keystrokes
@@ -1383,8 +1379,7 @@ class _ChatPanelState extends State<ChatPanel> {
       return;
     }
 
-    final seconds =
-        _graceMinSeconds +
+    final seconds = _graceMinSeconds +
         Random().nextInt(_graceMaxSeconds - _graceMinSeconds + 1);
 
     setState(() {
@@ -1556,8 +1551,7 @@ class _ChatPanelState extends State<ChatPanel> {
       return;
     }
 
-    final shouldFinish =
-        SimulationCoach.looksLikeClosing(text) ||
+    final shouldFinish = SimulationCoach.looksLikeClosing(text) ||
         (_sessionEscalated && SimulationCoach.looksLikeEscalation(text));
     if (!shouldFinish) {
       if (mounted) setState(() => _isSending = false);
@@ -1901,11 +1895,8 @@ class _ChatPanelState extends State<ChatPanel> {
           ? 0.0
           : DateTime.now().difference(_typingStartTime!).inMilliseconds / 1000;
 
-      final wordCount = text
-          .trim()
-          .split(RegExp(r'\s+'))
-          .where((w) => w.isNotEmpty)
-          .length;
+      final wordCount =
+          text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
       var wpm = elapsedSeconds > 0 ? (wordCount / elapsedSeconds) * 60 : 0.0;
       // Cap and exclude paste-inflated samples from the typing-pace average.
@@ -1931,18 +1922,14 @@ class _ChatPanelState extends State<ChatPanel> {
         _syncMissionMessages();
         final pack = _sessionController.mission.pack!;
         final step = _sessionController.mission.currentStep;
-        final rude =
-            SimulationCoach.isInsultingAgentReply(text) ||
+        final rude = SimulationCoach.isInsultingAgentReply(text) ||
             SimulationCoach.isNegativeAgentReply(text);
         final offTopic = SimulationCoach.isOffTopicReply(
           text,
           pack.problemSummary,
         );
-        final wordCount = text
-            .trim()
-            .split(RegExp(r'\s+'))
-            .where((w) => w.isNotEmpty)
-            .length;
+        final wordCount =
+            text.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
         // Always react to rude/refuse/short noise. Do not rely only on
         // lastTraineeDidNotAdvance, which can miss short negative replies.
         if (rude || (offTopic && wordCount <= 8)) {
@@ -2075,10 +2062,10 @@ class _ChatPanelState extends State<ChatPanel> {
         _startCustomerCheckWait();
       }
 
-      final satisfied =
-          CaseChecklist.isCustomerSatisfied(cleanedReply) ||
+      final satisfied = CaseChecklist.isCustomerSatisfied(cleanedReply) ||
           CaseChecklist.isCustomerSatisfied(
-            Provider.of<MessageProvider>(context, listen: false).messages
+            Provider.of<MessageProvider>(context, listen: false)
+                .messages
                 .where((m) => m.role == 'assistant')
                 .map((m) => m.message)
                 .join(' '),

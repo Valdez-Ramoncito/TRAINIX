@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
 import 'package:trainixprogram/components/button/logout_button.dart';
@@ -211,6 +212,8 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
+  bool get _isDarkMode => Theme.of(context).brightness == Brightness.dark;
+
   late TabController tabController;
   int indexPage = 0;
 
@@ -307,16 +310,16 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Colors.white54),
+      labelStyle: TextStyle(color: AppColors.textMuted(context)),
       filled: true,
-      fillColor: const Color(0xFF1A1A1A),
+      fillColor: AppColors.elevated(context),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+        borderSide: BorderSide(color: AppColors.borderStrong(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color(0xFF70BD8A)),
+        borderSide: BorderSide(color: AppColors.primaryText()),
       ),
     );
   }
@@ -350,13 +353,14 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: const Color(0xFF1E293B),
+              color: AppColors.elevated(context),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Complete your profile before unlocking Mini Training and Simulation modes.',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      style: TextStyle(
+                          color: AppColors.textPrimary(context), fontSize: 13),
                     ),
                   ),
                   if (TrainixDebug.unlocked) ...[
@@ -364,12 +368,12 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                       onPressed: () => _finishProfile(debug: true),
                       child: const Text('DEBUG: Skip profile'),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     ElevatedButton(
                       onPressed: () => _finishProfile(),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF166534),
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primaryText(),
+                        foregroundColor: AppColors.onPrimary(context),
                       ),
                       child: const Text('DEBUG: Mark profile complete'),
                     ),
@@ -405,7 +409,9 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                             children: [
                               Text(
                                 'TRAINIX',
-                                style: Theme.of(context).textTheme.titleMedium
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
                                     ?.copyWith(
                                       fontSize: context.responsiveFont(7),
                                     ),
@@ -467,7 +473,9 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                             children: [
                               Text(
                                 'TRAINIX',
-                                style: Theme.of(context).textTheme.titleMedium
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
                                     ?.copyWith(
                                       fontSize: context.responsiveFont(7),
                                     ),
@@ -561,10 +569,10 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                     ),
                   ),
                 if (ProfileData.role != AppRole.admin)
-                  const VerticalDivider(
+                  VerticalDivider(
                     width: .5,
                     thickness: .3,
-                    color: Color.fromARGB(255, 105, 106, 106),
+                    color: AppColors.textMuted(context),
                   ),
                 Expanded(
                   child: Padding(
@@ -583,21 +591,49 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                 right: 0,
                                 height: 160,
                                 child: Container(
+                                  clipBehavior: Clip.antiAlias,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(5),
-                                    image: const DecorationImage(
-                                      image: AssetImage(
-                                        'assets/images/cover_photo.png',
-                                      ),
-                                      fit: BoxFit.cover,
+                                    borderRadius: BorderRadius.circular(16),
+                                    color: _isDarkMode
+                                        ? null
+                                        : AppColors.surface(context),
+                                    border: Border.all(
+                                      color: _isDarkMode
+                                          ? Colors.transparent
+                                          : AppColors.border(context),
                                     ),
+                                    image: _isDarkMode
+                                        ? const DecorationImage(
+                                            image: AssetImage(
+                                              'assets/images/cover_photo.png',
+                                            ),
+                                            fit: BoxFit.cover,
+                                          )
+                                        : null,
                                   ),
+                                  child: _isDarkMode
+                                      ? null
+                                      : Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 24,
+                                            ),
+                                            child: Icon(
+                                              Icons.workspace_premium_outlined,
+                                              size: 88,
+                                              color: AppColors.primaryText()
+                                                  .withValues(alpha: 0.12),
+                                            ),
+                                          ),
+                                        ),
                                 ),
                               ),
                               Positioned(
                                 top: 15,
                                 right: 20,
                                 child: LogoutButton(
+                                  onImage: true,
                                   onTap: () async {
                                     await AuthService.instance.signOut();
                                     if (!context.mounted) return;
@@ -628,7 +664,7 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                               28,
                                             ),
                                             border: Border.all(
-                                              color: const Color(0xFF2A2A2A),
+                                              color: AppColors.border(context),
                                               width: 3,
                                             ),
                                             image: const DecorationImage(
@@ -652,41 +688,67 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                                         padding: const EdgeInsets.only(
                                           bottom: 12,
                                         ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              ProfileData.displayName,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleMedium
-                                                  ?.copyWith(
-                                                    fontSize: context
-                                                        .responsiveFont(8),
-                                                  ),
-                                            ),
-                                            Text(
-                                              ProfileData.joinedLabel,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodySmall
-                                                  ?.copyWith(
-                                                    fontSize: context
-                                                        .responsiveFont(3),
-                                                  ),
-                                            ),
-                                            if (ProfileData
-                                                .preferredSector
-                                                .isNotEmpty)
-                                              Text(
-                                                'Preferred sector: ${ProfileData.preferredSector}',
-                                                style: const TextStyle(
-                                                  color: Colors.white54,
-                                                  fontSize: 12,
+                                        child: Container(
+                                          padding: _isDarkMode
+                                              ? EdgeInsets.zero
+                                              : const EdgeInsets.symmetric(
+                                                  horizontal: 14, vertical: 10),
+                                          decoration: _isDarkMode
+                                              ? null
+                                              : BoxDecoration(
+                                                  color: AppColors.card(context)
+                                                      .withValues(alpha: 0.94),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                      color: AppColors.border(
+                                                          context)),
+                                                  boxShadow:
+                                                      AppColors.cardShadow(
+                                                          context),
                                                 ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                ProfileData.displayName,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      color:
+                                                          AppColors.textPrimary(
+                                                              context),
+                                                      fontSize: context
+                                                          .responsiveFont(8),
+                                                    ),
                                               ),
-                                          ],
+                                              Text(
+                                                ProfileData.joinedLabel,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodySmall
+                                                    ?.copyWith(
+                                                      color: AppColors
+                                                          .textSecondary(
+                                                              context),
+                                                      fontSize: context
+                                                          .responsiveFont(3),
+                                                    ),
+                                              ),
+                                              if (ProfileData
+                                                  .preferredSector.isNotEmpty)
+                                                Text(
+                                                  'Preferred sector: ${ProfileData.preferredSector}',
+                                                  style: TextStyle(
+                                                    color: AppColors.textMuted(
+                                                        context),
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -732,23 +794,24 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Edit profile',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 16,
                 ),
               ),
               const Gap(6),
-              const Text(
+              Text(
                 'Email comes from your login and cannot be changed here.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(16),
               TextField(
                 controller: _nameController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
                 textInputAction: TextInputAction.next,
                 decoration: _fieldDecoration('Display name'),
               ),
@@ -757,13 +820,14 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                 controller: _emailController,
                 readOnly: true,
                 enableInteractiveSelection: true,
-                style: const TextStyle(color: Colors.white54),
+                style: TextStyle(color: AppColors.textMuted(context)),
                 decoration: _fieldDecoration('Email (from login)'),
               ),
               const Gap(12),
-              const Text(
+              Text(
                 'Gender',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(8),
               Wrap(
@@ -775,18 +839,20 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                     label: Text(g),
                     selected: selected,
                     onSelected: (_) => setState(() => _gender = g),
-                    selectedColor: const Color(0xFF166534),
+                    selectedColor: AppColors.nextTint(context),
                     labelStyle: TextStyle(
-                      color: selected ? Colors.white : Colors.white70,
+                      color: selected
+                          ? AppColors.textPrimary(context)
+                          : AppColors.textSecondary(context),
                     ),
-                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: AppColors.elevated(context),
                   );
                 }).toList(),
               ),
               const Gap(12),
               TextField(
                 controller: _phoneController,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
                 textInputAction: TextInputAction.next,
                 decoration: _fieldDecoration('Phone (optional)'),
               ),
@@ -794,13 +860,14 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
               TextField(
                 controller: _bioController,
                 maxLines: 3,
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
                 decoration: _fieldDecoration('Short bio / training goal'),
               ),
               const Gap(12),
-              const Text(
+              Text(
                 'Preferred sector',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(8),
               Wrap(
@@ -812,11 +879,13 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                     label: Text(s),
                     selected: selected,
                     onSelected: (_) => setState(() => _sector = s),
-                    selectedColor: const Color(0xFF166534),
+                    selectedColor: AppColors.nextTint(context),
                     labelStyle: TextStyle(
-                      color: selected ? Colors.white : Colors.white70,
+                      color: selected
+                          ? AppColors.textPrimary(context)
+                          : AppColors.textSecondary(context),
                     ),
-                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: AppColors.elevated(context),
                   );
                 }).toList(),
               ),
@@ -826,8 +895,8 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
                   ElevatedButton(
                     onPressed: _saveLocal,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF166534),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primaryText(),
+                      foregroundColor: AppColors.onPrimary(context),
                     ),
                     child: const Text('Save profile'),
                   ),
@@ -850,94 +919,170 @@ class _ProfileState extends State<Profile> with SingleTickerProviderStateMixin {
   Widget _buildReadOnlyTabs() {
     return Column(
       children: [
-        TabBar(
-          controller: tabController,
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          indicator: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF4A4B54), width: 1),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              width: 420,
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.surface(context),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderIdle(context)),
+              ),
+              child: TabBar(
+                controller: tabController,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                indicator: BoxDecoration(
+                  color: AppColors.card(context),
+                  borderRadius: BorderRadius.circular(9),
+                  boxShadow: AppColors.cardShadow(
+                    context,
+                    blur: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ),
+                labelColor: AppColors.textPrimary(context),
+                unselectedLabelColor: AppColors.textMuted(context),
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                tabs: const [
+                  Tab(height: 36, text: 'Overview'),
+                  Tab(height: 36, text: 'Training prefs'),
+                ],
+              ),
+            ),
           ),
-          labelColor: Colors.white,
-          unselectedLabelColor: const Color(0xFFA5A6AD),
-          tabs: const [
-            Tab(height: 38, text: 'Overview'),
-            Tab(height: 38, text: 'Training prefs'),
-          ],
         ),
         const Gap(12),
         Expanded(
-          child: IndexedStack(
-            index: indexPage,
-            children: [
-              ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 720),
+              child: IndexedStack(
+                index: indexPage,
                 children: [
-                  _infoRow('Name', ProfileData.displayName),
-                  _infoRow(
-                    'Email',
-                    ProfileData.email.isEmpty ? ' - ' : ProfileData.email,
+                  ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _infoRow('Name', ProfileData.displayName),
+                      _infoRow(
+                        'Email',
+                        ProfileData.email.isEmpty ? ' - ' : ProfileData.email,
+                      ),
+                      _infoRow(
+                        'Gender',
+                        ProfileData.gender.isEmpty ? ' - ' : ProfileData.gender,
+                      ),
+                      _infoRow(
+                        'Phone',
+                        ProfileData.phone.isEmpty ? ' - ' : ProfileData.phone,
+                      ),
+                      _infoRow(
+                        'Bio',
+                        ProfileData.bio.isEmpty
+                            ? 'No bio yet.'
+                            : ProfileData.bio,
+                      ),
+                      _infoRow(
+                        'Photo',
+                        ProfileData.photoSet
+                            ? 'Placeholder set'
+                            : 'Default photo',
+                      ),
+                    ],
                   ),
-                  _infoRow(
-                    'Gender',
-                    ProfileData.gender.isEmpty ? ' - ' : ProfileData.gender,
-                  ),
-                  _infoRow(
-                    'Phone',
-                    ProfileData.phone.isEmpty ? ' - ' : ProfileData.phone,
-                  ),
-                  _infoRow(
-                    'Bio',
-                    ProfileData.bio.isEmpty ? 'No bio yet.' : ProfileData.bio,
-                  ),
-                  _infoRow(
-                    'Photo',
-                    ProfileData.photoSet ? 'Placeholder set' : 'Default photo',
+                  ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _infoRow('Preferred sector', ProfileData.preferredSector),
+                      _infoRow(
+                        'Profile status',
+                        MiniTrainingProgress.isProfileComplete
+                            ? 'Complete  -  modes unlocked'
+                            : 'Incomplete  -  complete profile to unlock modes',
+                      ),
+                      const Gap(8),
+                      Text(
+                        'Recommendations and strengths from simulations will appear here after more sessions.',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 12,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-              ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  _infoRow('Preferred sector', ProfileData.preferredSector),
-                  _infoRow(
-                    'Profile status',
-                    MiniTrainingProgress.isProfileComplete
-                        ? 'Complete  -  modes unlocked'
-                        : 'Incomplete  -  complete profile to unlock modes',
-                  ),
-                  const Gap(8),
-                  const Text(
-                    'Recommendations and strengths from simulations will appear here after more sessions.',
-                    style: TextStyle(
-                      color: Colors.white54,
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+            ),
           ),
         ),
       ],
     );
   }
 
+  static const Map<String, IconData> _infoIcons = {
+    'Name': Icons.person_outline_rounded,
+    'Email': Icons.alternate_email_rounded,
+    'Gender': Icons.wc_rounded,
+    'Phone': Icons.phone_outlined,
+    'Bio': Icons.notes_rounded,
+    'Photo': Icons.photo_outlined,
+    'Preferred sector': Icons.business_center_outlined,
+    'Profile status': Icons.verified_outlined,
+  };
+
   Widget _infoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
+    final icon = _infoIcons[label] ?? Icons.info_outline_rounded;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.card(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderIdle(context), width: 0.8),
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child:
+                Icon(icon, size: 17, color: AppColors.textSecondary(context)),
           ),
-          const Gap(4),
-          Text(
-            value,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+          const Gap(12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Gap(3),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

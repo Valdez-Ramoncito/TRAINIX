@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 import 'package:trainixprogram/screens/settings_screen.dart';
@@ -87,9 +88,8 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
 
   void _syncElapsed() {
     final started = widget.startedAt;
-    final next = started == null
-        ? 0
-        : DateTime.now().difference(started).inSeconds;
+    final next =
+        started == null ? 0 : DateTime.now().difference(started).inSeconds;
     if (next != _elapsedSeconds) {
       setState(() {
         _elapsedSeconds = next;
@@ -168,20 +168,20 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(180, 21, 21, 21),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: _tipPulse
-              ? const Color(0xFF60A5FA)
+              ? AppColors.secondaryText()
               : ahtWarning
-              ? const Color(0xFFF59E0B)
-              : const Color.fromARGB(255, 49, 48, 48),
+                  ? AppColors.warningText()
+                  : AppColors.borderIdle(context),
           width: _tipPulse ? 1.4 : 0.5,
         ),
         boxShadow: _tipPulse
             ? [
                 BoxShadow(
-                  color: const Color(0xFF60A5FA).withValues(alpha: 0.45),
+                  color: AppColors.secondaryText().withValues(alpha: 0.45),
                   blurRadius: 14,
                   spreadRadius: 1,
                 ),
@@ -193,18 +193,18 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.flag_outlined,
                 size: 16,
-                color: Color.fromARGB(255, 112, 189, 138),
+                color: AppColors.primaryText(),
               ),
               const Gap(8),
-              const Text(
+              Text(
                 'Objective',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: Color.fromARGB(255, 112, 189, 138),
+                  color: AppColors.primaryText(),
                 ),
               ),
               if (widget.startedAt != null) ...[
@@ -215,8 +215,8 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: ahtWarning
-                        ? const Color(0xFFF59E0B)
-                        : Colors.white54,
+                        ? AppColors.warningText()
+                        : AppColors.textMuted(context),
                   ),
                 ),
               ],
@@ -225,9 +225,9 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
           const Gap(6),
           Text(
             widget.objective,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Colors.white70,
+              color: AppColors.textSecondary(context),
               height: 1.35,
             ),
           ),
@@ -240,8 +240,8 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
                   Icons.lightbulb_outline,
                   size: 14,
                   color: _tipPulse
-                      ? const Color(0xFF93C5FD)
-                      : const Color(0xFF93C5FD),
+                      ? AppColors.secondaryText()
+                      : AppColors.secondaryText(),
                 ),
                 const Gap(6),
                 Expanded(
@@ -253,10 +253,10 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
                           padding: const EdgeInsets.only(bottom: 2),
                           child: Text(
                             _tipSourceLabel!,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF64748B),
+                              color: AppColors.textMuted(context),
                               letterSpacing: 0.3,
                             ),
                           ),
@@ -265,7 +265,7 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
                         tip,
                         style: TextStyle(
                           fontSize: 12,
-                          color: const Color(0xFF93C5FD),
+                          color: AppColors.secondaryText(),
                           height: 1.35,
                           fontWeight:
                               _tipPulse ? FontWeight.w700 : FontWeight.w400,
@@ -283,15 +283,15 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF3B2F14),
+                color: AppColors.elevated(context),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFF59E0B)),
+                border: Border.all(color: AppColors.warningText()),
               ),
               child: Text(
                 _milestoneMessage!,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFFFBBF24),
+                  color: AppColors.warningText(),
                   height: 1.3,
                 ),
               ),
@@ -299,11 +299,11 @@ class _SessionGuidanceBannerState extends State<SessionGuidanceBanner> {
           ],
           if (ahtWarning) ...[
             const Gap(6),
-            const Text(
+            Text(
               'Over target handle time. Wrap up and close when the customer is ready.',
               style: TextStyle(
                 fontSize: 11,
-                color: Color(0xFFFBBF24),
+                color: AppColors.warningText(),
                 height: 1.3,
               ),
             ),

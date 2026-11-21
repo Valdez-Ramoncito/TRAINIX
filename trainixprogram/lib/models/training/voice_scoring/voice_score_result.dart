@@ -9,6 +9,10 @@ class VoiceScoreResult {
   final List<String> contentNotes;
   final List<String> deliveryNotes;
   final bool deliveryEvaluated;
+  final int clarityScore;
+  final int paceScore;
+  final int toneScore;
+  final int confidenceScore;
 
   const VoiceScoreResult({
     required this.transcript,
@@ -21,5 +25,9 @@ class VoiceScoreResult {
     required this.contentNotes,
     required this.deliveryNotes,
     required this.deliveryEvaluated,
+    this.clarityScore = 0,
+    this.paceScore = 0,
+    this.toneScore = 0,
+    this.confidenceScore = 0,
   });
 }

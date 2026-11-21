@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/models/scoring_transparency.dart';
 import 'package:trainixprogram/models/training/script_personalization.dart';
 import 'package:trainixprogram/models/training/soft_text_match.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
+import 'package:trainixprogram/models/training/voice_scoring/voice_score_result.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/combined_assessment/assessment_models.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/combined_assessment/assessment_quiz_view.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/combined_assessment/assessment_results_view.dart';
@@ -34,6 +37,9 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
   late List<Assessment> _items;
   final Map<String, List<ShuffledQuestion>> _shuffledQuizzes = {};
   final List<MissedItem> _missed = [];
+  final List<AssessmentItemResult> _results = [];
+  final Map<String, int> _itemEarned = {};
+  final Map<String, List<int?>> _quizPicks = {};
 
   int _itemIndex = 0;
   int _questionIndex = 0;
@@ -64,6 +70,9 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     _items = List<Assessment>.from(widget.items)..shuffle(_random);
     _shuffledQuizzes.clear();
     _missed.clear();
+    _results.clear();
+    _itemEarned.clear();
+    _quizPicks.clear();
 
     for (final item in _items) {
       if (item.type == AssessmentType.quiz && item.quizQuestions != null) {
@@ -78,7 +87,8 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
             correctIndex: newCorrect,
             explanation: q.explanation,
           );
-        }).toList()..shuffle(_random);
+        }).toList()
+          ..shuffle(_random);
         _shuffledQuizzes[item.id] = shuffledQs;
       }
     }
@@ -95,6 +105,51 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     _typingController.clear();
     _typingFeedback = null;
     _immediateFeedback = null;
+  }
+
+  void _recordQuizResult(Assessment item) {
+    final questions = _shuffledQuizzes[item.id] ?? [];
+    final picks = _quizPicks[item.id] ?? const <int?>[];
+    final earned = _itemEarned[item.id] ?? 0;
+    final evidence = <String>[];
+    final notes = <String>[];
+    for (var i = 0; i < questions.length; i++) {
+      final q = questions[i];
+      final pick = i < picks.length ? picks[i] : null;
+      final pickedText = pick == null ? '(not answered)' : q.options[pick];
+      final correctText = q.options[q.correctIndex];
+      evidence.add(
+        'Q${i + 1}: ${q.question} Your answer: "$pickedText". '
+        'Correct answer: "$correctText".',
+      );
+      if (pick != q.correctIndex) {
+        final reason =
+            (q.explanation != null && q.explanation!.trim().isNotEmpty)
+                ? q.explanation!
+                : 'The correct answer is: $correctText';
+        notes.add('Q${i + 1}: $reason');
+      }
+    }
+    final ratio = questions.isEmpty ? 0.0 : earned / questions.length;
+    _results.add(
+      AssessmentItemResult(
+        title: item.title,
+        kind: AssessmentItemKind.quiz,
+        passed: ratio >= 0.75,
+        scoreText: '$earned / ${questions.length}',
+        earned: earned,
+        available: questions.length,
+        parts: [
+          'Correct answers: $earned',
+          'Questions in this item: ${questions.length}',
+          'Item score: ${(ratio * 100).round()}%',
+        ],
+        basis:
+            '${ScoringTransparency.quizInstrumentLine} ${ScoringTransparency.quizDeductionLine}',
+        evidence: evidence,
+        notes: notes,
+      ),
+    );
   }
 
   int _countTotalItems() {
@@ -137,8 +192,12 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     setState(() {
       _lockedIn = true;
       _answeredCount++;
+      final picks = _quizPicks[_currentItem.id] ??=
+          List<int?>.filled(questions.length, null);
+      picks[_questionIndex] = _selectedOption;
       if (isCorrect) {
         _correctCount++;
+        _itemEarned[_currentItem.id] = (_itemEarned[_currentItem.id] ?? 0) + 1;
         _immediateFeedback = null;
       } else {
         _immediateFeedback = reason;
@@ -181,20 +240,47 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
         );
       }
     });
+    _results.add(
+      AssessmentItemResult(
+        title: _currentItem.title,
+        kind: AssessmentItemKind.typing,
+        passed: isCorrect,
+        scoreText: isCorrect ? '1 / 1' : '0 / 1',
+        earned: isCorrect ? 1 : 0,
+        available: 1,
+        parts: [
+          'Meaning match: ${isCorrect ? 'matched' : 'not matched'}',
+          'Item score: ${isCorrect ? 100 : 0}%',
+        ],
+        basis: ScoringTransparency.typingInstrumentLine,
+        evidence: [
+          'Target reply: "$target"',
+          'You typed: "${input.isEmpty ? '(blank)' : input}"',
+        ],
+        notes: isCorrect
+            ? const []
+            : const [
+                'The reply has to carry the same meaning as the target. Wording, spacing, and punctuation can differ.',
+              ],
+      ),
+    );
   }
 
-  void _submitVoice(bool passed) {
+  void _submitVoice(VoiceScoreResult result) {
     if (_lockedIn) return;
     setState(() {
       _lockedIn = true;
       _answeredCount++;
-      if (passed) {
+      if (result.passed) {
         _correctCount++;
       } else {
         _missed.add(
           MissedItem(
             prompt: _currentItem.title,
-            yourAnswer: 'Spoken response did not meet script requirements',
+            yourAnswer:
+                result.criticalFail && result.criticalFailReason.isNotEmpty
+                    ? result.criticalFailReason
+                    : 'Spoken response did not meet script requirements',
             correctAnswer: _currentItem.voiceTargetScript ?? '',
             reason:
                 'Say the required line clearly. Content Accuracy must pass the script checklist.',
@@ -202,6 +288,70 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
         );
       }
     });
+    _results.add(_buildVoiceResult(_currentItem, result));
+  }
+
+  AssessmentItemResult _buildVoiceResult(
+    Assessment item,
+    VoiceScoreResult result,
+  ) {
+    final target = ScriptPersonalization.resolve(item.voiceTargetScript ?? '');
+    final targetLower = target.toLowerCase();
+    final isOpening = targetLower.contains('thank you for calling') ||
+        targetLower.contains('how may i help') ||
+        targetLower.contains('how can i help');
+    final isClosing = targetLower.contains('anything else') ||
+        (targetLower.contains('thank you for calling') &&
+            targetLower.contains('good day')) ||
+        targetLower.contains('have a good');
+    final contentLine = isOpening
+        ? ScoringTransparency.openingContentLine
+        : (isClosing
+            ? ScoringTransparency.closingContentLine
+            : ScoringTransparency.scriptContentLine);
+    final basis = result.deliveryEvaluated
+        ? '${ScoringTransparency.voiceInstrumentLine} $contentLine '
+            '${ScoringTransparency.deliveryRubricLine}'
+        : '${ScoringTransparency.voiceInstrumentLine} $contentLine';
+
+    final parts = <String>[
+      'Content Accuracy: ${result.contentScore} / 50',
+      if (result.deliveryEvaluated)
+        'Delivery Quality: ${result.deliveryScore} / 50'
+      else
+        'Delivery Quality: not scored for this item',
+      if (result.deliveryEvaluated) 'Clarity: ${result.clarityScore} / 15',
+      if (result.deliveryEvaluated) 'Pace: ${result.paceScore} / 10',
+      if (result.deliveryEvaluated) 'Tone: ${result.toneScore} / 15',
+      if (result.deliveryEvaluated)
+        'Confidence: ${result.confidenceScore} / 10',
+      'Total: ${result.totalScore} / 100',
+    ];
+
+    final evidence = <String>[
+      if (result.transcript.trim().isNotEmpty)
+        'What we heard: "${result.transcript.trim()}"',
+      if (target.isNotEmpty) 'Target line: "$target"',
+      if (result.criticalFail && result.criticalFailReason.isNotEmpty)
+        'Automatic fail: ${result.criticalFailReason}',
+    ];
+
+    return AssessmentItemResult(
+      title: item.title,
+      kind: AssessmentItemKind.voice,
+      passed: result.passed,
+      scoreText: '${result.totalScore} / 100',
+      earned: result.totalScore,
+      available: 100,
+      parts: parts,
+      basis: basis,
+      evidence: evidence,
+      notes: [
+        ...result.contentNotes,
+        ...result.deliveryNotes,
+        if (!result.deliveryEvaluated) ScoringTransparency.pendingDeliveryLine,
+      ],
+    );
   }
 
   void _next() {
@@ -220,6 +370,7 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
         });
         return;
       }
+      _recordQuizResult(item);
     }
 
     if (_itemIndex < _items.length - 1) {
@@ -298,6 +449,19 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     });
   }
 
+  IconData _itemIcon(AssessmentType type) {
+    switch (type) {
+      case AssessmentType.quiz:
+        return Icons.quiz_outlined;
+      case AssessmentType.typing:
+        return Icons.keyboard_rounded;
+      case AssessmentType.voice:
+        return Icons.mic_none_rounded;
+      case AssessmentType.finalTest:
+        return Icons.assignment_turned_in_outlined;
+    }
+  }
+
   bool _useDeliveryScoring() {
     if (widget.isCategoryFinal) return true;
     if (widget.categoryName == 'Grand Final') return true;
@@ -324,15 +488,15 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     }
 
     if (_finished) {
-      final nextCategoryName = widget.isCategoryFinal
-          ? _nextCategoryName()
-          : null;
+      final nextCategoryName =
+          widget.isCategoryFinal ? _nextCategoryName() : null;
       return AssessmentResultsView(
         title: title,
         passed: _passed,
         correctCount: _correctCount,
         totalCount: _totalCount,
         missed: _missed,
+        results: _results,
         onRetry: _retry,
         continueLabel: nextCategoryName != null
             ? 'Continue to $nextCategoryName'
@@ -351,17 +515,18 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
     final quizQuestions = _shuffledQuizzes[item.id] ?? [];
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.inputFill(context),
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppColors.elevated(context),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(8),
           child: LinearProgressIndicator(
             value: _progress,
             minHeight: 6,
-            backgroundColor: const Color(0xFF2A2A2A),
-            valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            backgroundColor: AppColors.border(context),
+            valueColor:
+                AlwaysStoppedAnimation<Color>(AppColors.primary(context)),
           ),
         ),
       ),
@@ -373,40 +538,70 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Progress: $_answeredCount / $_totalCount",
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white54,
-                    letterSpacing: 0.3,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.track_changes_rounded,
+                      size: 15,
+                      color: AppColors.textMuted(context),
+                    ),
+                    const Gap(6),
+                    Text(
+                      "Progress: $_answeredCount / $_totalCount",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted(context),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
                 const Gap(16),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: AppColors.card(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2C2C2C)),
+                    border: Border.all(color: AppColors.border(context)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        item.title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: AppColors.secondaryText()
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              _itemIcon(item.type),
+                              size: 16,
+                              color: AppColors.secondaryText(),
+                            ),
+                          ),
+                          const Gap(10),
+                          Expanded(
+                            child: Text(
+                              item.title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                height: 1.3,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(6),
                       Text(
                         item.instructions,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white60,
+                          color: AppColors.textSecondary(context),
                           height: 1.4,
                         ),
                       ),
@@ -462,8 +657,8 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
                         height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primary(context),
+                            foregroundColor: AppColors.onPrimary(context),
                           ),
                           onPressed: _lockInQuiz,
                           child: const Text("Confirm Answer"),
@@ -481,8 +676,8 @@ class _CombinedAssessmentScreenState extends State<CombinedAssessmentScreen> {
                         height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primary(context),
+                            foregroundColor: AppColors.onPrimary(context),
                           ),
                           onPressed: _next,
                           child: Text(

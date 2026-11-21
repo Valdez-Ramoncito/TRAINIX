@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/carousel_button.dart';
@@ -104,6 +105,7 @@ class _CarouselState extends State<Carousel> {
                       height: 420 * value,
                       width: 320 * value,
                       child: ContainerDecoration(
+                        key: ValueKey('trainer-carousel-card-${data.id}'),
                         onTap: () {
                           switch (data.id) {
                             case 1:
@@ -154,6 +156,7 @@ class _CarouselState extends State<Carousel> {
                                 style: TextStyle(
                                   fontSize: context.responsiveFont(4.5),
                                   fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                               const Gap(6),
@@ -162,7 +165,7 @@ class _CarouselState extends State<Carousel> {
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: context.responsiveFont(3.2),
-                                  color: Colors.white70,
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                             ],

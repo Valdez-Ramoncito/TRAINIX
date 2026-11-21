@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/combined_assessment/assessment_models.dart';
 
@@ -32,15 +33,15 @@ class AssessmentQuizView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1F26),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFF2A323C)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Text(
             'Question $questionNumber of $questionTotal',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
               letterSpacing: 0.3,
             ),
           ),
@@ -50,17 +51,17 @@ class AssessmentQuizView extends StatelessWidget {
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF141A20),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF2A323C)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Text(
             q.question,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w600,
               height: 1.45,
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
             ),
           ),
         ),
@@ -70,21 +71,21 @@ class AssessmentQuizView extends StatelessWidget {
           final showResult = lockedIn;
           final isCorrect = i == q.correctIndex;
 
-          Color borderColor = const Color(0xFF2A323C);
-          Color bgColor = const Color(0xFF1A1F26);
+          Color borderColor = AppColors.border(context);
+          Color bgColor = AppColors.card(context);
 
           if (!lockedIn && isSelected) {
-            borderColor = const Color(0xFF70BD8A);
-            bgColor = const Color(0xFF12261A);
+            borderColor = AppColors.primaryText();
+            bgColor = AppColors.nextTint(context);
           }
 
           if (showResult) {
             if (isCorrect) {
-              borderColor = const Color(0xFF70BD8A);
-              bgColor = const Color(0xFF1A3A1A);
+              borderColor = AppColors.primaryText();
+              bgColor = AppColors.nextTint(context);
             } else if (isSelected && !isCorrect) {
-              borderColor = const Color(0xFFEF4444);
-              bgColor = const Color(0xFF3A1A1A);
+              borderColor = AppColors.errorStrongText();
+              bgColor = AppColors.elevated(context);
             }
           }
 
@@ -115,19 +116,19 @@ class AssessmentQuizView extends StatelessWidget {
                           shape: BoxShape.circle,
                           border: Border.all(
                             color: isSelected
-                                ? const Color(0xFF70BD8A)
-                                : const Color(0xFF6B7280),
+                                ? AppColors.primaryText()
+                                : AppColors.textMuted(context),
                             width: 2,
                           ),
                           color: isSelected && !lockedIn
-                              ? const Color(0xFF70BD8A)
+                              ? AppColors.primaryText()
                               : Colors.transparent,
                         ),
                         child: isSelected && !lockedIn
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check,
                                 size: 14,
-                                color: Colors.white,
+                                color: AppColors.onPrimary(context),
                               )
                             : null,
                       ),
@@ -138,31 +139,31 @@ class AssessmentQuizView extends StatelessWidget {
                           children: [
                             Text(
                               q.options[i],
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 15,
                                 height: 1.35,
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                               ),
                             ),
                             if (showResult && isCorrect) ...[
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Correct',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF86EFAC),
+                                  color: AppColors.successText(),
                                 ),
                               ),
                             ],
                             if (showResult && isSelected && !isCorrect) ...[
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Wrong',
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFFFCA5A5),
+                                  color: AppColors.errorText(),
                                 ),
                               ),
                             ],
@@ -182,16 +183,16 @@ class AssessmentQuizView extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1F26),
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF374151)),
+              border: Border.all(color: AppColors.borderStrong(context)),
             ),
             child: Text(
               immediateFeedback!,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 height: 1.35,
-                color: Color(0xFFD1D5DB),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/screens/page/trainer_session.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
@@ -59,8 +60,7 @@ class TrainingNotificationCenter {
     bool addToInbox = true,
     String? id,
   }) {
-    final signedIn =
-        SupabaseService.isReady &&
+    final signedIn = SupabaseService.isReady &&
         SupabaseService.client.auth.currentUser != null;
     if (!signedIn) return;
     if (!AppSettings.notificationsEnabled) return;
@@ -206,9 +206,8 @@ class TrainingNotificationCenter {
   }
 
   static void notifyScenarioCompleted(String scenarioTitle) {
-    final label = scenarioTitle.trim().isEmpty
-        ? 'Scenario'
-        : scenarioTitle.trim();
+    final label =
+        scenarioTitle.trim().isEmpty ? 'Scenario' : scenarioTitle.trim();
     push(
       title: 'Scenario complete',
       body: 'You finished "$label". Keep going when you are ready.',
@@ -265,9 +264,8 @@ class TrainingNotificationCenter {
     String? roomCode,
   }) async {
     final code = roomCode?.trim() ?? '';
-    final title = isPrivate
-        ? 'Private training invite'
-        : 'Training room available';
+    final title =
+        isPrivate ? 'Private training invite' : 'Training room available';
     final codeLine = code.isEmpty ? '' : ' Room code: $code.';
     final body = isPrivate
         ? '$trainerName invited you to "$roomName".$codeLine Open Trainer Session to join.'
@@ -429,13 +427,13 @@ class _NotificationCard extends StatelessWidget {
   Color get _accent {
     switch (note.type) {
       case TrainingNotificationType.unlock:
-        return const Color(0xFF34D399);
+        return AppColors.successText();
       case TrainingNotificationType.success:
-        return const Color(0xFF60A5FA);
+        return AppColors.secondaryText();
       case TrainingNotificationType.progress:
-        return const Color(0xFFFBBF24);
+        return AppColors.warningText();
       case TrainingNotificationType.info:
-        return const Color(0xFF94A3B8);
+        return AppColors.textMuted();
     }
   }
 
@@ -515,15 +513,14 @@ class _NotificationCard extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: _navigable ? () => _openTarget(context) : null,
-        mouseCursor: _navigable
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.basic,
+        mouseCursor:
+            _navigable ? SystemMouseCursors.click : SystemMouseCursors.basic,
         borderRadius: BorderRadius.circular(12),
         child: Container(
           width: 360,
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: _accent, width: 1.4),
             boxShadow: [
@@ -554,8 +551,8 @@ class _NotificationCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       note.body,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.textPrimary(context),
                         fontSize: 13,
                         height: 1.35,
                       ),
@@ -564,8 +561,8 @@ class _NotificationCard extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         'Where: ${note.locationHint}',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                           height: 1.3,
                         ),
@@ -577,8 +574,8 @@ class _NotificationCard extends StatelessWidget {
                         note.actionType == 'join_room'
                             ? 'Click to open the room'
                             : 'Click to open',
-                        style: const TextStyle(
-                          color: Color(0xFF70BD8A),
+                        style: TextStyle(
+                          color: AppColors.primaryText(),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),
@@ -593,7 +590,8 @@ class _NotificationCard extends StatelessWidget {
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 onPressed: onClose,
                 mouseCursor: SystemMouseCursors.click,
-                icon: const Icon(Icons.close, size: 18, color: Colors.white54),
+                icon: Icon(Icons.close,
+                    size: 18, color: AppColors.textMuted(context)),
               ),
             ],
           ),

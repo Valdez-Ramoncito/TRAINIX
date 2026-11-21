@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart' as wf;
@@ -51,11 +52,11 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
       LiveSessionStore.instance.findByCode(widget.session.id) ?? widget.session;
 
   String get _meetingUrl => JitsiConfig.meetingUrl(
-    roomCode: _live.id,
-    displayName: ProfileData.displayName,
-    asModerator: widget.isTrainer,
-    jwt: _jwt,
-  );
+        roomCode: _live.id,
+        displayName: ProfileData.displayName,
+        asModerator: widget.isTrainer,
+        jwt: _jwt,
+      );
 
   @override
   void initState() {
@@ -150,7 +151,7 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
 
       final controller = ww.WebviewController();
       await controller.initialize();
-      await controller.setBackgroundColor(const Color(0xFF121212));
+      await controller.setBackgroundColor(AppColors.inputFill(context));
       await controller.setPopupWindowPolicy(ww.WebviewPopupWindowPolicy.deny);
       await controller.loadUrl(_meetingUrl);
 
@@ -177,7 +178,7 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
     try {
       final controller = wf.WebViewController()
         ..setJavaScriptMode(wf.JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0xFF121212))
+        ..setBackgroundColor(AppColors.inputFill(context))
         ..setNavigationDelegate(
           wf.NavigationDelegate(
             onPageFinished: (_) {
@@ -271,10 +272,10 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
       barrierDismissible: true,
       builder: (ctx) {
         return Dialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: AppColors.elevated(context),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+            side: BorderSide(color: AppColors.borderIdle(context)),
           ),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 720, maxHeight: 620),
@@ -321,6 +322,19 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
             children: [
               Row(
                 children: [
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryText().withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.video_camera_front_outlined,
+                      size: 20,
+                      color: AppColors.secondaryText(),
+                    ),
+                  ),
+                  const Gap(10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -330,7 +344,9 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                             Flexible(
                               child: Text(
                                 'Live Training Room',
-                                style: Theme.of(context).textTheme.titleSmall
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
                                     ?.copyWith(
                                       fontSize: context.responsiveFont(6),
                                     ),
@@ -344,8 +360,12 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                         const Gap(6),
                         Text(
                           '${live.name}  ·  $roleLabel  ·  ${live.presence.occupantCount} / 2',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white54, fontSize: 12),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppColors.textMuted(context),
+                                  fontSize: 12),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -354,6 +374,7 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                   const Gap(12),
                   CreateButton(
                     text: 'Leave',
+                    icon: Icons.logout_rounded,
                     onTap: () => Navigator.of(context).pop(),
                   ),
                 ],
@@ -362,10 +383,10 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0E0E0E),
+                    color: AppColors.scaffold(context),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color.fromARGB(255, 49, 48, 48),
+                      color: AppColors.borderIdle(context),
                     ),
                   ),
                   clipBehavior: Clip.antiAlias,
@@ -379,56 +400,64 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                     child: Text(
                       '${JitsiConfig.statusHint(hasJwt: _jwt != null)}',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
+                        color: AppColors.textSecondary(context),
                         fontSize: 12,
                       ),
                     ),
                   ),
-                  SelectableText(
-                    'Room code: ${live.id}',
-                    style: const TextStyle(
-                      color: Color(0xFF93C5FD),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.vpn_key_outlined,
+                        size: 14,
+                        color: AppColors.secondaryText(),
+                      ),
+                      const Gap(5),
+                      SelectableText(
+                        'Room code: ${live.id}',
+                        style: TextStyle(
+                          color: AppColors.secondaryText(),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
               const Gap(10),
-              Row(
-                children: [
-                  Expanded(
-                    child: CreateButton(
+              Align(
+                alignment: Alignment.center,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    CreateButton(
                       text: 'Reload call',
+                      icon: Icons.refresh_rounded,
                       onTap: _reloadCall,
                     ),
-                  ),
-                  const Gap(8),
-                  Expanded(
-                    child: CreateButton(
+                    CreateButton(
                       text: 'Open in browser',
+                      icon: Icons.open_in_new_rounded,
                       onTap: _openExternal,
                     ),
-                  ),
-                  const Gap(8),
-                  Expanded(
-                    child: CreateButton(
+                    CreateButton(
                       text: _showDetails ? 'Hide info' : 'Room info',
+                      icon: Icons.info_outline_rounded,
                       onTap: () => setState(() {
                         _showDetails = !_showDetails;
                       }),
                     ),
-                  ),
-                  if (widget.isTrainer) ...[
-                    const Gap(8),
-                    Expanded(
-                      child: CreateButton(
+                    if (widget.isTrainer)
+                      CreateButton(
                         text: 'Session tools',
+                        icon: Icons.tune_rounded,
                         onTap: () => _openSessionTools(),
                       ),
-                    ),
                   ],
-                ],
+                ),
               ),
               if (_showDetails) ...[
                 const Gap(10),
@@ -439,10 +468,10 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(180, 21, 21, 21),
+                        color: AppColors.panel(context),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: const Color.fromARGB(255, 49, 48, 48),
+                          color: AppColors.borderIdle(context),
                         ),
                       ),
                       child: Column(
@@ -495,13 +524,14 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
               Icon(
                 Icons.videocam_off_outlined,
                 size: 40,
-                color: Colors.white.withValues(alpha: 0.3),
+                color: AppColors.textMuted(context),
               ),
               const Gap(12),
               Text(
                 _statusMessage ?? 'In-app call could not start.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white54, fontSize: 13),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 13),
               ),
               const Gap(16),
               CreateButton(text: 'Open in browser', onTap: _openExternal),
@@ -526,13 +556,13 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                   height: h.isFinite ? h : null,
                   permissionRequested:
                       (url, permission, isUserInitiated) async {
-                        return ww.WebviewPermissionDecision.allow;
-                      },
+                    return ww.WebviewPermissionDecision.allow;
+                  },
                 ),
               ),
               if (!_webviewReady)
                 Container(
-                  color: const Color(0xFF0E0E0E),
+                  color: AppColors.scaffold(context),
                   alignment: Alignment.center,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -545,8 +575,8 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                       const Gap(12),
                       Text(
                         _statusMessage ?? 'Loading call...',
-                        style: const TextStyle(
-                          color: Colors.white54,
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 13,
                         ),
                       ),
@@ -568,7 +598,7 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
           ),
           if (!_webviewReady)
             Container(
-              color: const Color(0xFF0E0E0E),
+              color: AppColors.scaffold(context),
               alignment: Alignment.center,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -581,7 +611,8 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
                   const Gap(12),
                   Text(
                     _statusMessage ?? 'Loading call...',
-                    style: const TextStyle(color: Colors.white54, fontSize: 13),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 13),
                   ),
                 ],
               ),
@@ -602,28 +633,59 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
           const Gap(12),
           Text(
             _statusMessage ?? 'Loading call...',
-            style: const TextStyle(color: Colors.white54, fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           ),
         ],
       ),
     );
   }
 
+  IconData _detailIcon(String label) {
+    switch (label) {
+      case 'Room code':
+        return Icons.vpn_key_outlined;
+      case 'Trainer':
+        return Icons.person_outline_rounded;
+      case 'Visibility':
+        return Icons.visibility_outlined;
+      case 'Trainee':
+        return Icons.school_outlined;
+      case 'Mode':
+        return Icons.category_outlined;
+      case 'Agenda':
+        return Icons.notes_rounded;
+      case 'Jitsi room':
+        return Icons.videocam_outlined;
+      default:
+        return Icons.circle_outlined;
+    }
+  }
+
   Widget _row(String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(
+            _detailIcon(label),
+            size: 13,
+            color: AppColors.textMuted(context),
+          ),
+        ),
+        const Gap(6),
         SizedBox(
-          width: 100,
+          width: 94,
           child: Text(
             label,
-            style: const TextStyle(color: Colors.white38, fontSize: 12),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 12),
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: TextStyle(
+                color: AppColors.textSecondary(context), fontSize: 12),
           ),
         ),
       ],
@@ -678,14 +740,14 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
   }
 
   SessionWorkbench get _bench => LiveSessionStore.instance.workbenchFor(
-    LiveSessionStore.instance.findByCode(widget.roomId) ??
-        LiveTrainingSession(
-          id: widget.roomId,
-          name: '',
-          trainerName: '',
-          createdAt: DateTime.now(),
-        ),
-  );
+        LiveSessionStore.instance.findByCode(widget.roomId) ??
+            LiveTrainingSession(
+              id: widget.roomId,
+              name: '',
+              trainerName: '',
+              createdAt: DateTime.now(),
+            ),
+      );
 
   void _loadActiveNote(SessionWorkbench bench) {
     final active = bench.activeNote;
@@ -705,6 +767,12 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
         children: [
           Row(
             children: [
+              Icon(
+                Icons.tune_rounded,
+                size: 20,
+                color: AppColors.secondaryText(),
+              ),
+              const Gap(8),
               const Expanded(
                 child: Text(
                   'Session tools',
@@ -713,7 +781,8 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
               ),
               IconButton(
                 onPressed: widget.onClose,
-                icon: const Icon(Icons.close, size: 20, color: Colors.white54),
+                icon: Icon(Icons.close,
+                    size: 20, color: AppColors.textMuted(context)),
               ),
             ],
           ),
@@ -754,10 +823,10 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                 setState(() {});
                                 widget.onChanged();
                               },
-                              icon: const Icon(
+                              icon: Icon(
                                 Icons.add,
                                 size: 18,
-                                color: Colors.white70,
+                                color: AppColors.textSecondary(context),
                               ),
                             ),
                         ],
@@ -786,15 +855,14 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: selected
-                                      ? const Color(
-                                          0xFF0D82FE,
-                                        ).withValues(alpha: 0.2)
-                                      : const Color(0xFF121212),
+                                      ? AppColors.secondaryText()
+                                          .withValues(alpha: 0.2)
+                                      : AppColors.inputFill(context),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: selected
-                                        ? const Color(0xFF0D82FE)
-                                        : const Color.fromARGB(255, 49, 48, 48),
+                                        ? AppColors.secondaryText()
+                                        : AppColors.borderIdle(context),
                                   ),
                                 ),
                                 child: Row(
@@ -807,8 +875,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: selected
-                                              ? Colors.white
-                                              : Colors.white70,
+                                              ? AppColors.textPrimary(context)
+                                              : AppColors.textSecondary(
+                                                  context),
                                         ),
                                       ),
                                     ),
@@ -823,10 +892,10 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                           setState(() {});
                                           widget.onChanged();
                                         },
-                                        child: const Icon(
+                                        child: Icon(
                                           Icons.close,
                                           size: 14,
-                                          color: Colors.white38,
+                                          color: AppColors.textMuted(context),
                                         ),
                                       ),
                                   ],
@@ -856,9 +925,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                         TextField(
                           controller: widget.noteTitleCtrl,
                           enabled: !bench.ended,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: AppColors.textSecondary(context),
                           ),
                           decoration: _fieldDecoration('Title'),
                           onChanged: (v) {
@@ -874,9 +943,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                           controller: widget.noteBodyCtrl,
                           enabled: !bench.ended,
                           maxLines: 5,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: AppColors.textSecondary(context),
                           ),
                           decoration: _fieldDecoration(
                             widget.isTrainer
@@ -914,8 +983,8 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: item.done
-                                          ? Colors.white38
-                                          : Colors.white70,
+                                          ? AppColors.textMuted(context)
+                                          : AppColors.textSecondary(context),
                                       decoration: item.done
                                           ? TextDecoration.lineThrough
                                           : null,
@@ -926,9 +995,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                       : (_) {
                                           LiveSessionStore.instance
                                               .toggleChecklistItem(
-                                                widget.roomId,
-                                                item.id,
-                                              );
+                                            widget.roomId,
+                                            item.id,
+                                          );
                                           setState(() {});
                                           widget.onChanged();
                                         },
@@ -939,16 +1008,16 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                   onPressed: () {
                                     LiveSessionStore.instance
                                         .removeChecklistItem(
-                                          widget.roomId,
-                                          item.id,
-                                        );
+                                      widget.roomId,
+                                      item.id,
+                                    );
                                     setState(() {});
                                     widget.onChanged();
                                   },
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete_outline,
                                     size: 18,
-                                    color: Colors.white38,
+                                    color: AppColors.textMuted(context),
                                   ),
                                 ),
                             ],
@@ -961,9 +1030,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                               Expanded(
                                 child: TextField(
                                   controller: widget.checklistAddCtrl,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.white70,
+                                    color: AppColors.textSecondary(context),
                                   ),
                                   decoration: _fieldDecoration(
                                     'Add checklist item',
@@ -989,9 +1058,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                           controller: widget.takeawayCtrl,
                           enabled: !bench.ended,
                           maxLines: 2,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: AppColors.textSecondary(context),
                           ),
                           decoration: _fieldDecoration(
                             'One main point to remember...',
@@ -1012,11 +1081,11 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                           contentPadding: EdgeInsets.zero,
                           controlAffinity: ListTileControlAffinity.leading,
                           value: _followUp,
-                          title: const Text(
+                          title: Text(
                             'Needs follow-up session',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.white70,
+                              color: AppColors.textSecondary(context),
                             ),
                           ),
                           onChanged: bench.ended
@@ -1068,8 +1137,8 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                                     : Icons.star_outline_rounded,
                                 size: 28,
                                 color: selected
-                                    ? const Color(0xFFFFB74D)
-                                    : Colors.white30,
+                                    ? AppColors.warningText()
+                                    : AppColors.textMuted(context),
                               ),
                             );
                           }),
@@ -1079,9 +1148,9 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
                           controller: widget.feedbackCtrl,
                           maxLines: 3,
                           enabled: !bench.ended,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.white70,
+                            color: AppColors.textSecondary(context),
                           ),
                           decoration: _fieldDecoration(
                             'Short feedback after the session...',
@@ -1107,7 +1176,7 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
           if (bench.ended)
             Text(
               'Session ended${bench.endedAt != null ? " · ${formatCreatedAt(bench.endedAt!)}" : ""}',
-              style: const TextStyle(color: Color(0xFF8AFB09), fontSize: 13),
+              style: TextStyle(color: AppColors.primaryText(), fontSize: 13),
             )
           else if (!widget.isTrainer)
             CreateButton(text: 'Close', onTap: widget.onClose)
@@ -1171,16 +1240,16 @@ class _SessionToolsPanelState extends State<_SessionToolsPanel> {
   InputDecoration _fieldDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+      hintStyle: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
       filled: true,
-      fillColor: const Color(0xFF121212),
+      fillColor: AppColors.inputFill(context),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+        borderSide: BorderSide(color: AppColors.borderIdle(context)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+        borderSide: BorderSide(color: AppColors.borderIdle(context)),
       ),
       contentPadding: const EdgeInsets.all(12),
     );
@@ -1197,15 +1266,15 @@ class _StatusPill extends StatelessWidget {
     Color c;
     switch (info.tone) {
       case ColorTone.green:
-        c = const Color(0xFF8AFB09);
+        c = AppColors.primaryText();
       case ColorTone.blue:
-        c = const Color(0xFF0D82FE);
+        c = AppColors.secondaryText();
       case ColorTone.amber:
-        c = const Color(0xFFFFB74D);
+        c = AppColors.warningText();
       case ColorTone.red:
-        c = const Color(0xFFFF8A80);
+        c = AppColors.errorText();
       case ColorTone.neutral:
-        c = Colors.white54;
+        c = AppColors.textMuted(context);
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

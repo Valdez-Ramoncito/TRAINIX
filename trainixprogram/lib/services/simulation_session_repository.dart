@@ -193,56 +193,66 @@ class SimulationSessionRepository {
   }
 
   Future<List<PlayedSession>> fetchAll() async {
+    final uid = SupabaseService.client.auth.currentUser?.id;
+    return fetchForUserId(uid);
+  }
+
+  /// Staff-facing fetch for a specific trainee. Requires
+  /// simulation_sessions_select_staff RLS policy.
+  Future<List<PlayedSession>> fetchForUserId(String? userId) async {
     lastError = null;
     if (!SupabaseService.isReady) return [];
     try {
-      final uid = SupabaseService.client.auth.currentUser?.id;
       var query = SupabaseService.client.from(_table).select();
-      if (uid != null) {
-        query = query.eq('user_id', uid);
+      if (userId != null && userId.isNotEmpty) {
+        query = query.eq('user_id', userId);
       }
       final rows = await query.order('completed_at', ascending: false);
       final list = <PlayedSession>[];
       for (final row in rows as List) {
         final map = Map<String, dynamic>.from(row as Map);
-        SimulationMode mode = SimulationMode.chat;
-        for (final m in SimulationMode.values) {
-          if (m.name == (map['mode'] as String? ?? '')) {
-            mode = m;
-            break;
-          }
-        }
-        final evalsRaw = map['evaluations'];
-        final evals = <SessionEvaluation>[];
-        if (evalsRaw is List) {
-          for (final e in evalsRaw) {
-            if (e is Map) {
-              evals.add(_evalFromMap(Map<String, dynamic>.from(e)));
-            }
-          }
-        }
-        list.add(
-          PlayedSession(
-            evaluations: evals,
-            multitaskingScore: (map['multitasking_score'] as num?)?.toDouble(),
-            completedAt: map['completed_at'] != null
-                ? DateTime.tryParse(map['completed_at'] as String)?.toLocal() ??
-                      DateTime.now()
-                : DateTime.now(),
-            mode: mode,
-            averageTypingWpm: (map['typing_wpm'] as num?)?.toDouble(),
-            averageSpeakingWpm: (map['speaking_wpm'] as num?)?.toDouble(),
-            fillerWordCount: (map['filler_count'] as num?)?.toInt(),
-            guidedMode: map['guided_mode'] as bool? ?? true,
-          ),
-        );
+        list.add(_sessionFromMap(map));
       }
-      debugPrint('simulation_sessions fetch count: ${list.length}');
+      debugPrint(
+        'simulation_sessions fetch count: ${list.length} user=$userId',
+      );
       return list;
     } catch (e) {
       lastError = e.toString();
       debugPrint('simulation_sessions fetch failed: $lastError');
       return [];
     }
+  }
+
+  PlayedSession _sessionFromMap(Map<String, dynamic> map) {
+    SimulationMode mode = SimulationMode.chat;
+    for (final m in SimulationMode.values) {
+      if (m.name == (map['mode'] as String? ?? '')) {
+        mode = m;
+        break;
+      }
+    }
+    final evalsRaw = map['evaluations'];
+    final evals = <SessionEvaluation>[];
+    if (evalsRaw is List) {
+      for (final e in evalsRaw) {
+        if (e is Map) {
+          evals.add(_evalFromMap(Map<String, dynamic>.from(e)));
+        }
+      }
+    }
+    return PlayedSession(
+      evaluations: evals,
+      multitaskingScore: (map['multitasking_score'] as num?)?.toDouble(),
+      completedAt: map['completed_at'] != null
+          ? DateTime.tryParse(map['completed_at'] as String)?.toLocal() ??
+                DateTime.now()
+          : DateTime.now(),
+      mode: mode,
+      averageTypingWpm: (map['typing_wpm'] as num?)?.toDouble(),
+      averageSpeakingWpm: (map['speaking_wpm'] as num?)?.toDouble(),
+      fillerWordCount: (map['filler_count'] as num?)?.toInt(),
+      guidedMode: map['guided_mode'] as bool? ?? true,
+    );
   }
 }

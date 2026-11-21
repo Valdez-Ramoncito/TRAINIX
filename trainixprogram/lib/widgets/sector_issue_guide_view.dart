@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_coach.dart';
 
@@ -35,8 +36,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
         children: [
           Text(
             '${SimulationCoach.sectorGuideTabLabel(widget.sector)} · ${widget.sector}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -48,8 +49,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                 : 'Pick a common issue for step-by-step guidance. If nothing matches the customer, escalate.',
             style: TextStyle(
               color: unmatched
-                  ? const Color(0xFFFBBF24)
-                  : const Color(0xFF9CA3AF),
+                  ? AppColors.warningText()
+                  : AppColors.textMuted(context),
               fontSize: 12,
               height: 1.35,
             ),
@@ -70,10 +71,10 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
     final escalateCases = SectorIssueCatalog.escalateWhen(widget.sector);
     return ListView(
       children: [
-        const Text(
+        Text(
           'Common issues',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -93,13 +94,13 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
                   color: highlighted
-                      ? const Color(0xFF1E293B)
-                      : const Color.fromARGB(255, 28, 29, 29),
+                      ? AppColors.elevated(context)
+                      : AppColors.card(context),
                   borderRadius: BorderRadius.circular(14),
                   border: Border.all(
                     color: highlighted
-                        ? const Color(0xFF3B82F6)
-                        : const Color.fromARGB(255, 50, 51, 54),
+                        ? AppColors.secondaryText()
+                        : AppColors.borderStrong(context),
                   ),
                 ),
                 child: Row(
@@ -110,8 +111,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                         children: [
                           Text(
                             issue.title,
-                            style: const TextStyle(
-                              color: Colors.white,
+                            style: TextStyle(
+                              color: AppColors.textPrimary(context),
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
@@ -119,8 +120,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                           const Gap(4),
                           Text(
                             issue.summary,
-                            style: const TextStyle(
-                              color: Color(0xFF9CA3AF),
+                            style: TextStyle(
+                              color: AppColors.textMuted(context),
                               fontSize: 12,
                               height: 1.3,
                             ),
@@ -128,7 +129,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+                    Icon(Icons.chevron_right,
+                        color: AppColors.textMuted(context)),
                   ],
                 ),
               ),
@@ -136,10 +138,10 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
           );
         }),
         const Gap(8),
-        const Text(
+        Text(
           'Common terms',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -151,17 +153,17 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(180, 21, 21, 21),
+              color: AppColors.panel(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+              border: Border.all(color: AppColors.borderIdle(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   term['term'] ?? '',
-                  style: const TextStyle(
-                    color: Color(0xFF93C5FD),
+                  style: TextStyle(
+                    color: AppColors.secondaryText(),
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -169,8 +171,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                 const Gap(4),
                 Text(
                   term['meaning'] ?? '',
-                  style: const TextStyle(
-                    color: Colors.white70,
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 12,
                     height: 1.35,
                   ),
@@ -180,10 +182,10 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
           ),
         ),
         const Gap(8),
-        const Text(
+        Text(
           'When to escalate',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.w700,
             fontSize: 13,
           ),
@@ -195,17 +197,17 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF3B2F14),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFF59E0B)),
+              border: Border.all(color: AppColors.warningText()),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item['case'] ?? '',
-                  style: const TextStyle(
-                    color: Color(0xFFFBBF24),
+                  style: TextStyle(
+                    color: AppColors.warningText(),
                     fontWeight: FontWeight.w700,
                     fontSize: 12,
                   ),
@@ -213,8 +215,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                 const Gap(6),
                 Text(
                   'Say: ${item['say']}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontSize: 12,
                     height: 1.35,
                   ),
@@ -235,18 +237,19 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
           alignment: Alignment.centerLeft,
           child: TextButton.icon(
             onPressed: () => setState(() => _selectedIndex = null),
-            icon: const Icon(Icons.arrow_back, size: 16, color: Colors.white70),
-            label: const Text(
+            icon: Icon(Icons.arrow_back,
+                size: 16, color: AppColors.textSecondary(context)),
+            label: Text(
               'Back to issues',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           ),
         ),
         const Gap(4),
         Text(
           issue.title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppColors.textPrimary(context),
             fontSize: 15,
             fontWeight: FontWeight.w700,
           ),
@@ -254,8 +257,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
         const Gap(6),
         Text(
           issue.sayThis,
-          style: const TextStyle(
-            color: Color(0xFF93C5FD),
+          style: TextStyle(
+            color: AppColors.secondaryText(),
             fontSize: 12,
             height: 1.35,
           ),
@@ -270,10 +273,10 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
               return Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(180, 21, 21, 21),
+                  color: AppColors.panel(context),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 49, 48, 48),
+                    color: AppColors.borderIdle(context),
                   ),
                 ),
                 child: Row(
@@ -284,13 +287,13 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                       height: 24,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E3A5F),
+                        color: AppColors.completeTint(context),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
                         '${index + 1}',
-                        style: const TextStyle(
-                          color: Color(0xFF93C5FD),
+                        style: TextStyle(
+                          color: AppColors.secondaryText(),
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
@@ -300,8 +303,8 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
                     Expanded(
                       child: Text(
                         step,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 13,
                           height: 1.35,
                         ),
@@ -317,14 +320,14 @@ class _SectorIssueGuideViewState extends State<SectorIssueGuideView> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF3B2F14),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFF59E0B)),
+            border: Border.all(color: AppColors.warningText()),
           ),
-          child: const Text(
+          child: Text(
             'If these steps do not apply or the issue is not listed, escalate with a full handoff summary.',
             style: TextStyle(
-              color: Color(0xFFFBBF24),
+              color: AppColors.warningText(),
               fontSize: 12,
               height: 1.35,
             ),
@@ -768,7 +771,6 @@ class SectorIssueCatalog {
         'If nothing is recoverable at frontline level, escalate with device model, reset time, and what was lost.',
       ],
     ),
-
     SectorIssue(
       title: 'Device will not start or keeps restarting',
       summary:
@@ -904,7 +906,6 @@ class SectorIssueCatalog {
         'If data stays down, escalate with plan type and last time it worked.',
       ],
     ),
-
     SectorIssue(
       title: 'Unexpected charges on bill',
       summary: 'Bill is higher than expected or has unknown line items.',
@@ -989,7 +990,6 @@ class SectorIssueCatalog {
         'If denial needs appeal or exception, escalate with claim references.',
       ],
     ),
-
     SectorIssue(
       title: 'Patient portal or app login',
       summary: 'Cannot sign in to the health portal or mobile health app.',
@@ -1075,7 +1075,6 @@ class SectorIssueCatalog {
         'If still failing, escalate with error code and payment attempt time.',
       ],
     ),
-
     SectorIssue(
       title: 'Card declined at purchase',
       summary:
@@ -1151,7 +1150,6 @@ class SectorIssueCatalog {
         'Escalate carrier exceptions with tracking ID.',
       ],
     ),
-
     SectorIssue(
       title: 'Damaged or wrong item received',
       summary: 'Package arrived damaged or the item is not what was ordered.',

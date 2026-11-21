@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/models/scoring_transparency.dart';
 import 'package:trainixprogram/models/training/script_personalization.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/voice_line_player.dart';
@@ -12,7 +14,7 @@ class AssessmentVoiceView extends StatefulWidget {
   final Assessment item;
   final bool lockedIn;
   final bool useDeliveryScoring;
-  final void Function(bool passed) onCompleted;
+  final void Function(VoiceScoreResult result) onCompleted;
 
   const AssessmentVoiceView({
     super.key,
@@ -144,24 +146,25 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
     final cleaned = transcript.trim();
     if (cleaned.isEmpty) {
       if (!mounted) return;
+      const emptyResult = VoiceScoreResult(
+        transcript: '',
+        contentScore: 0,
+        deliveryScore: 0,
+        totalScore: 0,
+        passed: false,
+        criticalFail: true,
+        criticalFailReason:
+            'Nothing to score. No speech was detected. Try again and speak the line clearly.',
+        contentNotes: [],
+        deliveryNotes: [],
+        deliveryEvaluated: false,
+      );
       setState(() {
         _processing = false;
-        _result = const VoiceScoreResult(
-          transcript: '',
-          contentScore: 0,
-          deliveryScore: 0,
-          totalScore: 0,
-          passed: false,
-          criticalFail: true,
-          criticalFailReason:
-              'Nothing to score. No speech was detected. Try again and speak the line clearly.',
-          contentNotes: [],
-          deliveryNotes: [],
-          deliveryEvaluated: false,
-        );
+        _result = emptyResult;
         _status = 'No speech detected';
       });
-      widget.onCompleted(false);
+      widget.onCompleted(emptyResult);
       return;
     }
 
@@ -197,7 +200,7 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
       _status = scored.passed ? 'Passed' : 'Not passed yet';
     });
 
-    widget.onCompleted(scored.passed);
+    widget.onCompleted(scored);
   }
 
   @override
@@ -207,15 +210,15 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
     );
 
     final audioBtnStyle = OutlinedButton.styleFrom(
-      foregroundColor: const Color(0xFF70BD8A),
-      side: const BorderSide(color: Color(0xFF2E4A38)),
+      foregroundColor: AppColors.primaryText(),
+      side: BorderSide(color: AppColors.nextTint(context)),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Say this out loud clearly',
-          style: TextStyle(fontSize: 13, color: Colors.white54),
+          style: TextStyle(fontSize: 13, color: AppColors.textMuted(context)),
         ),
         const Gap(10),
         Wrap(
@@ -252,9 +255,9 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF333333)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Text(
             target,
@@ -270,9 +273,9 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
           widget.useDeliveryScoring
               ? 'Scored on content match and how clearly you deliver the line. Pass mark is about 75% overall.'
               : 'Scored on how closely your spoken line matches the target. Small wording differences are allowed.',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Colors.white38,
+            color: AppColors.textMuted(context),
             height: 1.35,
           ),
         ),
@@ -283,12 +286,13 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
             height: 44,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _recording ? Colors.redAccent : Colors.green,
-                foregroundColor: Colors.white,
+                backgroundColor: _recording
+                    ? AppColors.errorText()
+                    : AppColors.primary(context),
+                foregroundColor: AppColors.onPrimary(context),
               ),
-              onPressed: _processing
-                  ? null
-                  : (_recording ? _stopAndScore : _start),
+              onPressed:
+                  _processing ? null : (_recording ? _stopAndScore : _start),
               child: Text(
                 _processing
                     ? 'Processing...'
@@ -304,8 +308,10 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
             style: TextStyle(
               fontSize: 13,
               color: _result == null
-                  ? Colors.white54
-                  : (_result!.passed ? Colors.green : Colors.redAccent),
+                  ? AppColors.textMuted(context)
+                  : (_result!.passed
+                      ? AppColors.primary(context)
+                      : AppColors.errorText()),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -317,13 +323,13 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: _result!.passed
-                  ? const Color(0xFF1A3A1A)
-                  : const Color(0xFF3A1A1A),
+                  ? AppColors.nextTint(context)
+                  : AppColors.elevated(context),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: _result!.passed
-                    ? Colors.green.withOpacity(0.5)
-                    : Colors.redAccent.withOpacity(0.5),
+                    ? AppColors.primary(context).withValues(alpha: 0.5)
+                    : AppColors.errorText().withOpacity(0.5),
               ),
             ),
             child: Column(
@@ -333,12 +339,14 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
                   _result!.passed
                       ? 'Passed'
                       : (_result!.criticalFail
-                            ? 'Nothing to score'
-                            : 'Incorrect / Not passed'),
+                          ? 'Nothing to score'
+                          : 'Incorrect / Not passed'),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: _result!.passed ? Colors.green : Colors.redAccent,
+                    color: _result!.passed
+                        ? AppColors.primary(context)
+                        : AppColors.errorText(),
                   ),
                 ),
                 if (_result!.criticalFail &&
@@ -346,9 +354,9 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
                   const Gap(8),
                   Text(
                     _result!.criticalFailReason,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white70,
+                      color: AppColors.textSecondary(context),
                       height: 1.35,
                     ),
                   ),
@@ -356,26 +364,84 @@ class _AssessmentVoiceViewState extends State<AssessmentVoiceView> {
                 const Gap(8),
                 Text(
                   'Total: ${_result!.totalScore}/100',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary(context)),
                 ),
                 Text(
                   'Content Accuracy: ${_result!.contentScore}/50',
-                  style: const TextStyle(fontSize: 13, color: Colors.white70),
+                  style: TextStyle(
+                      fontSize: 13, color: AppColors.textSecondary(context)),
                 ),
                 if (_result!.deliveryEvaluated)
                   Text(
                     'Delivery Quality: ${_result!.deliveryScore}/50',
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary(context)),
                   ),
+                if (_result!.deliveryEvaluated) ...[
+                  const Gap(8),
+                  Text(
+                    'Clarity ${_result!.clarityScore}/15  |  Pace ${_result!.paceScore}/10  |  Tone ${_result!.toneScore}/15  |  Confidence ${_result!.confidenceScore}/10',
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary(context)),
+                  ),
+                ],
+                const Gap(8),
+                Text(
+                  _result!.deliveryEvaluated
+                      ? '${ScoringTransparency.voiceInstrumentLine} ${ScoringTransparency.deliveryRubricLine}'
+                      : '${ScoringTransparency.voiceInstrumentLine} ${ScoringTransparency.scriptContentLine}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    height: 1.35,
+                    color: AppColors.textMuted(context),
+                  ),
+                ),
+                if (_result!.contentNotes.isNotEmpty) ...[
+                  const Gap(8),
+                  Text(
+                    'Content notes',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
+                  ),
+                  for (final note in _result!.contentNotes)
+                    Text(
+                      note,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                ],
+                if (_result!.deliveryNotes.isNotEmpty) ...[
+                  const Gap(8),
+                  Text(
+                    'Delivery notes',
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
+                  ),
+                  for (final note in _result!.deliveryNotes)
+                    Text(
+                      note,
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                ],
                 if (_result!.transcript.isNotEmpty) ...[
                   const Gap(8),
-                  const Text(
+                  Text(
                     'Your transcript',
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
                   Text(
                     _result!.transcript,
-                    style: const TextStyle(fontSize: 13, color: Colors.white70),
+                    style: TextStyle(
+                        fontSize: 13, color: AppColors.textSecondary(context)),
                   ),
                 ],
               ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
@@ -13,8 +14,7 @@ class SessionLobby extends StatefulWidget {
     String? chosenSector,
     int? customerQuota,
     bool guidedMode,
-  )
-  onStart;
+  ) onStart;
   final VoidCallback? onDebugUnlock;
 
   const SessionLobby({
@@ -35,11 +35,9 @@ class _SessionLobbyState extends State<SessionLobby> {
   bool _guidedMode = true;
   bool _starting = false;
 
-  static const _accent = Color(0xFF70BD8A);
-  static const _accentBlue = Color(0xFF3B82F6);
-  static const _accentPurple = Color(0xFFA78BFA);
-  static const _cardBg = Color(0xFF151515);
-  static const _border = Color(0xFF2A2A2B);
+  static Color get _accent => AppColors.primaryText();
+  static Color get _accentBlue => AppColors.secondaryText();
+  static Color get _accentPurple => AppColors.secondaryText();
 
   @override
   void activate() {
@@ -146,10 +144,12 @@ class _SessionLobbyState extends State<SessionLobby> {
           decoration: BoxDecoration(
             color: selected
                 ? color.withValues(alpha: 0.16)
-                : const Color(0xFF1C1C1C),
+                : AppColors.chipBg(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? color.withValues(alpha: 0.7) : _border,
+              color: selected
+                  ? color.withValues(alpha: 0.7)
+                  : AppColors.borderIdle(context),
               width: selected ? 1.2 : 1,
             ),
           ),
@@ -160,7 +160,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                 Icon(
                   icon,
                   size: 14,
-                  color: selected ? color : const Color(0xFF9CA3AF),
+                  color: selected ? color : AppColors.textMuted(context),
                 ),
                 const Gap(6),
               ],
@@ -169,7 +169,9 @@ class _SessionLobbyState extends State<SessionLobby> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: selected ? Colors.white : const Color(0xFF9CA3AF),
+                  color: selected
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textMuted(context),
                 ),
               ),
             ],
@@ -195,10 +197,10 @@ class _SessionLobbyState extends State<SessionLobby> {
         const Gap(10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
           ),
         ),
       ],
@@ -229,7 +231,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                 child: Icon(
                   _icon,
                   size: 22,
-                  color: unlocked ? modeColor : const Color(0xFF9CA3AF),
+                  color: unlocked ? modeColor : AppColors.textMuted(context),
                 ),
               ),
               const Gap(14),
@@ -242,15 +244,17 @@ class _SessionLobbyState extends State<SessionLobby> {
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: unlocked ? Colors.white : const Color(0xFF9CA3AF),
+                        color: unlocked
+                            ? AppColors.textPrimary(context)
+                            : AppColors.textMuted(context),
                       ),
                     ),
                     const Gap(4),
                     Text(
                       unlocked ? _description : _lockHint,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textSecondary(context),
                         height: 1.35,
                       ),
                     ),
@@ -277,12 +281,12 @@ class _SessionLobbyState extends State<SessionLobby> {
             width: double.infinity,
             padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              color: _cardBg,
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: unlocked
                     ? modeColor.withValues(alpha: 0.35)
-                    : _border,
+                    : AppColors.borderIdle(context),
               ),
             ),
             child: Column(
@@ -294,16 +298,16 @@ class _SessionLobbyState extends State<SessionLobby> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 18),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1C1C1C),
+                      color: AppColors.card(context),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _border),
+                      border: Border.all(color: AppColors.borderIdle(context)),
                     ),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Icon(
                           Icons.lock_rounded,
                           size: 16,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textMuted(context),
                         ),
                         Gap(8),
                         Expanded(
@@ -311,7 +315,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                             'Locked until the matching Scenario Practice stage is cleared.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF9CA3AF),
+                              color: AppColors.textMuted(context),
                               height: 1.35,
                             ),
                           ),
@@ -358,9 +362,9 @@ class _SessionLobbyState extends State<SessionLobby> {
                   _useRandom
                       ? 'A sector will be chosen for you. Specific picks still update the random cycle so repeats stay uncommon.'
                       : 'This sector will be used. You can switch back to Random anytime.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                     height: 1.35,
                   ),
                 ),
@@ -398,11 +402,11 @@ class _SessionLobbyState extends State<SessionLobby> {
                   _selectedQuota == null
                       ? 'This run will include a random number of customers between 3 and 5.'
                       : _selectedQuota == 1
-                      ? 'This run will include exactly 1 customer.'
-                      : 'This run will include exactly $_selectedQuota customers.',
-                  style: const TextStyle(
+                          ? 'This run will include exactly 1 customer.'
+                          : 'This run will include exactly $_selectedQuota customers.',
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                     height: 1.35,
                   ),
                 ),
@@ -438,9 +442,9 @@ class _SessionLobbyState extends State<SessionLobby> {
                   _guidedMode
                       ? 'Script Guide, tips, and step examples stay available. Best for practice and learning.'
                       : 'No Script Guide, tips, or step examples. Real call-center style assessment with scoring still on.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                     height: 1.35,
                   ),
                 ),
@@ -465,12 +469,12 @@ class _SessionLobbyState extends State<SessionLobby> {
                           color: modeColor,
                         ),
                         const Gap(10),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Pick a sector, customer quota, and guidance mode, then start. After the run you will see a score report. Modes unlock from Scenario Practice in Mini Training.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFFCBD5E1),
+                              color: AppColors.textSecondary(context),
                               height: 1.4,
                             ),
                           ),
@@ -502,7 +506,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                             decoration: BoxDecoration(
                               color: canStart && !_starting
                                   ? modeColor
-                                  : const Color(0xFF2A2A2B),
+                                  : AppColors.border(context),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -514,8 +518,8 @@ class _SessionLobbyState extends State<SessionLobby> {
                                       : Icons.play_arrow_rounded,
                                   size: 20,
                                   color: canStart && !_starting
-                                      ? const Color(0xFF0B1A12)
-                                      : const Color(0xFF6B7280),
+                                      ? AppColors.onPrimary(context)
+                                      : AppColors.textMuted(context),
                                 ),
                                 const Gap(8),
                                 Text(
@@ -524,8 +528,8 @@ class _SessionLobbyState extends State<SessionLobby> {
                                     fontSize: 14,
                                     fontWeight: FontWeight.w800,
                                     color: canStart && !_starting
-                                        ? const Color(0xFF0B1A12)
-                                        : const Color(0xFF6B7280),
+                                        ? AppColors.onPrimary(context)
+                                        : AppColors.textMuted(context),
                                   ),
                                 ),
                               ],
@@ -543,7 +547,7 @@ class _SessionLobbyState extends State<SessionLobby> {
                     icon: const Icon(Icons.lock_open_rounded, size: 16),
                     label: const Text('DEBUG: Unlock this mode'),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFFF59E0B),
+                      foregroundColor: AppColors.warningText(),
                     ),
                   ),
                 ],

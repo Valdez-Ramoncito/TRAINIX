@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class AgentNoteItem {
   final String id;
@@ -134,18 +135,18 @@ class _AgentNotepadState extends State<AgentNotepad> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1712),
-          title: const Text(
+          backgroundColor: AppColors.elevated(context),
+          title: Text(
             'Rename note',
-            style: TextStyle(color: Color(0xFFFDE68A)),
+            style: TextStyle(color: AppColors.warningText()),
           ),
           content: TextField(
             controller: ctrl,
             autofocus: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
+            style: TextStyle(color: AppColors.textPrimary(context)),
+            decoration: InputDecoration(
               hintText: 'Note name',
-              hintStyle: TextStyle(color: Color(0xFF78716C)),
+              hintStyle: TextStyle(color: AppColors.textMuted(context)),
             ),
           ),
           actions: [
@@ -187,17 +188,17 @@ class _AgentNotepadState extends State<AgentNotepad> {
         padding: const EdgeInsets.fromLTRB(10, 8, 6, 8),
         child: Row(
           children: [
-            const Icon(
+            Icon(
               Icons.sticky_note_2_outlined,
               size: 16,
-              color: Color(0xFFFBBF24),
+              color: AppColors.warningText(),
             ),
             const SizedBox(width: 6),
-            const Expanded(
+            Expanded(
               child: Text(
                 'Notepad',
                 style: TextStyle(
-                  color: Color(0xFFFDE68A),
+                  color: AppColors.warningText(),
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -218,10 +219,10 @@ class _AgentNotepadState extends State<AgentNotepad> {
                 _bindSelected();
                 setState(() => _expanded = true);
               },
-              icon: const Icon(
+              icon: Icon(
                 Icons.add,
                 size: 16,
-                color: Color(0xFFFBBF24),
+                color: AppColors.warningText(),
               ),
             ),
             Icon(
@@ -229,7 +230,7 @@ class _AgentNotepadState extends State<AgentNotepad> {
                   ? Icons.keyboard_arrow_down_rounded
                   : Icons.keyboard_arrow_right_rounded,
               size: 18,
-              color: const Color(0xFFFBBF24),
+              color: AppColors.warningText(),
             ),
           ],
         ),
@@ -263,10 +264,10 @@ class _AgentNotepadState extends State<AgentNotepad> {
                     curve: Curves.easeOut,
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.chevron_left,
                   size: 18,
-                  color: Color(0xFFFBBF24),
+                  color: AppColors.warningText(),
                 ),
               ),
               Expanded(
@@ -295,24 +296,23 @@ class _AgentNotepadState extends State<AgentNotepad> {
                         ),
                         decoration: BoxDecoration(
                           color: on
-                              ? const Color(0xFF3D3428)
-                              : const Color(0xFF252018),
+                              ? AppColors.elevated(context)
+                              : AppColors.elevated(context),
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(
                             color: on
-                                ? const Color(0xFFFBBF24)
-                                : const Color(0xFF3D3428),
+                                ? AppColors.warningText()
+                                : AppColors.elevated(context),
                           ),
                         ),
                         child: Text(
                           n.title,
                           style: TextStyle(
                             color: on
-                                ? const Color(0xFFFDE68A)
-                                : Colors.white70,
+                                ? AppColors.warningText()
+                                : AppColors.textSecondary(context),
                             fontSize: 11,
-                            fontWeight:
-                                on ? FontWeight.w700 : FontWeight.w500,
+                            fontWeight: on ? FontWeight.w700 : FontWeight.w500,
                           ),
                         ),
                       ),
@@ -340,10 +340,10 @@ class _AgentNotepadState extends State<AgentNotepad> {
                     curve: Curves.easeOut,
                   );
                 },
-                icon: const Icon(
+                icon: Icon(
                   Icons.chevron_right,
                   size: 18,
-                  color: Color(0xFFFBBF24),
+                  color: AppColors.warningText(),
                 ),
               ),
             ],
@@ -357,17 +357,17 @@ class _AgentNotepadState extends State<AgentNotepad> {
               _saveCurrent();
               setState(() {});
             },
-            style: const TextStyle(
-              color: Color(0xFFFDE68A),
+            style: TextStyle(
+              color: AppColors.warningText(),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               isDense: true,
               border: InputBorder.none,
               hintText: 'Rename this note',
               hintStyle: TextStyle(
-                color: Color(0xFF78716C),
+                color: AppColors.textMuted(context),
                 fontSize: 12,
               ),
               contentPadding: EdgeInsets.symmetric(
@@ -386,27 +386,26 @@ class _AgentNotepadState extends State<AgentNotepad> {
               maxLines: null,
               expands: true,
               textAlignVertical: TextAlignVertical.top,
-              style: const TextStyle(
-                color: Color(0xFFE7E5E4),
+              style: TextStyle(
+                color: AppColors.textSecondary(context),
                 fontSize: 12,
                 height: 1.45,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 filled: true,
-                fillColor: Color(0xFF12100E),
+                fillColor: AppColors.scaffold(context),
                 border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF3D3428)),
+                  borderSide: BorderSide(color: AppColors.elevated(context)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFF3D3428)),
+                  borderSide: BorderSide(color: AppColors.elevated(context)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Color(0xFFFBBF24)),
+                  borderSide: BorderSide(color: AppColors.warningText()),
                 ),
-                hintText:
-                    'Account digits, issue, promises, next steps...',
+                hintText: 'Account digits, issue, promises, next steps...',
                 hintStyle: TextStyle(
-                  color: Color(0xFF57534E),
+                  color: AppColors.textMuted(context),
                   fontSize: 11,
                 ),
                 contentPadding: EdgeInsets.all(8),
@@ -420,8 +419,8 @@ class _AgentNotepadState extends State<AgentNotepad> {
             children: [
               Text(
                 '${items.length} note${items.length == 1 ? '' : 's'}',
-                style: const TextStyle(
-                  color: Color(0xFF78716C),
+                style: TextStyle(
+                  color: AppColors.textMuted(context),
                   fontSize: 10,
                 ),
               ),
@@ -435,7 +434,7 @@ class _AgentNotepadState extends State<AgentNotepad> {
                         setState(() {});
                       },
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFFF87171),
+                  foregroundColor: AppColors.errorText(),
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   minimumSize: const Size(0, 28),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -460,13 +459,12 @@ class _AgentNotepadState extends State<AgentNotepad> {
     return Container(
       margin: EdgeInsets.fromLTRB(8, 4, 8, widget.bottomInset),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1712),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF3D3428)),
+        border: Border.all(color: AppColors.elevated(context)),
       ),
       child: Column(
-        mainAxisSize:
-            widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisSize: widget.fillHeight ? MainAxisSize.max : MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           header,

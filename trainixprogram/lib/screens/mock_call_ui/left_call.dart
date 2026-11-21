@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/simulation_phase.dart';
 
@@ -58,44 +59,44 @@ class _LeftCallState extends State<LeftCall>
       case SimulationPhase.active:
         titleText = 'Call in Progress';
         centerIcon = Icons.headset_mic_rounded;
-        iconColor = const Color(0xFF60A5FA);
-        outerRingColor = const Color(0xFF2563EB).withOpacity(0.35);
-        innerCircleColor = const Color(0xFF1E293B);
+        iconColor = AppColors.secondaryText();
+        outerRingColor = AppColors.secondaryText().withValues(alpha: 0.35);
+        innerCircleColor = AppColors.elevated(context);
         break;
       case SimulationPhase.onHold:
         titleText = 'Call on Hold';
         centerIcon = Icons.pause_circle_filled_rounded;
-        iconColor = const Color(0xFFF59E0B);
-        outerRingColor = const Color(0xFFD97706).withOpacity(0.35);
-        innerCircleColor = const Color(0xFF27272A);
+        iconColor = AppColors.warningText();
+        outerRingColor = AppColors.warningText().withValues(alpha: 0.35);
+        innerCircleColor = AppColors.elevated(context);
         break;
       case SimulationPhase.afterCallWork:
         titleText = 'After Call Work';
         centerIcon = Icons.assignment_outlined;
-        iconColor = const Color(0xFF38BDF8);
-        outerRingColor = const Color(0xFF0284C7).withOpacity(0.35);
-        innerCircleColor = const Color(0xFF1E293B);
+        iconColor = AppColors.secondaryText();
+        outerRingColor = AppColors.secondaryText().withOpacity(0.35);
+        innerCircleColor = AppColors.elevated(context);
         break;
       case SimulationPhase.postCallBreak:
         titleText = 'Grace Period (${widget.remainingBreakSeconds}s)';
         centerIcon = Icons.coffee_rounded;
-        iconColor = const Color(0xFFA855F7);
-        outerRingColor = const Color(0xFF9333EA).withOpacity(0.35);
-        innerCircleColor = const Color(0xFF1E293B);
+        iconColor = AppColors.secondaryText();
+        outerRingColor = AppColors.secondaryText().withValues(alpha: 0.35);
+        innerCircleColor = AppColors.elevated(context);
         break;
       case SimulationPhase.wrappingUp:
         titleText = 'Session Wrapping Up';
         centerIcon = Icons.task_alt_rounded;
-        iconColor = const Color(0xFF34D399);
-        outerRingColor = const Color(0xFF059669).withOpacity(0.35);
-        innerCircleColor = const Color(0xFF1E293B);
+        iconColor = AppColors.successText();
+        outerRingColor = AppColors.primaryText().withValues(alpha: 0.35);
+        innerCircleColor = AppColors.elevated(context);
         break;
       case SimulationPhase.incoming:
         titleText = 'Incoming Call';
         centerIcon = Icons.phone_in_talk_rounded;
-        iconColor = const Color.fromARGB(255, 169, 226, 189);
-        outerRingColor = const Color(0xFF16A34A).withOpacity(0.5);
-        innerCircleColor = Color.fromARGB(110, 22, 163, 74);
+        iconColor = AppColors.onPrimary(context);
+        outerRingColor = AppColors.primaryText().withValues(alpha: 0.5);
+        innerCircleColor = AppColors.primaryText();
         break;
     }
 
@@ -132,9 +133,18 @@ class _LeftCallState extends State<LeftCall>
                     shape: BoxShape.circle,
                     color: innerCircleColor,
                     border: Border.all(
-                      color: iconColor.withOpacity(0.3),
+                      color: iconColor.withValues(alpha: 0.3),
                       width: 1.2,
                     ),
+                    boxShadow: Theme.of(context).brightness == Brightness.dark
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: innerCircleColor.withValues(alpha: 0.28),
+                              blurRadius: 26,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                   ),
                   child: Icon(centerIcon, size: 56, color: iconColor),
                 ),
@@ -146,8 +156,8 @@ class _LeftCallState extends State<LeftCall>
           // Title: "Incoming Call"
           Text(
             titleText,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontSize: 28,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.3,
@@ -165,23 +175,23 @@ class _LeftCallState extends State<LeftCall>
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF27272A),
+                  color: AppColors.elevated(context),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   widget.customerType,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
               const Gap(8),
-              const Text(
+              Text(
                 '·',
                 style: TextStyle(
-                  color: Color(0xFF9CA3AF),
+                  color: AppColors.textMuted(context),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -189,8 +199,8 @@ class _LeftCallState extends State<LeftCall>
               const Gap(8),
               Text(
                 widget.sector,
-                style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
+                style: TextStyle(
+                  color: AppColors.textMuted(context),
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
                 ),
@@ -205,8 +215,8 @@ class _LeftCallState extends State<LeftCall>
             ElevatedButton.icon(
               onPressed: widget.onAccept,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.primaryText(),
+                foregroundColor: AppColors.onPrimary(context),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 28,
                   vertical: 14,

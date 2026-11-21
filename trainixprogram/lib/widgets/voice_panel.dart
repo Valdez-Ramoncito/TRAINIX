@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/customer_account.dart';
@@ -547,7 +548,9 @@ class _VoicePanelState extends State<VoicePanel> {
     });
   }
 
-  Widget _buildHoldStatusStrip() {
+  Widget _buildHoldStatusStrip(
+    BuildContext context,
+  ) {
     final waitMin = _holdSeconds ~/ 60;
     final waitSec = _holdSeconds % 60;
     final waitLabel =
@@ -558,12 +561,14 @@ class _VoicePanelState extends State<VoicePanel> {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: waitWarm ? const Color(0x33F59E0B) : const Color(0xFF1F2937),
+        color: waitWarm
+            ? AppColors.warningTint(context)
+            : AppColors.chipBg(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: waitWarm
-              ? const Color(0xFFF59E0B)
-              : const Color(0xFF374151),
+              ? AppColors.warningText()
+              : AppColors.borderStrong(context),
         ),
       ),
       child: Row(
@@ -573,10 +578,10 @@ class _VoicePanelState extends State<VoicePanel> {
             waitWarm ? Icons.warning_amber_rounded : Icons.pause_circle_outline,
             size: 18,
             color: waitWarm
-                ? const Color(0xFFFBBF24)
-                : const Color(0xFF9CA3AF),
+                ? AppColors.warningText()
+                : AppColors.textMuted(context),
           ),
-          const SizedBox(width: 10),
+          SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,11 +594,11 @@ class _VoicePanelState extends State<VoicePanel> {
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: waitWarm
-                        ? const Color(0xFFFBBF24)
-                        : const Color(0xFFE5E7EB),
+                        ? AppColors.warningText()
+                        : AppColors.textSecondary(context),
                   ),
                 ),
-                const SizedBox(height: 2),
+                SizedBox(height: 2),
                 Text(
                   waitWarm
                       ? 'Hold is running long. Finish Account Lookup or the sector guide and resume the call.'
@@ -602,8 +607,8 @@ class _VoicePanelState extends State<VoicePanel> {
                     fontSize: 12,
                     height: 1.35,
                     color: waitWarm
-                        ? const Color(0xFFFDE68A)
-                        : const Color(0xFF9CA3AF),
+                        ? AppColors.warningText()
+                        : AppColors.textMuted(context),
                   ),
                 ),
               ],
@@ -643,9 +648,7 @@ class _VoicePanelState extends State<VoicePanel> {
             _coachMessages.any(
               (m) => m.isTrainee && m.text.trim().isNotEmpty,
             );
-        if (hasScoreableWork &&
-            !_evaluationSubmitted &&
-            !_evaluationInFlight) {
+        if (hasScoreableWork && !_evaluationSubmitted && !_evaluationInFlight) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) _evaluateVoiceInteraction();
           });
@@ -678,8 +681,7 @@ class _VoicePanelState extends State<VoicePanel> {
         if (mounted) {
           setState(() {
             _voicePhase = _VoicePhase.customerSpeaking;
-            _customerTranscript =
-                'Waiting for you to come back on the line...';
+            _customerTranscript = 'Waiting for you to come back on the line...';
           });
         }
       }
@@ -861,7 +863,7 @@ class _VoicePanelState extends State<VoicePanel> {
     try {
       final emotion =
           _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
-          'neutral';
+              'neutral';
       for (final line in lines) {
         if (!mounted) return;
         if (line.trim().isEmpty) continue;
@@ -933,10 +935,8 @@ class _VoicePanelState extends State<VoicePanel> {
 
       //trim the words, split them, and find the words where its not
       //an empty string. Then return the length of that list
-      final wordCount = words
-          .split(RegExp(r'\s+'))
-          .where((w) => w.isNotEmpty)
-          .length;
+      final wordCount =
+          words.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
       //to get the words per minute, divide the word count to
       //how many seconds have passed
@@ -967,8 +967,7 @@ class _VoicePanelState extends State<VoicePanel> {
           }
           return;
         }
-        final shouldFinish =
-            SimulationCoach.looksLikeClosing(words) ||
+        final shouldFinish = SimulationCoach.looksLikeClosing(words) ||
             (_sessionEscalated && wantsEscalation);
         if (shouldFinish) {
           setState(() {
@@ -1044,8 +1043,7 @@ class _VoicePanelState extends State<VoicePanel> {
         }
         final pack = _sessionController.mission.pack!;
         final step = _sessionController.mission.currentStep;
-        final rude =
-            SimulationCoach.isInsultingAgentReply(spoken) ||
+        final rude = SimulationCoach.isInsultingAgentReply(spoken) ||
             SimulationCoach.isNegativeAgentReply(spoken);
         final offTopic = SimulationCoach.isOffTopicReply(
           spoken,
@@ -1077,8 +1075,7 @@ class _VoicePanelState extends State<VoicePanel> {
             _sessionController.mission.lastTraineeDidNotAdvance &&
             step != null &&
             step.kind != SimStepKind.tool) {
-          final judged =
-              await _typeCastService.openRouterAPI.judgeMissionTurn(
+          final judged = await _typeCastService.openRouterAPI.judgeMissionTurn(
             agentMessage: spoken,
             stepLabel: step.label,
             stepTip: step.tip,
@@ -1121,10 +1118,8 @@ class _VoicePanelState extends State<VoicePanel> {
         );
         if (closeDone || _sessionController.isMissionComplete) {
           if (_callStartTime != null) {
-            final seconds = DateTime.now()
-                .difference(_callStartTime!)
-                .inSeconds
-                .toDouble();
+            final seconds =
+                DateTime.now().difference(_callStartTime!).inSeconds.toDouble();
             widget.onResolutionSeconds?.call(seconds);
             _handleSeconds = seconds;
           }
@@ -1213,7 +1208,7 @@ class _VoicePanelState extends State<VoicePanel> {
           //with, so Account Lookup always matches who's on the line
           targetOwnerName:
               _typeCastService.openRouterAPI.chosenSimulation['name'] ??
-              'Customer',
+                  'Customer',
         );
       }
     }
@@ -1225,10 +1220,8 @@ class _VoicePanelState extends State<VoicePanel> {
       );
       accountProvider.confirmCustomerResolved();
       if (_callStartTime != null) {
-        final seconds = DateTime.now()
-            .difference(_callStartTime!)
-            .inSeconds
-            .toDouble();
+        final seconds =
+            DateTime.now().difference(_callStartTime!).inSeconds.toDouble();
         widget.onResolutionSeconds?.call(seconds);
         _handleSeconds = seconds;
       }
@@ -1299,14 +1292,12 @@ class _VoicePanelState extends State<VoicePanel> {
       evalMessages = List.from(messageProvider.messages);
     }
 
-    final sector =
-        _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
+    final sector = _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
         widget.sector;
     final customerName =
         _typeCastService.openRouterAPI.chosenSimulation['name']?.toString() ??
-        'Customer';
-    final problem =
-        _typeCastService.openRouterAPI.chosenSimulation['problem']
+            'Customer';
+    final problem = _typeCastService.openRouterAPI.chosenSimulation['problem']
             ?.toString() ??
         '';
     final emotion =
@@ -1373,12 +1364,17 @@ class _VoicePanelState extends State<VoicePanel> {
   @override
   Widget build(BuildContext context) {
     //if the current phase is incoming, return the incoming UI
-    if (widget.phase == SimulationPhase.incoming) return _buildIncoming();
+    if (widget.phase == SimulationPhase.incoming)
+      return _buildIncoming(
+        context,
+      );
 
     //if the current phase is after call work, return the after call
     //work UI
     if (widget.phase == SimulationPhase.afterCallWork) {
-      return _buildAfterCallWork();
+      return _buildAfterCallWork(
+        context,
+      );
     }
 
     //if the current phase is post call break, then return the post call
@@ -1396,13 +1392,12 @@ class _VoicePanelState extends State<VoicePanel> {
     final bool onHold = widget.phase == SimulationPhase.onHold;
     final sectorForTabs =
         _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
-        widget.sector;
+            widget.sector;
     final problemForTabs =
         _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '';
     final packNeedsAccount =
         _sessionController.mission.pack?.needsAccount == true;
-    final showAccountLookup =
-        packNeedsAccount ||
+    final showAccountLookup = packNeedsAccount ||
         SimulationCoach.needsAccountLookup(
           problemForTabs,
           sector: sectorForTabs,
@@ -1421,21 +1416,30 @@ class _VoicePanelState extends State<VoicePanel> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _buildTabBar(onHold: onHold),
-        if (onHold) _buildHoldStatusStrip(),
+        if (onHold)
+          _buildHoldStatusStrip(
+            context,
+          ),
         const Divider(height: 1),
         Expanded(
           child: effectiveTab == 1 && showAccountLookup && onHold
               ? AccountLookupView(sector: widget.sector)
               : effectiveTab == 2 && showSectorGuide
-              ? SectorIssueGuideView(
-                  sector: sectorForTabs,
-                  customerProblem: problemForTabs,
-                  onIssueOpened: () {
-                    _sessionController.markSectorGuideIssueOpened();
-                    if (mounted) setState(() {});
-                  },
-                )
-              : (onHold ? _buildOnHold() : _buildActive()),
+                  ? SectorIssueGuideView(
+                      sector: sectorForTabs,
+                      customerProblem: problemForTabs,
+                      onIssueOpened: () {
+                        _sessionController.markSectorGuideIssueOpened();
+                        if (mounted) setState(() {});
+                      },
+                    )
+                  : (onHold
+                      ? _buildOnHold(
+                          context,
+                        )
+                      : _buildActive(
+                          context,
+                        )),
         ),
       ],
     );
@@ -1448,7 +1452,7 @@ class _VoicePanelState extends State<VoicePanel> {
         _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '';
     final voiceSector =
         _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
-        widget.sector;
+            widget.sector;
     final voiceElapsed = _callStartTime == null
         ? 0
         : DateTime.now().difference(_callStartTime!).inSeconds;
@@ -1480,8 +1484,7 @@ class _VoicePanelState extends State<VoicePanel> {
     final idNow = accountProvider.identityVerified;
     final toolNow = accountProvider.toolWorkDone;
     final actionNow = accountProvider.lastToolAction;
-    final needsToolSync =
-        SimulationSessionController.useMissionGuide &&
+    final needsToolSync = SimulationSessionController.useMissionGuide &&
         _sessionController.mission.pack != null &&
         (idNow != _lastSyncedIdentity ||
             toolNow != _lastSyncedToolWork ||
@@ -1535,8 +1538,7 @@ class _VoicePanelState extends State<VoicePanel> {
         family: _problemFamily!,
       );
     }
-    final hideExamples =
-        _postingScripted ||
+    final hideExamples = _postingScripted ||
         _voicePhase == _VoicePhase.processing ||
         _voicePhase == _VoicePhase.transcribing;
     // Until the customer actually speaks, never show problem-specific open
@@ -1609,13 +1611,11 @@ class _VoicePanelState extends State<VoicePanel> {
     final guideProblem = agentFirstPhase
         ? ''
         : (voiceProblem.trim().isNotEmpty ? voiceProblem : packProblem);
-    final guideName =
-        _typeCastService.openRouterAPI.chosenSimulation['name'] ??
+    final guideName = _typeCastService.openRouterAPI.chosenSimulation['name'] ??
         _sessionController.mission.pack?.customerName;
     final guide = ScenarioGuideView(
       sector: voiceSector,
-      emotion:
-          _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
+      emotion: _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
           _sessionController.mission.pack?.emotion,
       problem: guideProblem,
       customerName: guideName,
@@ -1672,7 +1672,7 @@ class _VoicePanelState extends State<VoicePanel> {
             final line = reactions[Random().nextInt(reactions.length)];
             final emotion =
                 _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
-                'neutral';
+                    'neutral';
             _coachMessages.add(CoachMessage(isTrainee: false, text: line));
             setState(() {
               _customerTranscript = line;
@@ -1716,13 +1716,12 @@ class _VoicePanelState extends State<VoicePanel> {
   Widget _buildTabBar({required bool onHold}) {
     final sectorForTabs =
         _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
-        widget.sector;
+            widget.sector;
     final problemForTabs =
         _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '';
     final packNeedsAccount =
         _sessionController.mission.pack?.needsAccount == true;
-    final showAccountLookup =
-        packNeedsAccount ||
+    final showAccountLookup = packNeedsAccount ||
         SimulationCoach.needsAccountLookup(
           problemForTabs,
           sector: sectorForTabs,
@@ -1784,10 +1783,10 @@ class _VoicePanelState extends State<VoicePanel> {
                       ? BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFFF59E0B),
+                            color: AppColors.warningText(),
                             width: 1.5,
                           ),
-                          color: const Color(0x33F59E0B),
+                          color: AppColors.warningTint(context),
                         )
                       : null,
                   child: Column(
@@ -1801,12 +1800,12 @@ class _VoicePanelState extends State<VoicePanel> {
                               ? FontWeight.w600
                               : FontWeight.w400,
                           color: accountLocked
-                              ? const Color(0xFF6B7280)
+                              ? AppColors.textMuted(context)
                               : isSelected
-                              ? Colors.white
-                              : needsAttention
-                              ? const Color(0xFFFBBF24)
-                              : const Color(0xFFB0B8C4),
+                                  ? AppColors.textPrimary(context)
+                                  : needsAttention
+                                      ? AppColors.warningText()
+                                      : AppColors.textSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1814,10 +1813,10 @@ class _VoicePanelState extends State<VoicePanel> {
                         height: 2,
                         width: isSelected || needsAttention ? 36 : 0,
                         color: isSelected
-                            ? const Color(0xFF3B82F6)
+                            ? AppColors.secondaryText()
                             : needsAttention
-                            ? const Color(0xFFF59E0B)
-                            : Colors.transparent,
+                                ? AppColors.warningText()
+                                : Colors.transparent,
                       ),
                     ],
                   ),
@@ -1832,13 +1831,13 @@ class _VoicePanelState extends State<VoicePanel> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: holdWarm
-                    ? const Color(0x33F59E0B)
-                    : const Color(0xFF1F2937),
+                    ? AppColors.warningTint(context)
+                    : AppColors.chipBg(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: holdWarm
-                      ? const Color(0xFFF59E0B)
-                      : const Color(0xFF374151),
+                      ? AppColors.warningText()
+                      : AppColors.borderStrong(context),
                 ),
               ),
               child: Text(
@@ -1847,8 +1846,8 @@ class _VoicePanelState extends State<VoicePanel> {
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                   color: holdWarm
-                      ? const Color(0xFFFBBF24)
-                      : const Color(0xFFD1D5DB),
+                      ? AppColors.warningText()
+                      : AppColors.textSecondary(context),
                 ),
               ),
             ),
@@ -1859,7 +1858,9 @@ class _VoicePanelState extends State<VoicePanel> {
 
   //Incoming call UI
   //Shows a customer calling using LeftCall design
-  Widget _buildIncoming() {
+  Widget _buildIncoming(
+    BuildContext context,
+  ) {
     return LeftCall(
       sector: widget.sector,
       phase: widget.phase,
@@ -1870,7 +1871,9 @@ class _VoicePanelState extends State<VoicePanel> {
 
   //Active UI
   //shows you're on a call with a customer
-  Widget _buildActive() {
+  Widget _buildActive(
+    BuildContext context,
+  ) {
     //checkers for each voice phase
     final bool isCustomerSpeaking = _voicePhase == _VoicePhase.customerSpeaking;
     final bool isTraineeSpeaking = _voicePhase == _VoicePhase.traineeSpeaking;
@@ -1880,8 +1883,7 @@ class _VoicePanelState extends State<VoicePanel> {
     final bool isAwaitingClosing = _voicePhase == _VoicePhase.awaitingClosing;
 
     final bool isIdle = _voicePhase == _VoicePhase.idle;
-    final bool micEnabled =
-        (isCustomerSpeaking ||
+    final bool micEnabled = (isCustomerSpeaking ||
             isTraineeSpeaking ||
             isAwaitingClosing ||
             isIdle) &&
@@ -1921,23 +1923,23 @@ class _VoicePanelState extends State<VoicePanel> {
     final customerName =
         _typeCastService.openRouterAPI.chosenSimulation['name'] ?? 'Customer';
     final statusBg = isResolved
-        ? const Color(0xFF14532D)
+        ? AppColors.nextTint(context)
         : isAwaitingClosing
-        ? const Color(0xFF78350F)
-        : isCustomerSpeaking
-        ? const Color(0xFF14532D)
-        : isTraineeSpeaking
-        ? const Color(0xFF1E3A5F)
-        : const Color(0xFF1F2937);
+            ? AppColors.warningText()
+            : isCustomerSpeaking
+                ? AppColors.nextTint(context)
+                : isTraineeSpeaking
+                    ? AppColors.completeTint(context)
+                    : AppColors.chipBg(context);
     final statusBorder = isResolved
-        ? const Color(0xFF22C55E)
+        ? AppColors.primaryText()
         : isAwaitingClosing
-        ? const Color(0xFFF59E0B)
-        : isCustomerSpeaking
-        ? const Color(0xFF4ADE80)
-        : isTraineeSpeaking
-        ? const Color(0xFF60A5FA)
-        : const Color(0xFF374151);
+            ? AppColors.warningText()
+            : isCustomerSpeaking
+                ? AppColors.successText()
+                : isTraineeSpeaking
+                    ? AppColors.secondaryText()
+                    : AppColors.borderStrong(context);
 
     return Column(
       children: [
@@ -1948,17 +1950,17 @@ class _VoicePanelState extends State<VoicePanel> {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF1E293B),
+                  color: AppColors.elevated(context),
                 ),
                 child: Center(
                   child: Text(
                     customerName.isNotEmpty
                         ? customerName[0].toUpperCase()
                         : 'C',
-                    style: const TextStyle(
-                      color: Color(0xFF93C5FD),
+                    style: TextStyle(
+                      color: AppColors.secondaryText(),
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
@@ -1972,17 +1974,17 @@ class _VoicePanelState extends State<VoicePanel> {
                   children: [
                     Text(
                       customerName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         fontSize: 15,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       widget.sector,
-                      style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 12,
                       ),
                     ),
@@ -2001,9 +2003,9 @@ class _VoicePanelState extends State<VoicePanel> {
                 ),
                 child: Text(
                   statusText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -2017,7 +2019,7 @@ class _VoicePanelState extends State<VoicePanel> {
               _typeCastService.openRouterAPI.chosenSimulation['problem'] ?? '',
               sector:
                   _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
-                  widget.sector,
+                      widget.sector,
             ),
             startedAt: _callStartTime,
             ahtLimitSeconds: SimulationCoach.ahtLimitSeconds,
@@ -2027,21 +2029,23 @@ class _VoicePanelState extends State<VoicePanel> {
             hasCustomerSpoken: _customerTranscript.isNotEmpty,
             problem: _customerTranscript.isNotEmpty
                 ? (_typeCastService.openRouterAPI.chosenSimulation['problem'] ??
-                      '')
+                    '')
                 : '',
-            sector:
-                _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
+            sector: _typeCastService.openRouterAPI.chosenSimulation['sector'] ??
                 widget.sector,
             traineeTurnCount: _retainedAudioPaths.length,
             isChatChannel: false,
           ),
-        const Divider(height: 1, color: Color(0xFF2A313A)),
+        Divider(height: 1, color: AppColors.border(context)),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
             child: Column(
               children: [
-                Expanded(child: _buildConversationHistory()),
+                Expanded(
+                    child: _buildConversationHistory(
+                  context,
+                )),
                 const SizedBox(height: 8),
                 _buildLiveTurnStrip(
                   isTraineeSpeaking: isTraineeSpeaking,
@@ -2071,16 +2075,16 @@ class _VoicePanelState extends State<VoicePanel> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isTraineeSpeaking
-                          ? const Color(0xFF7F1D1D)
+                          ? AppColors.errorStrongText()
                           : micEnabled
-                          ? const Color(0xFF14532D)
-                          : const Color(0xFF1F2937),
+                              ? AppColors.nextTint(context)
+                              : AppColors.chipBg(context),
                       border: Border.all(
                         color: isTraineeSpeaking
-                            ? const Color(0xFFEF4444)
+                            ? AppColors.errorStrongText()
                             : micEnabled
-                            ? const Color(0xFF4ADE80)
-                            : const Color(0xFF4B5563),
+                                ? AppColors.successText()
+                                : AppColors.borderStrong(context),
                         width: 1.5,
                       ),
                     ),
@@ -2088,22 +2092,23 @@ class _VoicePanelState extends State<VoicePanel> {
                       isTraineeSpeaking ? Icons.stop_rounded : Icons.mic,
                       size: 28,
                       color: isTraineeSpeaking
-                          ? const Color(0xFFFCA5A5)
+                          ? AppColors.errorText()
                           : micEnabled
-                          ? const Color(0xFF86EFAC)
-                          : const Color(0xFF6B7280),
+                              ? AppColors.successText()
+                              : AppColors.textMuted(context),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 isTraineeSpeaking
                     ? 'Tap to stop'
                     : micEnabled
-                    ? 'Tap to speak'
-                    : '',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                        ? 'Tap to speak'
+                        : '',
+                style: TextStyle(
+                    fontSize: 11, color: AppColors.textMuted(context)),
               ),
             ],
           ),
@@ -2112,26 +2117,27 @@ class _VoicePanelState extends State<VoicePanel> {
     );
   }
 
-  Widget _buildConversationHistory() {
-    final history = _coachMessages
-        .where((m) => m.text.trim().isNotEmpty)
-        .toList();
+  Widget _buildConversationHistory(
+    BuildContext context,
+  ) {
+    final history =
+        _coachMessages.where((m) => m.text.trim().isNotEmpty).toList();
     if (history.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: const Color(0xFF12171E),
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2A313A)),
+          border: Border.all(color: AppColors.border(context)),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
             'Conversation history will appear here as the call progresses.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
               height: 1.35,
             ),
           ),
@@ -2141,9 +2147,9 @@ class _VoicePanelState extends State<VoicePanel> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF12171E),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A313A)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: ListView.builder(
         controller: _historyScrollController,
@@ -2153,9 +2159,10 @@ class _VoicePanelState extends State<VoicePanel> {
           final msg = history[index];
           final isTrainee = msg.isTrainee;
           final accent =
-              isTrainee ? const Color(0xFF60A5FA) : const Color(0xFF4ADE80);
+              isTrainee ? AppColors.secondaryText() : AppColors.successText();
           return Padding(
-            padding: EdgeInsets.only(bottom: index == history.length - 1 ? 0 : 10),
+            padding:
+                EdgeInsets.only(bottom: index == history.length - 1 ? 0 : 10),
             child: Column(
               crossAxisAlignment:
                   isTrainee ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -2168,7 +2175,7 @@ class _VoicePanelState extends State<VoicePanel> {
                     color: accent,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Container(
                   constraints: const BoxConstraints(maxWidth: 520),
                   padding: const EdgeInsets.symmetric(
@@ -2177,20 +2184,20 @@ class _VoicePanelState extends State<VoicePanel> {
                   ),
                   decoration: BoxDecoration(
                     color: isTrainee
-                        ? const Color(0xFF1E3A5F)
-                        : const Color(0xFF1F2937),
+                        ? AppColors.completeTint(context)
+                        : AppColors.chipBg(context),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isTrainee
-                          ? const Color(0xFF3B82F6)
-                          : const Color(0xFF374151),
+                          ? AppColors.secondaryText()
+                          : AppColors.borderStrong(context),
                     ),
                   ),
                   child: Text(
                     SimulationCoach.stripInternalFields(msg.text.trim()),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFFE5E7EB),
+                      color: AppColors.textSecondary(context),
                       height: 1.35,
                     ),
                   ),
@@ -2215,33 +2222,34 @@ class _VoicePanelState extends State<VoicePanel> {
     if (isResolved) {
       liveLabel = 'Status';
       liveText = 'Call resolved';
-      accent = const Color(0xFF4ADE80);
+      accent = AppColors.successText();
     } else if (isTraineeSpeaking) {
       liveLabel = 'You (live)';
-      liveText = _traineeTranscript.isEmpty ? 'Listening...' : _traineeTranscript;
-      accent = const Color(0xFF60A5FA);
+      liveText =
+          _traineeTranscript.isEmpty ? 'Listening...' : _traineeTranscript;
+      accent = AppColors.secondaryText();
     } else if (isProcessing) {
       liveLabel = 'Status';
       liveText = 'Processing your reply...';
-      accent = const Color(0xFFF59E0B);
+      accent = AppColors.warningText();
     } else if (isCustomerSpeaking && _customerTranscript.isNotEmpty) {
       liveLabel = 'Customer (live)';
       liveText = SimulationCoach.stripInternalFields(_customerTranscript);
-      accent = const Color(0xFF4ADE80);
+      accent = AppColors.successText();
     } else if (!_traineeHasSpoken && _customerTranscript.isEmpty) {
       liveLabel = 'You';
       liveText = 'Your turn: deliver the opening spiel';
-      accent = const Color(0xFF60A5FA);
+      accent = AppColors.secondaryText();
     } else {
       liveLabel = 'Status';
       liveText = 'Your turn to speak';
-      accent = const Color(0xFF9CA3AF);
+      accent = AppColors.textMuted(context);
     }
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF12171E),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.5),
       ),
@@ -2261,9 +2269,9 @@ class _VoicePanelState extends State<VoicePanel> {
             liveText,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Color(0xFFE5E7EB),
+              color: AppColors.textSecondary(context),
               height: 1.35,
             ),
           ),
@@ -2283,10 +2291,10 @@ class _VoicePanelState extends State<VoicePanel> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF12171E),
+        color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: active ? accent : const Color(0xFF2A313A),
+          color: active ? accent : AppColors.border(context),
           width: active ? 1.5 : 1,
         ),
       ),
@@ -2301,7 +2309,7 @@ class _VoicePanelState extends State<VoicePanel> {
               color: accent,
             ),
           ),
-          const SizedBox(height: 6),
+          SizedBox(height: 6),
           Expanded(
             child: SingleChildScrollView(
               child: Text(
@@ -2309,7 +2317,9 @@ class _VoicePanelState extends State<VoicePanel> {
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.4,
-                  color: empty ? const Color(0xFF9CA3AF) : Colors.white,
+                  color: empty
+                      ? AppColors.textMuted(context)
+                      : AppColors.textPrimary(context),
                 ),
               ),
             ),
@@ -2319,7 +2329,9 @@ class _VoicePanelState extends State<VoicePanel> {
     );
   }
 
-  Widget _buildOnHold() {
+  Widget _buildOnHold(
+    BuildContext context,
+  ) {
     final waitMin = _holdSeconds ~/ 60;
     final waitSec = _holdSeconds % 60;
     final waitLabel =
@@ -2328,32 +2340,32 @@ class _VoicePanelState extends State<VoicePanel> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(
+        Icon(
           Icons.pause_circle_outline,
           size: 56,
-          color: Color(0xFFF59E0B),
+          color: AppColors.warningText(),
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'Call On Hold',
           style: TextStyle(
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontSize: 16,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: waitWarm
-                ? const Color(0x33F59E0B)
-                : const Color(0xFF1F2937),
+                ? AppColors.warningTint(context)
+                : AppColors.chipBg(context),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: waitWarm
-                  ? const Color(0xFFF59E0B)
-                  : const Color(0xFF374151),
+                  ? AppColors.warningText()
+                  : AppColors.borderStrong(context),
             ),
           ),
           child: Text(
@@ -2362,27 +2374,27 @@ class _VoicePanelState extends State<VoicePanel> {
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: waitWarm
-                  ? const Color(0xFFFBBF24)
-                  : const Color(0xFFD1D5DB),
+                  ? AppColors.warningText()
+                  : AppColors.textSecondary(context),
             ),
           ),
         ),
         const SizedBox(height: 12),
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(horizontal: 24),
           child: Text(
             'Use Account Lookup or the sector guide, then resume the call.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           ),
         ),
         if (waitWarm)
-          const Padding(
+          Padding(
             padding: EdgeInsets.fromLTRB(24, 12, 24, 0),
             child: Text(
               'Hold is running long. Finish the tool work and resume soon.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFFFBBF24), fontSize: 12),
+              style: TextStyle(color: AppColors.warningText(), fontSize: 12),
             ),
           ),
       ],
@@ -2392,14 +2404,13 @@ class _VoicePanelState extends State<VoicePanel> {
   String _acwSuggestedNote() {
     final pack = _sessionController.mission.pack;
     final done = _sessionController.mission.state.done.toList();
-    final name =
-        _typeCastService.openRouterAPI.chosenSimulation['name'] ??
+    final name = _typeCastService.openRouterAPI.chosenSimulation['name'] ??
         pack?.customerName ??
         'Customer';
     final problem =
         _typeCastService.openRouterAPI.chosenSimulation['problem'] ??
-        pack?.problemSummary ??
-        '';
+            pack?.problemSummary ??
+            '';
     final branch = _sessionController.mission.evidence.branch;
     final parts = <String>[
       'Customer: $name.',
@@ -2461,7 +2472,9 @@ class _VoicePanelState extends State<VoicePanel> {
     _acwPrepared = true;
   }
 
-  Widget _buildAfterCallWork() {
+  Widget _buildAfterCallWork(
+    BuildContext context,
+  ) {
     if (!_acwPrepared) {
       _prepareAcwForm();
     }
@@ -2473,9 +2486,8 @@ class _VoicePanelState extends State<VoicePanel> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: constraints.maxHeight > 32
-                  ? constraints.maxHeight - 32
-                  : 0,
+              minHeight:
+                  constraints.maxHeight > 32 ? constraints.maxHeight - 32 : 0,
               maxWidth: 640,
             ),
             child: Align(
@@ -2490,65 +2502,68 @@ class _VoicePanelState extends State<VoicePanel> {
                     height: 50,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF191919),
+                      color: AppColors.card(context),
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF303030)),
+                      border:
+                          Border.all(color: AppColors.borderStrong(context)),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.edit_note,
                       size: 32,
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Text(
+                  Text(
                     'After Call Work',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontSize: 20,
                       fontWeight: FontWeight.w600,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Text(
                     'Use the suggested disposition and note from this case. Edit if needed, then submit.',
                     style: textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFFF4F3F3),
+                      color: AppColors.textPrimary(context),
                       fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF15201A),
+                      color: AppColors.nextTint(context),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF2E4A38)),
+                      border: Border.all(color: AppColors.nextTint(context)),
                     ),
                     child: Text(
                       'Suggested from this case: $_acwDisposition. $suggested',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.35,
-                        color: Color(0xFFD7E8DB),
+                        color: AppColors.primaryText(),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const Text(
+                  Text(
                     'Disposition',
-                    style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 12),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: _acwDisposition,
-                    dropdownColor: const Color(0xFF1A1F26),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    dropdownColor: AppColors.card(context),
+                    style: TextStyle(
+                        color: AppColors.textPrimary(context), fontSize: 14),
                     decoration: InputDecoration(
                       filled: true,
-                      fillColor: const Color(0xFF1A1A1A),
+                      fillColor: AppColors.elevated(context),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -2579,26 +2594,27 @@ class _VoicePanelState extends State<VoicePanel> {
                   TextField(
                     controller: _reportController,
                     maxLines: 4,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: AppColors.textPrimary(context)),
                     decoration: InputDecoration(
                       hintText: 'Summary, next action, account notes...',
                       hintStyle: textTheme.bodyMedium?.copyWith(
                         fontSize: 12,
-                        color: const Color(0xFFBBBBBB),
+                        color: AppColors.textMuted(context),
                       ),
-                      border: const OutlineInputBorder(
+                      border: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)),
                       ),
-                      enabledBorder: const OutlineInputBorder(
+                      enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)),
                         borderSide: BorderSide(
-                          color: Color(0xFFBBBBBB),
+                          color: AppColors.textMuted(context),
                           width: .5,
                         ),
                       ),
-                      focusedBorder: const OutlineInputBorder(
+                      focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(10)),
-                        borderSide: BorderSide(color: Colors.white, width: 1),
+                        borderSide: BorderSide(
+                            color: AppColors.textPrimary(context), width: 1),
                       ),
                     ),
                   ),
@@ -2620,8 +2636,8 @@ class _VoicePanelState extends State<VoicePanel> {
                       widget.onSendReport?.call();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2563EB),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.secondaryText(),
+                      foregroundColor: AppColors.onPrimary(context),
                       padding: const EdgeInsets.symmetric(vertical: 20),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),

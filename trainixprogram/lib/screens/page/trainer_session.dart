@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
 import 'package:trainixprogram/components/button/create_button.dart';
@@ -163,9 +164,9 @@ class _TrainerSessionState extends State<TrainerSession> {
                 ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  color: const Color.fromARGB(240, 21, 21, 21),
+                  color: AppColors.panel(context),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 49, 48, 48),
+                    color: AppColors.borderIdle(context),
                   ),
                 ),
                 child: Column(
@@ -175,14 +176,14 @@ class _TrainerSessionState extends State<TrainerSession> {
                     Text(
                       'Private room',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontSize: context.responsiveFont(5),
-                      ),
+                            fontSize: context.responsiveFont(5),
+                          ),
                     ),
                     const Gap(8),
                     Text(
                       'Enter the room code shared by your trainer to join "${session.name}".',
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 13,
                       ),
                     ),
@@ -192,8 +193,8 @@ class _TrainerSessionState extends State<TrainerSession> {
                       const Gap(8),
                       Text(
                         error!,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8A80),
+                        style: TextStyle(
+                          color: AppColors.errorText(),
                           fontSize: 12,
                         ),
                       ),
@@ -308,7 +309,9 @@ class _TrainerSessionState extends State<TrainerSession> {
                       children: [
                         Text(
                           'TRAINIX',
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
                               ?.copyWith(fontSize: context.responsiveFont(7)),
                         ),
                         const Gap(40),
@@ -356,10 +359,10 @@ class _TrainerSessionState extends State<TrainerSession> {
                 ),
               ),
             ),
-            const VerticalDivider(
+            VerticalDivider(
               width: .5,
               thickness: .3,
-              color: Color.fromARGB(255, 105, 106, 106),
+              color: AppColors.textMuted(context),
             ),
             Expanded(
               child: Padding(
@@ -373,23 +376,23 @@ class _TrainerSessionState extends State<TrainerSession> {
                     Text(
                       'Trainer Session',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontSize: context.responsiveFont(7),
-                      ),
+                            fontSize: context.responsiveFont(7),
+                          ),
                     ),
                     const Gap(8),
                     Text(
                       'Join a real 1:1 coaching room with your trainer. Private rooms need a code; public rooms show theirs.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white54,
-                        fontSize: 13,
-                      ),
+                            color: AppColors.textMuted(context),
+                            fontSize: 13,
+                          ),
                     ),
                     const Gap(28),
                     Text(
                       'Join by room code',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontSize: context.responsiveFont(4.5),
-                      ),
+                            fontSize: context.responsiveFont(4.5),
+                          ),
                     ),
                     const Gap(12),
                     Row(
@@ -409,8 +412,8 @@ class _TrainerSessionState extends State<TrainerSession> {
                       const Gap(10),
                       Text(
                         _joinError!,
-                        style: const TextStyle(
-                          color: Color(0xFFFF8A80),
+                        style: TextStyle(
+                          color: AppColors.errorText(),
                           fontSize: 13,
                         ),
                       ),
@@ -420,8 +423,8 @@ class _TrainerSessionState extends State<TrainerSession> {
                       Text(
                         'Upcoming',
                         style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontSize: context.responsiveFont(4),
-                        ),
+                              fontSize: context.responsiveFont(4),
+                            ),
                       ),
                       const Gap(10),
                       SizedBox(
@@ -442,12 +445,12 @@ class _TrainerSessionState extends State<TrainerSession> {
                                 width: 220,
                                 padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: const Color.fromARGB(180, 21, 21, 21),
+                                  color: AppColors.panel(context),
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                     color: open
-                                        ? const Color(0xFF0D82FE)
-                                        : const Color.fromARGB(255, 49, 48, 48),
+                                        ? AppColors.secondaryText()
+                                        : AppColors.borderIdle(context),
                                   ),
                                 ),
                                 child: Column(
@@ -469,8 +472,8 @@ class _TrainerSessionState extends State<TrainerSession> {
                                           : 'Starts $when',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white54,
+                                      style: TextStyle(
+                                        color: AppColors.textMuted(context),
                                         fontSize: 11,
                                       ),
                                     ),
@@ -481,8 +484,8 @@ class _TrainerSessionState extends State<TrainerSession> {
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         color: open
-                                            ? const Color(0xFF8AFB09)
-                                            : Colors.white38,
+                                            ? AppColors.primaryText()
+                                            : AppColors.textMuted(context),
                                         fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
@@ -501,7 +504,9 @@ class _TrainerSessionState extends State<TrainerSession> {
                       children: [
                         Text(
                           'Available rooms',
-                          style: Theme.of(context).textTheme.titleSmall
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleSmall
                               ?.copyWith(fontSize: context.responsiveFont(4.5)),
                         ),
                         TextButton.icon(
@@ -509,7 +514,7 @@ class _TrainerSessionState extends State<TrainerSession> {
                           icon: const Icon(Icons.refresh_rounded, size: 18),
                           label: const Text('Refresh'),
                           style: TextButton.styleFrom(
-                            foregroundColor: Colors.white70,
+                            foregroundColor: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -518,24 +523,36 @@ class _TrainerSessionState extends State<TrainerSession> {
                     Expanded(
                       child: _rooms.isEmpty
                           ? const _EmptyInvites()
-                          : GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    mainAxisSpacing: 15,
-                                    crossAxisSpacing: 15,
-                                    childAspectRatio: 1.05,
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final maxW = constraints.maxWidth;
+                                final extent = maxW >= 1400
+                                    ? 300.0
+                                    : maxW >= 1100
+                                        ? 320.0
+                                        : maxW >= 800
+                                            ? 340.0
+                                            : maxW;
+                                return GridView.builder(
+                                  gridDelegate:
+                                      SliverGridDelegateWithMaxCrossAxisExtent(
+                                    maxCrossAxisExtent: extent,
+                                    mainAxisSpacing: 14,
+                                    crossAxisSpacing: 14,
+                                    mainAxisExtent: 210,
                                   ),
-                              itemCount: _rooms.length,
-                              itemBuilder: (_, index) {
-                                final session = _rooms[index];
-                                final forMe = session.isDesignatedFor(
-                                  ProfileData.displayName,
-                                );
-                                return _RoomCard(
-                                  session: session,
-                                  highlighted: forMe,
-                                  onTap: () => _onRoomTap(session),
+                                  itemCount: _rooms.length,
+                                  itemBuilder: (_, index) {
+                                    final session = _rooms[index];
+                                    final forMe = session.isDesignatedFor(
+                                      ProfileData.displayName,
+                                    );
+                                    return _RoomCard(
+                                      session: session,
+                                      highlighted: forMe,
+                                      onTap: () => _onRoomTap(session),
+                                    );
+                                  },
                                 );
                               },
                             ),
@@ -563,21 +580,27 @@ class _EmptyInvites extends StatelessWidget {
           Icon(
             Icons.meeting_room_outlined,
             size: 48,
-            color: Colors.white.withValues(alpha: 0.25),
+            color: AppColors.textMuted(context),
           ),
           const Gap(16),
           Text(
             'No rooms available yet',
             style: Theme.of(
               context,
-            ).textTheme.titleSmall?.copyWith(color: Colors.white54),
+            )
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: AppColors.textMuted(context)),
           ),
           const Gap(8),
           Text(
             'Ask your trainer for a room code, or wait for an invite.',
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.white38),
+            )
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textMuted(context)),
           ),
         ],
       ),
@@ -599,7 +622,7 @@ class _RoomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final info = computeRoomStatus(session);
-    final tone = _toneColor(info.tone);
+    final tone = _toneColor(context, info.tone);
 
     return GestureDetector(
       onTap: onTap,
@@ -609,14 +632,14 @@ class _RoomCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
             color: highlighted
-                ? const Color(0xFF0D82FE)
-                : const Color.fromARGB(255, 49, 48, 48),
+                ? AppColors.secondaryText()
+                : AppColors.borderIdle(context),
             width: highlighted ? 1.5 : 0.3,
           ),
           boxShadow: highlighted
               ? [
                   BoxShadow(
-                    color: const Color(0xFF0D82FE).withValues(alpha: 0.25),
+                    color: AppColors.secondaryText().withValues(alpha: 0.25),
                     blurRadius: 12,
                     spreadRadius: 1,
                   ),
@@ -641,13 +664,20 @@ class _RoomCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(6),
                         border: Border.all(color: tone.withValues(alpha: 0.45)),
                       ),
-                      child: Text(
-                        info.label,
-                        style: TextStyle(
-                          color: tone,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.circle, size: 8, color: tone),
+                          const Gap(5),
+                          Text(
+                            info.label,
+                            style: TextStyle(
+                              color: tone,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Gap(6),
@@ -658,13 +688,14 @@ class _RoomCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0D82FE).withValues(alpha: 0.2),
+                          color:
+                              AppColors.secondaryText().withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text(
+                        child: Text(
                           'For you',
                           style: TextStyle(
-                            color: Color(0xFF0D82FE),
+                            color: AppColors.secondaryText(),
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
@@ -674,7 +705,7 @@ class _RoomCard extends StatelessWidget {
                     Icon(
                       session.isPrivate ? Icons.lock_outline : Icons.public,
                       size: 14,
-                      color: Colors.white38,
+                      color: AppColors.textMuted(context),
                     ),
                   ],
                 ),
@@ -687,66 +718,122 @@ class _RoomCard extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const Gap(4),
-                Text(
-                  'Trainer: ${session.trainerName}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (session.isPublic) ...[
-                  const Gap(4),
-                  Text(
-                    'Code: ${session.id}',
-                    style: const TextStyle(
-                      color: Colors.white38,
-                      fontSize: 11,
-                      fontFamily: 'monospace',
-                    ),
-                  ),
-                ] else ...[
-                  const Gap(4),
-                  const Text(
-                    'Code: •••••• (enter to join)',
-                    style: TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
-                if (session.description != null &&
-                    session.description!.isNotEmpty) ...[
-                  const Gap(6),
-                  Text(
-                    session.description!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(color: Colors.white38, fontSize: 11),
-                  ),
-                ],
                 const Gap(6),
-                Text(
-                  info.detail,
-                  style: TextStyle(
-                    color: tone.withValues(alpha: 0.9),
-                    fontSize: 11,
-                  ),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.person_outline_rounded,
+                      size: 13,
+                      color: AppColors.textMuted(context),
+                    ),
+                    const Gap(4),
+                    Expanded(
+                      child: Text(
+                        session.trainerName,
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 const Gap(4),
-                Text(
-                  'Created ${formatCreatedAt(session.createdAt)}',
-                  style: const TextStyle(color: Colors.white24, fontSize: 10),
+                Row(
+                  children: [
+                    Icon(
+                      session.isPrivate
+                          ? Icons.vpn_key_outlined
+                          : Icons.tag_rounded,
+                      size: 13,
+                      color: AppColors.textMuted(context),
+                    ),
+                    const Gap(4),
+                    Expanded(
+                      child: Text(
+                        session.isPublic
+                            ? session.id
+                            : '•••••• (enter to join)',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 11,
+                          fontFamily: session.isPublic ? 'monospace' : null,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.group_outlined,
+                      size: 13,
+                      color: AppColors.textMuted(context),
+                    ),
+                    const Gap(4),
+                    Expanded(
+                      child: Text(
+                        info.detail,
+                        style: TextStyle(
+                          color: tone.withValues(alpha: 0.95),
+                          fontSize: 11,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const Gap(4),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.schedule_outlined,
+                      size: 12,
+                      color: AppColors.textMuted(context),
+                    ),
+                    const Gap(4),
+                    Expanded(
+                      child: Text(
+                        'Created ${formatCreatedAt(session.createdAt)}',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 10,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
                 const Spacer(),
                 Align(
                   alignment: Alignment.centerRight,
-                  child: Text(
-                    session.isPrivate ? 'Tap · enter code' : 'Tap to join',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.45),
-                      fontSize: 11,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        session.isPrivate
+                            ? Icons.keyboard_outlined
+                            : Icons.login_rounded,
+                        size: 13,
+                        color: AppColors.textMuted(context),
+                      ),
+                      const Gap(4),
+                      Text(
+                        session.isPrivate ? 'Tap · enter code' : 'Tap to join',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -757,18 +844,18 @@ class _RoomCard extends StatelessWidget {
     );
   }
 
-  Color _toneColor(ColorTone tone) {
+  Color _toneColor(BuildContext context, ColorTone tone) {
     switch (tone) {
       case ColorTone.green:
-        return const Color(0xFF8AFB09);
+        return AppColors.primaryText();
       case ColorTone.blue:
-        return const Color(0xFF0D82FE);
+        return AppColors.secondaryText();
       case ColorTone.amber:
-        return const Color(0xFFFFB74D);
+        return AppColors.warningText();
       case ColorTone.red:
-        return const Color(0xFFFF8A80);
+        return AppColors.errorText();
       case ColorTone.neutral:
-        return Colors.white54;
+        return AppColors.textMuted(context);
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/models/scoring_transparency.dart';
@@ -188,7 +189,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
     );
 
     if (items.isEmpty) return null;
-    final earned = items.fold<double>(0.0, (s, i) => s + (i.earned ? i.weight : 0.0));
+    final earned =
+        items.fold<double>(0.0, (s, i) => s + (i.earned ? i.weight : 0.0));
     final maxPts = items.fold<double>(0.0, (s, i) => s + i.weight);
     if (maxPts <= 0) return null;
     final percent = ((earned / maxPts) * 100).clamp(0.0, 100.0).toDouble();
@@ -218,9 +220,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
   Widget _constrainWide(Widget child) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final maxW = constraints.maxWidth > 1680
-            ? 1680.0
-            : constraints.maxWidth;
+        final maxW =
+            constraints.maxWidth > 1400 ? 1400.0 : constraints.maxWidth;
         return Align(
           alignment: Alignment.topCenter,
           child: SizedBox(width: maxW, child: child),
@@ -251,9 +252,8 @@ class _MockCallScreenState extends State<MockCallScreen> {
   bool _tryStartNewInteraction(String channel) {
     if (_sessionEnding) return false;
 
-    final otherChannelOccupied = channel == 'voice'
-        ? _chatHasActiveCustomer
-        : _voiceHasActiveCustomer;
+    final otherChannelOccupied =
+        channel == 'voice' ? _chatHasActiveCustomer : _voiceHasActiveCustomer;
     final otherOccupiedCount = otherChannelOccupied ? 1 : 0;
 
     //completed so far, plus the other channel's in-flight customer, if there's
@@ -406,24 +406,18 @@ class _MockCallScreenState extends State<MockCallScreen> {
         sectorKnowledgeScore: scores[8],
         closingSpielScore: scores[9],
         overallScore: double.parse(overall.toStringAsFixed(1)),
-        typingSpeedScore: channel == 'chat'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
-        errorRateAccuracyScore: channel == 'chat'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
-        responseConsistencyScore: channel == 'chat'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
-        paceAndSpeedScore: channel == 'voice'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
-        pronunciationClarityScore: channel == 'voice'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
-        fillerWordUsageScore: channel == 'voice'
-            ? 6.0 + random.nextDouble() * 3
-            : null,
+        typingSpeedScore:
+            channel == 'chat' ? 6.0 + random.nextDouble() * 3 : null,
+        errorRateAccuracyScore:
+            channel == 'chat' ? 6.0 + random.nextDouble() * 3 : null,
+        responseConsistencyScore:
+            channel == 'chat' ? 6.0 + random.nextDouble() * 3 : null,
+        paceAndSpeedScore:
+            channel == 'voice' ? 6.0 + random.nextDouble() * 3 : null,
+        pronunciationClarityScore:
+            channel == 'voice' ? 6.0 + random.nextDouble() * 3 : null,
+        fillerWordUsageScore:
+            channel == 'voice' ? 6.0 + random.nextDouble() * 3 : null,
         categoryNotes: {
           'Opening Spiel':
               'Practice greeting, agent and company ID, and a clear purpose for this channel.',
@@ -608,8 +602,7 @@ class _MockCallScreenState extends State<MockCallScreen> {
       return;
     }
 
-    final seconds =
-        _postCallBreakMinSeconds +
+    final seconds = _postCallBreakMinSeconds +
         Random().nextInt(
           _postCallBreakMaxSeconds - _postCallBreakMinSeconds + 1,
         );
@@ -733,9 +726,9 @@ class _MockCallScreenState extends State<MockCallScreen> {
 
   Widget _buildVoiceBottomBar(bool isOnHold, bool callInProgress) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Color.fromARGB(255, 105, 106, 106), width: .3),
+          top: BorderSide(color: AppColors.textMuted(context), width: .3),
         ),
       ),
       child: Container(
@@ -815,10 +808,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
                       flex: showChat ? 46 : 100,
                       child: Container(
                         decoration: showChat
-                            ? const BoxDecoration(
+                            ? BoxDecoration(
                                 border: Border(
                                   right: BorderSide(
-                                    color: Color(0xFF2A313A),
+                                    color: AppColors.border(context),
                                     width: 1,
                                   ),
                                 ),
@@ -835,11 +828,11 @@ class _MockCallScreenState extends State<MockCallScreen> {
                                   14,
                                   6,
                                 ),
-                                color: const Color(0xFF12171E),
-                                child: const Text(
+                                color: AppColors.surface(context),
+                                child: Text(
                                   'Voice',
                                   style: TextStyle(
-                                    color: Color(0xFF9CA3AF),
+                                    color: AppColors.textMuted(context),
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     letterSpacing: 0.4,
@@ -860,11 +853,11 @@ class _MockCallScreenState extends State<MockCallScreen> {
                           if (showVoice)
                             Container(
                               padding: const EdgeInsets.fromLTRB(14, 8, 14, 6),
-                              color: const Color(0xFF12171E),
-                              child: const Text(
+                              color: AppColors.surface(context),
+                              child: Text(
                                 'Non-Voice',
                                 style: TextStyle(
-                                  color: Color(0xFF9CA3AF),
+                                  color: AppColors.textMuted(context),
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0.4,
@@ -893,10 +886,10 @@ class _MockCallScreenState extends State<MockCallScreen> {
     VoidCallback? onTap,
   }) {
     final Color color = !enabled
-        ? const Color(0xFF6B7280)
+        ? AppColors.textMuted(context)
         : isEndCall
-        ? const Color(0xFFEF4444)
-        : const Color(0xFFE5E7EB);
+            ? AppColors.errorStrongText()
+            : AppColors.textSecondary(context);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -924,17 +917,17 @@ class _MockCallScreenState extends State<MockCallScreen> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
+            Icon(
               Icons.timer_outlined,
               size: 28,
-              color: Color(0xFFE5E7EB),
+              color: AppColors.textSecondary(context),
             ),
             Text(
               _formatElapsed(seconds),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
-                color: Color(0xFFE5E7EB),
+                color: AppColors.textSecondary(context),
               ),
             ),
           ],

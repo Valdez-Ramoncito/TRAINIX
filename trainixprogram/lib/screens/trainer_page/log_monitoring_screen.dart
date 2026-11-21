@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
 import 'package:trainixprogram/components/button/create_button.dart';
@@ -10,6 +11,8 @@ import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/models/session_score.dart';
+import 'package:trainixprogram/services/training_progress_repository.dart';
+import 'package:trainixprogram/screens/trainer_page/trainee_statistics_screen.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
 import 'package:trainixprogram/widgets/user_facing_messages.dart';
 
@@ -82,43 +85,50 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
     final avgRating = history.isEmpty
         ? 0.0
         : history
-                  .where((e) => e.rating != null)
-                  .map((e) => e.rating!)
-                  .fold<int>(0, (a, b) => a + b) /
-              (history.where((e) => e.rating != null).isEmpty
-                  ? 1
-                  : history.where((e) => e.rating != null).length);
+                .where((e) => e.rating != null)
+                .map((e) => e.rating!)
+                .fold<int>(0, (a, b) => a + b) /
+            (history.where((e) => e.rating != null).isEmpty
+                ? 1
+                : history.where((e) => e.rating != null).length);
 
-    final body = Padding(
-      padding: EdgeInsets.fromLTRB(
-        widget.embedded ? 20 : 24,
-        widget.embedded ? 8 : 18,
-        widget.embedded ? 20 : 24,
-        widget.embedded ? 8 : 14,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!widget.embedded) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Log Monitoring',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontSize: context.responsiveFont(6),
-                        ),
-                      ),
+    final body = Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            widget.embedded ? 20 : 24,
+            widget.embedded ? 8 : 18,
+            widget.embedded ? 20 : 24,
+            widget.embedded ? 8 : 14,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!widget.embedded) ...[
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Log Monitoring',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  fontSize: context.responsiveFont(6),
+                                ),
+                          ),
                       const Gap(4),
                       Text(
                         'Review practice sessions, live coaching rooms, and recent trainee activity.',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
+                              color: AppColors.textMuted(context),
+                              fontSize: 12,
+                            ),
                       ),
                     ],
                   ),
@@ -127,7 +137,11 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
                   content: ScreenHelpCatalog.logMonitoring,
                 ),
                 const Gap(8),
-                CreateButton(text: 'Refresh', onTap: () => setState(() {})),
+                CreateButton(
+                  text: 'Refresh',
+                  icon: Icons.refresh_rounded,
+                  onTap: () => setState(() {}),
+                ),
               ],
             ),
             const Gap(16),
@@ -139,36 +153,41 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
               final cols = maxW >= 1100
                   ? 5
                   : maxW >= 800
-                  ? 4
-                  : maxW >= 560
-                  ? 3
-                  : 2;
+                      ? 4
+                      : maxW >= 560
+                          ? 3
+                          : 2;
               final cardW = (maxW - gap * (cols - 1)) / cols;
               final cards = [
                 _StatCard(
                   label: 'Ended sessions',
                   value: '$endedCount',
-                  tone: const Color(0xFF0D82FE),
+                  icon: Icons.event_available_outlined,
+                  tone: AppColors.secondaryText(),
                 ),
                 _StatCard(
                   label: 'Follow-ups',
                   value: '$followUps',
-                  tone: const Color(0xFFFFB74D),
+                  icon: Icons.flag_outlined,
+                  tone: AppColors.warningText(),
                 ),
                 _StatCard(
                   label: 'Avg rating',
                   value: history.isEmpty ? '-' : avgRating.toStringAsFixed(1),
-                  tone: const Color(0xFF8AFB09),
+                  icon: Icons.star_outline_rounded,
+                  tone: AppColors.primaryText(),
                 ),
                 _StatCard(
                   label: 'Activity today',
                   value: '$traineeToday',
-                  tone: Colors.white70,
+                  icon: Icons.today_outlined,
+                  tone: AppColors.textSecondary(context),
                 ),
                 _StatCard(
                   label: widget.showAllRoles ? 'All logs' : 'Trainee logs',
                   value: '${scoped.length}',
-                  tone: Colors.white54,
+                  icon: Icons.receipt_long_outlined,
+                  tone: AppColors.textMuted(context),
                 ),
               ];
               return Wrap(
@@ -187,20 +206,30 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
             children: [
               _TabChip(
                 label: 'Overview',
+                icon: Icons.dashboard_outlined,
                 selected: _tab == 0,
                 onTap: () => setState(() => _tab = 0),
               ),
               const Gap(8),
               _TabChip(
                 label: 'Live sessions',
+                icon: Icons.sensors_rounded,
                 selected: _tab == 1,
                 onTap: () => setState(() => _tab = 1),
               ),
               const Gap(8),
               _TabChip(
                 label: widget.showAllRoles ? 'Activity logs' : 'Trainee logs',
+                icon: Icons.history_rounded,
                 selected: _tab == 2,
                 onTap: () => setState(() => _tab = 2),
+              ),
+              const Gap(8),
+              _TabChip(
+                label: 'Trainee progress',
+                icon: Icons.school_outlined,
+                selected: _tab == 3,
+                onTap: () => setState(() => _tab = 3),
               ),
             ],
           ),
@@ -213,33 +242,41 @@ class _LogMonitoringScreenState extends State<LogMonitoringScreen> {
                     actors: actors.length - 1,
                   )
                 : _tab == 1
-                ? _LiveSessionsTab(entries: history)
-                : _TraineeLogsTab(
-                    logs: logs,
-                    actors: actors,
-                    actorFilter: _actorFilter,
-                    categoryFilter: _logFilter,
-                    roleFilter: widget.showAllRoles ? _roleFilter : null,
-                    onActor: (v) => setState(() => _actorFilter = v),
-                    onCategory: (v) => setState(() => _logFilter = v),
-                    onRole: widget.showAllRoles
-                        ? (v) => setState(() => _roleFilter = v)
-                        : null,
-                  ),
+                    ? _LiveSessionsTab(entries: history)
+                    : _tab == 2
+                        ? _TraineeLogsTab(
+                            logs: logs,
+                            actors: actors,
+                            actorFilter: _actorFilter,
+                            categoryFilter: _logFilter,
+                            roleFilter:
+                                widget.showAllRoles ? _roleFilter : null,
+                            onActor: (v) => setState(() => _actorFilter = v),
+                            onCategory: (v) =>
+                                setState(() => _logFilter = v),
+                            onRole: widget.showAllRoles
+                                ? (v) => setState(() => _roleFilter = v)
+                                : null,
+                          )
+                        : const _TraineeProgressTab(),
           ),
-          if (!widget.embedded) ...[
-            const Gap(10),
-            TrainingBackButton(
-              expand: false,
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const HomeScreenTrainer()),
-                );
-              },
-            ),
-          ],
-        ],
+              if (!widget.embedded) ...[
+                const Gap(10),
+                TrainingBackButton(
+                  expand: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HomeScreenTrainer(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
 
@@ -253,37 +290,59 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.tone,
+    this.icon,
   });
 
   final String label;
   final String value;
   final Color tone;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final icon = this.icon;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(180, 21, 21, 21),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+        border: Border.all(color: AppColors.borderIdle(context)),
+        boxShadow: AppColors.cardShadow(context, blur: 8),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: tone,
+          if (icon != null) ...[
+            Container(
+              padding: const EdgeInsets.all(7),
+              decoration: BoxDecoration(
+                color: tone.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 16, color: tone),
             ),
-          ),
-          const Gap(4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white54, fontSize: 11),
+            const Gap(10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: tone,
+                  ),
+                ),
+                const Gap(2),
+                Text(
+                  label,
+                  style: TextStyle(
+                      color: AppColors.textMuted(context), fontSize: 11),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -296,14 +355,17 @@ class _TabChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
+    final icon = this.icon;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -311,22 +373,39 @@ class _TabChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF0D82FE).withValues(alpha: 0.2)
-              : const Color.fromARGB(180, 21, 21, 21),
+              ? AppColors.secondaryText().withValues(alpha: 0.2)
+              : AppColors.panel(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
-                ? const Color(0xFF0D82FE)
-                : const Color.fromARGB(255, 49, 48, 48),
+                ? AppColors.secondaryText()
+                : AppColors.borderIdle(context),
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-            color: selected ? Colors.white : Colors.white70,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: 14,
+                color: selected
+                    ? AppColors.secondaryText()
+                    : AppColors.textSecondary(context),
+              ),
+              const Gap(6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                color: selected
+                    ? AppColors.textPrimary(context)
+                    : AppColors.textSecondary(context),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -355,24 +434,35 @@ class _OverviewTab extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color.fromARGB(180, 21, 21, 21),
+              color: AppColors.panel(context),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+              border: Border.all(color: AppColors.borderIdle(context)),
             ),
-            child: const Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'How to use this screen',
-                  style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 16,
+                      color: AppColors.warningText(),
+                    ),
+                    const Gap(7),
+                    Text(
+                      'How to use this screen',
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    ),
+                  ],
                 ),
                 Gap(8),
                 Text(
                   'See finished live coaching sessions, ratings, and notes. '
-                  'Open Trainee logs to check who signed in, joined a room, or finished practice. '
+                  'Open Trainee logs for activity. Open Trainee progress for Knowledge Path and scenario stage. '
                   'Use this when you need proof of training or a quick activity timeline.',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: AppColors.textSecondary(context),
                     fontSize: 13,
                     height: 1.45,
                   ),
@@ -389,9 +479,10 @@ class _OverviewTab extends StatelessWidget {
           ),
           const Gap(8),
           if (recent.isEmpty)
-            const Text(
+            Text(
               'No ended live sessions yet. End a session from Session tools to populate this list.',
-              style: TextStyle(color: Colors.white38, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             )
           else
             ...recent.map(
@@ -410,7 +501,7 @@ class _OverviewTab extends StatelessWidget {
           const Gap(8),
           Text(
             '$logCount log event(s) stored  ·  $actors unique actor(s)',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 12),
           ),
         ],
       ),
@@ -426,11 +517,11 @@ class _LiveSessionsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (entries.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No ended live sessions yet.\nOpen a room, use Session tools, then End session.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white38, fontSize: 13),
+          style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
         ),
       );
     }
@@ -440,6 +531,22 @@ class _LiveSessionsTab extends StatelessWidget {
       itemBuilder: (_, i) => _HistoryCard(entry: entries[i]),
     );
   }
+}
+
+IconData _logActionIcon(String action, String category) {
+  final a = action.toLowerCase();
+  final c = category.toLowerCase();
+  if (a.contains('enter') || a.contains('join')) return Icons.login_rounded;
+  if (a.contains('left') || a.contains('leave')) return Icons.logout_rounded;
+  if (a.contains('login') || a.contains('sign')) return Icons.badge_outlined;
+  if (a.contains('complete') || a.contains('finish')) {
+    return Icons.check_circle_outline_rounded;
+  }
+  if (a.contains('delete')) return Icons.delete_outline_rounded;
+  if (c.contains('live')) return Icons.sensors_rounded;
+  if (c.contains('sim')) return Icons.computer_rounded;
+  if (c.contains('mini')) return Icons.school_outlined;
+  return Icons.history_rounded;
 }
 
 class _TraineeLogsTab extends StatelessWidget {
@@ -474,15 +581,17 @@ class _TraineeLogsTab extends StatelessWidget {
         Row(
           children: [
             if (onRole != null && roleFilter != null) ...[
-              const Text(
+              Text(
                 'Role',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(8),
               DropdownButton<String>(
                 value: roles.contains(roleFilter) ? roleFilter : 'All',
-                dropdownColor: const Color(0xFF1A1A1A),
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                dropdownColor: AppColors.elevated(context),
+                style: TextStyle(
+                    color: AppColors.textSecondary(context), fontSize: 12),
                 items: roles
                     .map((r) => DropdownMenuItem(value: r, child: Text(r)))
                     .toList(),
@@ -492,15 +601,17 @@ class _TraineeLogsTab extends StatelessWidget {
               ),
               const Gap(16),
             ],
-            const Text(
+            Text(
               'Actor',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
             const Gap(8),
             DropdownButton<String>(
               value: actors.contains(actorFilter) ? actorFilter : 'All',
-              dropdownColor: const Color(0xFF1A1A1A),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              dropdownColor: AppColors.elevated(context),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
               items: actors
                   .map((a) => DropdownMenuItem(value: a, child: Text(a)))
                   .toList(),
@@ -509,17 +620,18 @@ class _TraineeLogsTab extends StatelessWidget {
               },
             ),
             const Gap(16),
-            const Text(
+            Text(
               'Category',
-              style: TextStyle(color: Colors.white54, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
             const Gap(8),
             DropdownButton<String>(
-              value: categories.contains(categoryFilter)
-                  ? categoryFilter
-                  : 'All',
-              dropdownColor: const Color(0xFF1A1A1A),
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              value:
+                  categories.contains(categoryFilter) ? categoryFilter : 'All',
+              dropdownColor: AppColors.elevated(context),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
               items: categories
                   .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                   .toList(),
@@ -532,11 +644,12 @@ class _TraineeLogsTab extends StatelessWidget {
         const Gap(10),
         Expanded(
           child: logs.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No activity logs yet.\nTrainee logins and completed sessions will appear here.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white38, fontSize: 13),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 13),
                   ),
                 )
               : ListView.separated(
@@ -544,21 +657,24 @@ class _TraineeLogsTab extends StatelessWidget {
                   separatorBuilder: (_, __) => const Gap(8),
                   itemBuilder: (_, i) {
                     final e = logs[i];
-                    return InkWell(
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: InkWell(
                       onTap: () {
                         showDialog(
                           context: context,
                           builder: (ctx) => _LogDetailDialog(entry: e),
                         );
                       },
+                      mouseCursor: SystemMouseCursors.click,
                       borderRadius: BorderRadius.circular(10),
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(180, 21, 21, 21),
+                          color: AppColors.panel(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color.fromARGB(255, 49, 48, 48),
+                            color: AppColors.borderIdle(context),
                           ),
                         ),
                         child: Column(
@@ -566,6 +682,21 @@ class _TraineeLogsTab extends StatelessWidget {
                           children: [
                             Row(
                               children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.secondaryWash(context),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    _logActionIcon(e.action, e.category.name),
+                                    size: 16,
+                                    color: AppColors.secondaryText(),
+                                  ),
+                                ),
+                                const Gap(10),
                                 Expanded(
                                   child: Text(
                                     e.action,
@@ -577,26 +708,40 @@ class _TraineeLogsTab extends StatelessWidget {
                                 ),
                                 Text(
                                   formatCreatedAt(e.at),
-                                  style: const TextStyle(
-                                    color: Colors.white38,
+                                  style: TextStyle(
+                                    color: AppColors.textMuted(context),
                                     fontSize: 11,
                                   ),
                                 ),
                               ],
                             ),
-                            const Gap(4),
-                            Text(
-                              '${e.actorName}  ·  ${e.category.name}',
-                              style: const TextStyle(
-                                color: Colors.white54,
-                                fontSize: 11,
-                              ),
+                            const Gap(6),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.person_outline_rounded,
+                                  size: 13,
+                                  color: AppColors.textMuted(context),
+                                ),
+                                const Gap(4),
+                                Expanded(
+                                  child: Text(
+                                    '${e.actorName}  ·  ${e.category.name}',
+                                    style: TextStyle(
+                                      color: AppColors.textMuted(context),
+                                      fontSize: 11,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                             const Gap(6),
                             Text(
                               e.detail,
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                               ),
                             ),
@@ -607,20 +752,547 @@ class _TraineeLogsTab extends StatelessWidget {
                                 if (e.sessionRef != null) 'Ref ${e.sessionRef}',
                                 'Tap for details',
                               ].join('  ·  '),
-                              style: const TextStyle(
-                                color: Colors.white30,
+                              style: TextStyle(
+                                color: AppColors.textMuted(context),
                                 fontSize: 11,
                               ),
                             ),
                           ],
                         ),
                       ),
+                    ),
                     );
                   },
                 ),
         ),
       ],
     );
+  }
+}
+
+class _TraineeProgressTab extends StatefulWidget {
+  const _TraineeProgressTab();
+
+  @override
+  State<_TraineeProgressTab> createState() => _TraineeProgressTabState();
+}
+
+class _TraineeProgressTabState extends State<_TraineeProgressTab> {
+  bool _loading = true;
+  String? _error;
+  List<TraineeProgressSnapshot> _rows = const [];
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload({bool force = false}) async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    final list =
+        await TrainingProgressRepository.instance.loadTraineeSnapshots(
+      force: force,
+    );
+    if (!mounted) return;
+    setState(() {
+      _rows = list;
+      _loading = false;
+      _error = TrainingProgressRepository.lastError;
+    });
+  }
+
+  List<TraineeProgressSnapshot> get _filtered {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _rows;
+    return _rows
+        .where(
+          (r) =>
+              r.displayName.toLowerCase().contains(q) ||
+              r.email.toLowerCase().contains(q) ||
+              r.stageLabel.toLowerCase().contains(q),
+        )
+        .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = _filtered;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'Mini Training progress by trainee',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: _loading ? null : () => _reload(force: true),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: const Text('Refresh'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary(context),
+              ),
+            ),
+          ],
+        ),
+        const Gap(4),
+        Text(
+          'Knowledge Path categories, Grand Final, and Scenario Practice stage from saved training_progress.',
+          style: TextStyle(
+            color: AppColors.textMuted(context),
+            fontSize: 12,
+          ),
+        ),
+        const Gap(10),
+        SizedBox(
+          width: 320,
+          child: TextField(
+            onChanged: (v) => setState(() => _query = v),
+            decoration: InputDecoration(
+              hintText: 'Filter by name or email',
+              prefixIcon: Icon(
+                Icons.search_rounded,
+                color: AppColors.textMuted(context),
+              ),
+              isDense: true,
+              filled: true,
+              fillColor: AppColors.inputFill(context),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.borderIdle(context)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: AppColors.borderIdle(context)),
+              ),
+            ),
+          ),
+        ),
+        if (_error != null) ...[
+          const Gap(8),
+          Text(
+            'Could not load every progress row. Check that trainers can read training_progress (RLS). $_error',
+            style: TextStyle(
+              color: AppColors.warningText(),
+              fontSize: 12,
+            ),
+          ),
+        ],
+        const Gap(12),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : rows.isEmpty
+                  ? Center(
+                      child: Text(
+                        _rows.isEmpty
+                            ? 'No trainee profiles found yet.'
+                            : 'No trainees match this filter.',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      itemCount: rows.length,
+                      separatorBuilder: (_, __) => const Gap(10),
+                      itemBuilder: (context, index) {
+                        final r = rows[index];
+                        return _ProgressCard(snapshot: r);
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProgressCard extends StatelessWidget {
+  const _ProgressCard({required this.snapshot});
+
+  final TraineeProgressSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = snapshot;
+    final fraction = r.knowledgeFraction.clamp(0.0, 1.0);
+    return Material(
+      color: AppColors.card(context),
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        mouseCursor: SystemMouseCursors.click,
+        onTap: () => _showDetail(context, r),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.borderIdle(context)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline_rounded,
+                    size: 18,
+                    color: AppColors.secondaryText(),
+                  ),
+                  const Gap(8),
+                  Expanded(
+                    child: Text(
+                      r.displayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryWash(context),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      r.stageLabel,
+                      style: TextStyle(
+                        color: AppColors.secondaryText(),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (r.email.isNotEmpty) ...[
+                const Gap(4),
+                Text(
+                  r.email,
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+              const Gap(10),
+              Row(
+                children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: fraction,
+                        minHeight: 8,
+                        backgroundColor: AppColors.chipBg(context),
+                        color: AppColors.primaryText(),
+                      ),
+                    ),
+                  ),
+                  const Gap(10),
+                  Text(
+                    '${r.completedCategories}/${r.totalCategories} categories',
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const Gap(8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                children: [
+                  _miniChip(
+                    context,
+                    Icons.badge_outlined,
+                    r.profileComplete ? 'Profile complete' : 'Profile open',
+                    r.profileComplete,
+                  ),
+                  _miniChip(
+                    context,
+                    Icons.emoji_events_outlined,
+                    r.grandFinalPassed
+                        ? 'Grand Final passed'
+                        : (r.grandFinalUnlocked
+                            ? 'Grand Final unlocked'
+                            : 'Grand Final locked'),
+                    r.grandFinalPassed,
+                  ),
+                  _miniChip(
+                    context,
+                    Icons.chat_bubble_outline_rounded,
+                    'Non-Voice ${r.completedChatScenarios}',
+                    r.completedChatScenarios > 0,
+                  ),
+                  _miniChip(
+                    context,
+                    Icons.mic_none_rounded,
+                    'Voice ${r.completedVoiceScenarios}',
+                    r.completedVoiceScenarios > 0,
+                  ),
+                ],
+              ),
+              if (r.updatedAt != null) ...[
+                const Gap(6),
+                Text(
+                  'Updated ${_formatWhen(r.updatedAt!)}',
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _miniChip(
+    BuildContext context,
+    IconData icon,
+    String label,
+    bool active,
+  ) {
+    final color =
+        active ? AppColors.primaryText() : AppColors.textMuted(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: active
+            ? AppColors.primaryWash(context)
+            : AppColors.chipBg(context),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const Gap(4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context, TraineeProgressSnapshot r) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.elevated(context),
+          title: Text(r.displayName),
+          content: SizedBox(
+            width: 420,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    r.stageLabel,
+                    style: TextStyle(
+                      color: AppColors.secondaryText(),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Gap(12),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.menu_book_outlined,
+                        size: 14,
+                        color: AppColors.textMuted(context),
+                      ),
+                      const Gap(6),
+                      Text(
+                        'Knowledge Path',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(8),
+                  ...r.categoryDone.entries.map((e) {
+                    final done = e.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            done
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked,
+                            size: 16,
+                            color: done
+                                ? AppColors.primaryText()
+                                : AppColors.textMuted(context),
+                          ),
+                          const Gap(8),
+                          Expanded(
+                            child: Text(
+                              e.key,
+                              style: TextStyle(
+                                color: done
+                                    ? AppColors.textPrimary(context)
+                                    : AppColors.textMuted(context),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const Gap(14),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.history_rounded,
+                        size: 14,
+                        color: AppColors.textMuted(context),
+                      ),
+                      const Gap(6),
+                      Text(
+                        'Recent activity for this trainee',
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Gap(8),
+                  ...() {
+                    final logs = TraineeActivityLogStore.instance.entries
+                        .where(
+                          (e) =>
+                              e.actorName.toLowerCase() ==
+                              r.displayName.toLowerCase(),
+                        )
+                        .take(8)
+                        .toList();
+                    if (logs.isEmpty) {
+                      return [
+                        Text(
+                          'No activity log rows for this name yet. Simulation session history requires trainer RLS access to training_progress and session tables.',
+                          style: TextStyle(
+                            color: AppColors.textMuted(context),
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ];
+                    }
+                    return logs
+                        .map(
+                          (e) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  _logActionIcon(e.action, e.category.name),
+                                  size: 15,
+                                  color: AppColors.secondaryText(),
+                                ),
+                                const Gap(8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        e.action,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      Text(
+                                        e.detail,
+                                        style: TextStyle(
+                                          color: AppColors.textMuted(context),
+                                          fontSize: 11,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList();
+                  }(),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TraineeStatisticsScreen(snapshot: r),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.insights_rounded, size: 16),
+              label: const Text('Show statistics'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatWhen(DateTime at) {
+    final m = at.month.toString().padLeft(2, '0');
+    final d = at.day.toString().padLeft(2, '0');
+    final h = at.hour > 12 ? at.hour - 12 : (at.hour == 0 ? 12 : at.hour);
+    final mm = at.minute.toString().padLeft(2, '0');
+    final am = at.hour >= 12 ? 'PM' : 'AM';
+    return '$h:$mm $am $m/$d/${at.year}';
   }
 }
 
@@ -632,7 +1304,9 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return MouseRegion(
+      cursor: compact ? SystemMouseCursors.basic : SystemMouseCursors.click,
+      child: InkWell(
       onTap: compact
           ? null
           : () {
@@ -641,19 +1315,34 @@ class _HistoryCard extends StatelessWidget {
                 builder: (ctx) => _SessionDetailDialog(entry: entry),
               );
             },
+      mouseCursor:
+          compact ? SystemMouseCursors.basic : SystemMouseCursors.click,
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: EdgeInsets.all(compact ? 12 : 16),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(180, 21, 21, 21),
+          color: AppColors.panel(context),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+          border: Border.all(color: AppColors.borderIdle(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                Container(
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: AppColors.secondaryText().withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.video_camera_front_outlined,
+                    size: 13,
+                    color: AppColors.secondaryText(),
+                  ),
+                ),
+                const Gap(8),
                 Expanded(
                   child: Text(
                     entry.roomName,
@@ -671,12 +1360,13 @@ class _HistoryCard extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white12,
+                      color: AppColors.chipBg(context),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Closed',
-                      style: TextStyle(color: Colors.white54, fontSize: 11),
+                      style: TextStyle(
+                          color: AppColors.textMuted(context), fontSize: 11),
                     ),
                   ),
                 if (entry.needsFollowUp)
@@ -686,12 +1376,13 @@ class _HistoryCard extends StatelessWidget {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                      color: AppColors.warningText().withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Follow-up',
-                      style: TextStyle(color: Color(0xFFFFB74D), fontSize: 11),
+                      style: TextStyle(
+                          color: AppColors.warningText(), fontSize: 11),
                     ),
                   ),
               ],
@@ -699,18 +1390,21 @@ class _HistoryCard extends StatelessWidget {
             const Gap(6),
             Text(
               'Code ${entry.roomId}  ·  ${entry.mode.name}',
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 11),
             ),
             const Gap(6),
             Text(
               'Trainer: ${entry.trainerName}'
               '${entry.traineeName != null ? "  ·  Trainee: ${entry.traineeName}" : ""}',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
             ),
             const Gap(6),
             Text(
               'Ended ${formatCreatedAt(entry.endedAt)}',
-              style: const TextStyle(color: Colors.white38, fontSize: 11),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 11),
             ),
             if (!compact) ...[
               const Gap(8),
@@ -719,27 +1413,30 @@ class _HistoryCard extends StatelessWidget {
                   if (entry.rating != null) ...[
                     ...List.generate(
                       entry.rating!,
-                      (_) => const Icon(
+                      (_) => Icon(
                         Icons.star_rounded,
                         size: 14,
-                        color: Color(0xFFFFB74D),
+                        color: AppColors.warningText(),
                       ),
                     ),
                     const Gap(10),
                   ],
                   Text(
                     'Checklist ${entry.checklistDone}/${entry.checklistTotal}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 11),
                   ),
                   const Gap(12),
                   Text(
                     '${entry.noteCount} note${entry.noteCount == 1 ? '' : 's'}',
-                    style: const TextStyle(color: Colors.white54, fontSize: 11),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 11),
                   ),
                   const Spacer(),
-                  const Text(
+                  Text(
                     'Tap for notes and checklist',
-                    style: TextStyle(color: Colors.white30, fontSize: 11),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 11),
                   ),
                 ],
               ),
@@ -747,7 +1444,8 @@ class _HistoryCard extends StatelessWidget {
                 const Gap(8),
                 Text(
                   'Takeaway: ${entry.takeaway}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 12),
                 ),
               ],
               if (entry.feedback.trim().isNotEmpty) ...[
@@ -756,12 +1454,14 @@ class _HistoryCard extends StatelessWidget {
                   entry.feedback,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(
+                      color: AppColors.textMuted(context), fontSize: 12),
                 ),
               ],
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -775,10 +1475,10 @@ class _SessionDetailDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppColors.elevated(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+        side: BorderSide(color: AppColors.borderIdle(context)),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560, maxHeight: 640),
@@ -800,13 +1500,36 @@ class _SessionDetailDialog extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.white54),
+                    icon:
+                        Icon(Icons.close, color: AppColors.textMuted(context)),
                   ),
                 ],
               ),
-              Text(
-                'Code ${entry.roomId}  ·  Ended ${formatCreatedAt(entry.endedAt)}',
-                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              const Gap(6),
+              Row(
+                children: [
+                  Icon(
+                    Icons.videocam_outlined,
+                    size: 14,
+                    color: AppColors.secondaryText(),
+                  ),
+                  const Gap(4),
+                  Icon(
+                    Icons.tag_rounded,
+                    size: 14,
+                    color: AppColors.textMuted(context),
+                  ),
+                  const Gap(4),
+                  Expanded(
+                    child: Text(
+                      'Code ${entry.roomId}  ·  Ended ${formatCreatedAt(entry.endedAt)}',
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const Gap(14),
               Expanded(
@@ -814,18 +1537,30 @@ class _SessionDetailDialog extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Notes (${entry.notes.length})',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.sticky_note_2_outlined,
+                            size: 16,
+                            color: AppColors.secondaryText(),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Notes (${entry.notes.length})',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(8),
                       if (entry.notes.isEmpty)
-                        const Text(
+                        Text(
                           'No notes saved.',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(
+                              color: AppColors.textMuted(context),
+                              fontSize: 12),
                         )
                       else
                         ...entry.notes.asMap().entries.map((e) {
@@ -837,18 +1572,30 @@ class _SessionDetailDialog extends StatelessWidget {
                           );
                         }),
                       const Gap(12),
-                      const Text(
-                        'Checklist',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 13,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.checklist_rounded,
+                            size: 16,
+                            color: AppColors.secondaryText(),
+                          ),
+                          const Gap(6),
+                          const Text(
+                            'Checklist',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(8),
                       if (entry.checklist.isEmpty)
-                        const Text(
+                        Text(
                           'No checklist items.',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(
+                              color: AppColors.textMuted(context),
+                              fontSize: 12),
                         )
                       else
                         ...entry.checklist.map((c) {
@@ -862,8 +1609,8 @@ class _SessionDetailDialog extends StatelessWidget {
                                       : Icons.check_box_outline_blank,
                                   size: 18,
                                   color: c.done
-                                      ? const Color(0xFF8AFB09)
-                                      : Colors.white38,
+                                      ? AppColors.primaryText()
+                                      : AppColors.textMuted(context),
                                 ),
                                 const Gap(8),
                                 Expanded(
@@ -872,8 +1619,8 @@ class _SessionDetailDialog extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: c.done
-                                          ? Colors.white54
-                                          : Colors.white70,
+                                          ? AppColors.textMuted(context)
+                                          : AppColors.textSecondary(context),
                                       decoration: c.done
                                           ? TextDecoration.lineThrough
                                           : null,
@@ -896,8 +1643,8 @@ class _SessionDetailDialog extends StatelessWidget {
                         const Gap(6),
                         Text(
                           entry.takeaway,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
                             fontSize: 12,
                           ),
                         ),
@@ -914,8 +1661,8 @@ class _SessionDetailDialog extends StatelessWidget {
                         const Gap(6),
                         Text(
                           entry.feedback,
-                          style: const TextStyle(
-                            color: Colors.white70,
+                          style: TextStyle(
+                            color: AppColors.textSecondary(context),
                             fontSize: 12,
                           ),
                         ),
@@ -1018,10 +1765,10 @@ class _LogDetailDialog extends StatelessWidget {
     } catch (_) {}
 
     return Dialog(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: AppColors.elevated(context),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color.fromARGB(255, 49, 48, 48)),
+        side: BorderSide(color: AppColors.borderIdle(context)),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480, maxHeight: 520),
@@ -1033,6 +1780,21 @@ class _LogDetailDialog extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryWash(context),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      _logActionIcon(entry.action, entry.category.name),
+                      size: 18,
+                      color: AppColors.secondaryText(),
+                    ),
+                  ),
+                  const Gap(10),
                   Expanded(
                     child: Text(
                       entry.action,
@@ -1044,13 +1806,30 @@ class _LogDetailDialog extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.white54),
+                    icon:
+                        Icon(Icons.close, color: AppColors.textMuted(context)),
                   ),
                 ],
               ),
-              Text(
-                '${entry.actorName}  ·  ${formatCreatedAt(entry.at)}',
-                style: const TextStyle(color: Colors.white38, fontSize: 12),
+              const Gap(4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.person_outline_rounded,
+                    size: 14,
+                    color: AppColors.textMuted(context),
+                  ),
+                  const Gap(4),
+                  Expanded(
+                    child: Text(
+                      '${entry.actorName}  ·  ${formatCreatedAt(entry.at)}',
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const Gap(14),
               Flexible(
@@ -1058,11 +1837,12 @@ class _LogDetailDialog extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _kv('Type', entry.category.name),
-                      _kv('What happened', entry.detail),
-                      if (entry.roomId != null) _kv('Room code', entry.roomId!),
+                      _kv(context, 'Type', entry.category.name),
+                      _kv(context, 'What happened', entry.detail),
+                      if (entry.roomId != null)
+                        _kv(context, 'Room code', entry.roomId!),
                       if (entry.sessionRef != null)
-                        _kv('Session', entry.sessionRef!),
+                        _kv(context, 'Session', entry.sessionRef!),
                       if (linkedEval != null) ...[
                         const Gap(16),
                         const Text(
@@ -1073,19 +1853,22 @@ class _LogDetailDialog extends StatelessWidget {
                           ),
                         ),
                         const Gap(8),
-                        _kv('Sector', linkedEval.sector),
-                        _kv('Channel', linkedEval.channel),
+                        _kv(context, 'Sector', linkedEval.sector),
+                        _kv(context, 'Channel', linkedEval.channel),
                         _kv(
+                          context,
                           'Overall score',
                           linkedEval.overallScore.toStringAsFixed(1),
                         ),
                         if (linkedEval.customerName.isNotEmpty)
                           _kv(
+                            context,
                             'Customer',
                             friendlyCustomerName(linkedEval.customerName),
                           ),
                         if (friendlyProblemText(linkedEval.problem).isNotEmpty)
                           _kv(
+                            context,
                             'Problem',
                             friendlyProblemText(linkedEval.problem),
                           ),
@@ -1106,8 +1889,8 @@ class _LogDetailDialog extends StatelessWidget {
                             if (text.isEmpty) return const SizedBox.shrink();
                             return Text(
                               '· $text',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                               ),
                             );
@@ -1130,8 +1913,8 @@ class _LogDetailDialog extends StatelessWidget {
                             if (text.isEmpty) return const SizedBox.shrink();
                             return Text(
                               '· $text',
-                              style: const TextStyle(
-                                color: Colors.white70,
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                               ),
                             );
@@ -1151,8 +1934,8 @@ class _LogDetailDialog extends StatelessWidget {
                           const Gap(4),
                           Text(
                             friendlyEvalText(linkedEval.feedback),
-                            style: const TextStyle(
-                              color: Colors.white70,
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
                               fontSize: 12,
                               height: 1.35,
                             ),
@@ -1175,8 +1958,8 @@ class _LogDetailDialog extends StatelessWidget {
                               padding: const EdgeInsets.only(bottom: 6),
                               child: Text(
                                 '$role: $msg',
-                                style: const TextStyle(
-                                  color: Colors.white70,
+                                style: TextStyle(
+                                  color: AppColors.textSecondary(context),
                                   fontSize: 12,
                                   height: 1.3,
                                 ),
@@ -1186,8 +1969,8 @@ class _LogDetailDialog extends StatelessWidget {
                           if (linkedEval.conversation.length > 20)
                             Text(
                               '... ${linkedEval.conversation.length - 20} more message(s)',
-                              style: const TextStyle(
-                                color: Colors.white38,
+                              style: TextStyle(
+                                color: AppColors.textMuted(context),
                                 fontSize: 11,
                               ),
                             ),
@@ -1196,11 +1979,11 @@ class _LogDetailDialog extends StatelessWidget {
                               TraineeLogCategory.simulation ||
                           entry.category == TraineeLogCategory.scoring) ...[
                         const Gap(16),
-                        const Text(
+                        Text(
                           'No matching simulation record in memory yet. '
                           'After a real simulation completes, scores and messages will show here when linked.',
                           style: TextStyle(
-                            color: Colors.white38,
+                            color: AppColors.textMuted(context),
                             fontSize: 12,
                             height: 1.35,
                           ),
@@ -1219,7 +2002,7 @@ class _LogDetailDialog extends StatelessWidget {
     );
   }
 
-  Widget _kv(String k, String v) {
+  Widget _kv(BuildContext context, String k, String v) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1229,13 +2012,15 @@ class _LogDetailDialog extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
             ),
           ),
         ],
@@ -1279,9 +2064,9 @@ class _CollapsibleNoteTileState extends State<_CollapsibleNoteTile> {
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF121212),
+        color: AppColors.inputFill(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+        border: Border.all(color: AppColors.borderIdle(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1312,8 +2097,8 @@ class _CollapsibleNoteTileState extends State<_CollapsibleNoteTile> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               color: body.isEmpty
-                                  ? Colors.white30
-                                  : Colors.white54,
+                                  ? AppColors.textMuted(context)
+                                  : AppColors.textMuted(context),
                               fontSize: 11,
                             ),
                           ),
@@ -1323,7 +2108,7 @@ class _CollapsibleNoteTileState extends State<_CollapsibleNoteTile> {
                   ),
                   Icon(
                     _open ? Icons.expand_less : Icons.expand_more,
-                    color: Colors.white38,
+                    color: AppColors.textMuted(context),
                     size: 20,
                   ),
                 ],
@@ -1339,7 +2124,9 @@ class _CollapsibleNoteTileState extends State<_CollapsibleNoteTile> {
                   child: Text(
                     body.isEmpty ? '(empty)' : widget.body,
                     style: TextStyle(
-                      color: body.isEmpty ? Colors.white30 : Colors.white70,
+                      color: body.isEmpty
+                          ? AppColors.textMuted(context)
+                          : AppColors.textSecondary(context),
                       fontSize: 12,
                       height: 1.35,
                     ),

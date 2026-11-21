@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/customer_account.dart';
@@ -32,8 +33,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
 
   void _applyNoteForAction(String action, Account? account) {
     final issue = account?.details['Issue'] ?? 'Customer request';
-    final ending =
-        account?.details['Card Ending'] ??
+    final ending = account?.details['Card Ending'] ??
         account?.details['Member ID'] ??
         account?.details['Mobile Ending'] ??
         account?.details['Email'] ??
@@ -66,23 +66,21 @@ class _AccountLookupViewState extends State<AccountLookupView> {
     }
     final note = _actionNoteController.text.trim();
     accountProvider.markToolWorkDone(action: action, note: note);
-    final isIdentity =
-        action.toLowerCase().contains('identity') ||
+    final isIdentity = action.toLowerCase().contains('identity') ||
         action.toLowerCase().contains('verify');
-    final msg = isIdentity
-        ? 'Identity confirmed on file.'
-        : 'Recorded: $action';
+    final msg =
+        isIdentity ? 'Identity confirmed on file.' : 'Recorded: $action';
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           msg,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppColors.successText(context),
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
         ),
-        backgroundColor: const Color(0xFF14532D),
+        backgroundColor: AppColors.nextTint(context),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 3),
       ),
@@ -134,10 +132,9 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (accountProvider.needsAccount) ...[
-                    _buildSearchInput(accountProvider),
+                    _buildSearchInput(context, accountProvider),
                     const Gap(20),
                   ],
-
                   if (accountProvider.identityVerified ||
                       accountProvider.toolWorkDone) ...[
                     Container(
@@ -148,16 +145,16 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF14532D),
+                        color: AppColors.nextTint(context),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF22C55E)),
+                        border: Border.all(color: AppColors.primaryText()),
                       ),
                       child: Text(
                         accountProvider.toolWorkDone
                             ? 'Action recorded: ${accountProvider.lastToolAction.isEmpty ? 'Service action submitted' : accountProvider.lastToolAction}'
                             : 'Identity confirmed on file. You can explain findings or submit a service request next.',
-                        style: const TextStyle(
-                          color: Color(0xFFBBF7D0),
+                        style: TextStyle(
+                          color: AppColors.primaryText(),
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -165,18 +162,18 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                     ),
                   ],
                   if (!accountProvider.needsAccount)
-                    _buildNoAccountsView(accountProvider)
+                    _buildNoAccountsView(context, accountProvider)
                   else if (accountProvider.accounts.isEmpty)
-                    _buildNoAccountsView(accountProvider)
+                    _buildNoAccountsView(context, accountProvider)
                   else ...[
-                    _buildAccountsListHeader(accountProvider),
+                    _buildAccountsListHeader(context, accountProvider),
                     const Gap(12),
-                    _buildAccountsList(accountProvider),
+                    _buildAccountsList(context, accountProvider),
                     const Gap(24),
                     if (accountProvider.selectedAccount != null) ...[
                       KeyedSubtree(
                         key: _detailsKey,
-                        child: _buildAccountDetails(accountProvider),
+                        child: _buildAccountDetails(context, accountProvider),
                       ),
                     ],
                   ],
@@ -190,27 +187,30 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   // Modern Search Bar Input
-  Widget _buildSearchInput(AccountProvider accountProvider) {
+  Widget _buildSearchInput(
+      BuildContext context, AccountProvider accountProvider) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1B),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 27, 28, 30)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 22),
+          Icon(Icons.search_rounded,
+              color: AppColors.textMuted(context), size: 22),
           const Gap(12),
           Expanded(
             child: TextField(
               controller: _searchController,
               onChanged: accountProvider.search,
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: const InputDecoration(
+              style: TextStyle(
+                  color: AppColors.textPrimary(context), fontSize: 14),
+              decoration: InputDecoration(
                 hintText: 'Search by account ID or customer name...',
                 hintStyle: TextStyle(
-                  color: Color.fromARGB(255, 91, 92, 93),
+                  color: AppColors.textMuted(context),
                   fontSize: 14,
                 ),
                 border: InputBorder.none,
@@ -224,9 +224,9 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 accountProvider.search('');
                 setState(() {});
               },
-              child: const Icon(
+              child: Icon(
                 Icons.close_rounded,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textMuted(context),
                 size: 20,
               ),
             ),
@@ -236,27 +236,28 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   // View displayed when no accounts are required/generated
-  Widget _buildNoAccountsView(AccountProvider accountProvider) {
+  Widget _buildNoAccountsView(
+      BuildContext context, AccountProvider accountProvider) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(130, 28, 28, 28),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color.fromARGB(255, 40, 40, 40)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         children: [
           Container(
             width: 64,
             height: 64,
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(255, 40, 41, 41),
+            decoration: BoxDecoration(
+              color: AppColors.border(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.assignment_turned_in_rounded,
-              color: Color.fromARGB(255, 247, 247, 248),
+              color: AppColors.textPrimary(context),
               size: 32,
             ),
           ),
@@ -265,8 +266,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             accountProvider.needsAccount
                 ? 'No Matching Accounts Yet'
                 : 'No Account Lookup Needed',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontSize: 18,
               fontWeight: FontWeight.w600,
             ),
@@ -277,8 +278,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 ? 'Ask the customer for identity details, then search again. Select the correct account before applying any account action.'
                 : 'This case does not need Account Lookup. Clarify what the customer needs, give a clear answer or next step, and confirm they understand.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF9CA3AF),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 13,
               height: 1.5,
             ),
@@ -288,23 +289,23 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF064E3B),
+                color: AppColors.nextTint(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF059669)),
+                border: Border.all(color: AppColors.primaryText()),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.check_circle_rounded,
-                    color: Color(0xFF34D399),
+                    color: AppColors.successText(),
                     size: 20,
                   ),
                   Gap(8),
                   Text(
                     'Customer confirmed resolved',
                     style: TextStyle(
-                      color: Color(0xFF34D399),
+                      color: AppColors.successText(),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -316,23 +317,23 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A5F),
+                color: AppColors.completeTint(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF3B82F6)),
+                border: Border.all(color: AppColors.secondaryText()),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     Icons.build_circle_outlined,
-                    color: Color(0xFF93C5FD),
+                    color: AppColors.secondaryText(),
                     size: 20,
                   ),
                   Gap(8),
                   Text(
                     'Tool work noted. Wait for customer confirmation.',
                     style: TextStyle(
-                      color: Color(0xFF93C5FD),
+                      color: AppColors.secondaryText(),
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -341,18 +342,20 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               ),
             )
           else ...[
-            const Text(
+            Text(
               'Account action',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
             const Gap(8),
             DropdownButtonFormField<String>(
               value: _selectedAction,
-              dropdownColor: const Color(0xFF1A1F26),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              dropdownColor: AppColors.card(context),
+              style: TextStyle(
+                  color: AppColors.textPrimary(context), fontSize: 13),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFF121212),
+                fillColor: AppColors.inputFill(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -389,12 +392,13 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               controller: _actionNoteController,
               maxLines: 2,
               readOnly: true,
-              style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 13),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Note fills in when you pick an action',
-                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                hintStyle: TextStyle(color: AppColors.textMuted(context)),
                 filled: true,
-                fillColor: const Color(0xFF0F1419),
+                fillColor: AppColors.scaffold(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -408,8 +412,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               icon: const Icon(Icons.task_alt, size: 18),
               label: Text(_submitLabelForAction(_selectedAction)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.secondaryText(),
+                foregroundColor: AppColors.onPrimary(context),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 14,
@@ -427,18 +431,20 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   // Header section above the account list
-  Widget _buildAccountsListHeader(AccountProvider accountProvider) {
+  Widget _buildAccountsListHeader(
+      BuildContext context, AccountProvider accountProvider) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.badge_outlined, color: Color(0xFF3B82F6), size: 20),
+            Icon(Icons.badge_outlined,
+                color: AppColors.secondaryText(), size: 20),
             Gap(8),
             Text(
               'Customer Accounts',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -448,13 +454,13 @@ class _AccountLookupViewState extends State<AccountLookupView> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             '${accountProvider.filteredAccounts.length} found',
-            style: const TextStyle(
-              color: Color(0xFF9CA3AF),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -465,7 +471,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   // Filtered account cards list
-  Widget _buildAccountsList(AccountProvider accountProvider) {
+  Widget _buildAccountsList(
+      BuildContext context, AccountProvider accountProvider) {
     final filtered = accountProvider.filteredAccounts;
 
     if (filtered.isEmpty) {
@@ -473,15 +480,15 @@ class _AccountLookupViewState extends State<AccountLookupView> {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 28, 29, 29),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color.fromARGB(255, 50, 51, 54)),
+          border: Border.all(color: AppColors.borderStrong(context)),
         ),
-        child: const Text(
+        child: Text(
           'No matching accounts found.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color.fromARGB(255, 181, 184, 189),
+            color: AppColors.textSecondary(context),
             fontSize: 13,
           ),
         ),
@@ -511,13 +518,13 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF1E293B)
-                  : const Color.fromARGB(255, 28, 29, 29),
+                  ? AppColors.elevated(context)
+                  : AppColors.card(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF3B82F6)
-                    : const Color.fromARGB(255, 42, 44, 45),
+                    ? AppColors.secondaryText()
+                    : AppColors.border(context),
                 width: isSelected ? 1.5 : 1.0,
               ),
             ),
@@ -526,16 +533,16 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: isSelected
-                      ? const Color(0xFF2563EB)
-                      : const Color(0xFF1F2937),
+                      ? AppColors.secondaryText()
+                      : AppColors.chipBg(context),
                   child: Text(
                     account.ownerName.isNotEmpty
                         ? account.ownerName[0].toUpperCase()
                         : 'A',
                     style: TextStyle(
                       color: isSelected
-                          ? Colors.white
-                          : const Color(0xFF9CA3AF),
+                          ? AppColors.onSecondary(context)
+                          : AppColors.textMuted(context),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -548,8 +555,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                     children: [
                       Text(
                         account.ownerName,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -557,8 +564,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                       const Gap(2),
                       Text(
                         'ID: ${account.accountId}',
-                        style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                         ),
                       ),
@@ -566,15 +573,15 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.secondaryText(),
                     size: 22,
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFF475569),
+                    color: AppColors.textMuted(context),
                     size: 20,
                   ),
               ],
@@ -586,16 +593,17 @@ class _AccountLookupViewState extends State<AccountLookupView> {
   }
 
   // Selected account detail card
-  Widget _buildAccountDetails(AccountProvider accountProvider) {
+  Widget _buildAccountDetails(
+      BuildContext context, AccountProvider accountProvider) {
     final account = accountProvider.selectedAccount!;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 26, 26, 26),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 38, 38, 40)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,18 +611,18 @@ class _AccountLookupViewState extends State<AccountLookupView> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
                   Icon(
                     Icons.folder_shared_outlined,
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.secondaryText(),
                     size: 20,
                   ),
                   Gap(8),
                   Text(
                     'Account Details',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -628,14 +636,14 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E3A8A),
+                    color: AppColors.completeTint(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2563EB)),
+                    border: Border.all(color: AppColors.secondaryText()),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Verified Customer',
                     style: TextStyle(
-                      color: Color(0xFF93C5FD),
+                      color: AppColors.secondaryText(),
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
@@ -644,7 +652,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
             ],
           ),
           const Gap(16),
-          const Divider(height: 1, color: Color.fromARGB(255, 94, 95, 96)),
+          Divider(height: 1, color: AppColors.borderStrong(context)),
           const Gap(16),
           ...account.details.entries.map((entry) {
             final isIssueField = entry.key == 'Issue' && account.isTarget;
@@ -654,11 +662,13 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isIssueField
-                    ? const Color(0x80451A03)
-                    : const Color.fromARGB(255, 32, 32, 32),
+                    ? (Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0x80451A03)
+                        : AppColors.warningWash(context))
+                    : AppColors.elevated(context),
                 borderRadius: BorderRadius.circular(10),
                 border: isIssueField
-                    ? Border.all(color: const Color(0xFFB45309))
+                    ? Border.all(color: AppColors.warningText())
                     : null,
               ),
               child: Row(
@@ -670,8 +680,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                       entry.key,
                       style: TextStyle(
                         color: isIssueField
-                            ? const Color(0xFFFBBF24)
-                            : const Color(0xFF9CA3AF),
+                            ? AppColors.warningText()
+                            : AppColors.textMuted(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -682,12 +692,11 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                       entry.value,
                       style: TextStyle(
                         color: isIssueField
-                            ? const Color(0xFFFBBF24)
-                            : Colors.white,
+                            ? AppColors.warningText()
+                            : AppColors.textPrimary(context),
                         fontSize: 13,
-                        fontWeight: isIssueField
-                            ? FontWeight.w600
-                            : FontWeight.w400,
+                        fontWeight:
+                            isIssueField ? FontWeight.w600 : FontWeight.w400,
                       ),
                     ),
                   ),
@@ -701,23 +710,23 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF064E3B),
+                color: AppColors.nextTint(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF059669)),
+                border: Border.all(color: AppColors.primaryText()),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.check_circle_rounded,
-                    color: Color(0xFF34D399),
+                    color: AppColors.successText(),
                     size: 20,
                   ),
                   Gap(8),
                   Text(
                     'Customer confirmed resolved',
                     style: TextStyle(
-                      color: Color(0xFF34D399),
+                      color: AppColors.successText(),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -730,23 +739,23 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E3A5F),
+                color: AppColors.completeTint(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF3B82F6)),
+                border: Border.all(color: AppColors.secondaryText()),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.build_circle_outlined,
-                    color: Color(0xFF93C5FD),
+                    color: AppColors.secondaryText(),
                     size: 20,
                   ),
                   Gap(8),
                   Text(
                     'Action applied. Await customer confirmation.',
                     style: TextStyle(
-                      color: Color(0xFF93C5FD),
+                      color: AppColors.secondaryText(),
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -755,18 +764,20 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               ),
             )
           else if (account.isTarget) ...[
-            const Text(
+            Text(
               'Choose the correct action for this step, then submit. The note fills in for you.',
-              style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
             const Gap(8),
             DropdownButtonFormField<String>(
               value: _selectedAction,
-              dropdownColor: const Color(0xFF1A1F26),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              dropdownColor: AppColors.card(context),
+              style: TextStyle(
+                  color: AppColors.textPrimary(context), fontSize: 13),
               decoration: InputDecoration(
                 filled: true,
-                fillColor: const Color(0xFF121212),
+                fillColor: AppColors.inputFill(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -803,12 +814,13 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               controller: _actionNoteController,
               maxLines: 2,
               readOnly: true,
-              style: const TextStyle(color: Color(0xFFD1D5DB), fontSize: 13),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 13),
               decoration: InputDecoration(
                 hintText: 'Note fills in when you pick an action',
-                hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
+                hintStyle: TextStyle(color: AppColors.textMuted(context)),
                 filled: true,
-                fillColor: const Color(0xFF0F1419),
+                fillColor: AppColors.scaffold(context),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -823,8 +835,8 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                 label: Text(_submitLabelForAction(_selectedAction)),
                 style: ElevatedButton.styleFrom(
                   enabledMouseCursor: SystemMouseCursors.click,
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.secondaryText(),
+                  foregroundColor: AppColors.onSecondary(context),
                   padding: const EdgeInsets.symmetric(vertical: 20),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -838,15 +850,17 @@ class _AccountLookupViewState extends State<AccountLookupView> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0x80451A03),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0x80451A03)
+                    : AppColors.warningWash(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFB45309)),
+                border: Border.all(color: AppColors.warningText()),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(
                     Icons.warning_amber_rounded,
-                    color: Color(0xFFFBBF24),
+                    color: AppColors.warningText(),
                     size: 18,
                   ),
                   Gap(8),
@@ -854,7 +868,7 @@ class _AccountLookupViewState extends State<AccountLookupView> {
                     child: Text(
                       'This is not the customer\'s active account.',
                       style: TextStyle(
-                        color: Color(0xFFFBBF24),
+                        color: AppColors.warningText(),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),

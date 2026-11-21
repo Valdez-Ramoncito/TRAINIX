@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class ProfileCameraButton extends StatelessWidget {
   const ProfileCameraButton({super.key});
@@ -10,14 +11,18 @@ class ProfileCameraButton extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(13),
-        color: const Color.fromARGB(100, 65, 65, 70),
+        color: AppColors.elevated(context).withValues(alpha: 0.7),
         border: Border.all(
-          color: const Color.fromARGB(99, 137, 137, 145),
-          width: .5,
+          color: AppColors.border(context),
+          width: 0.5,
         ),
       ),
-      child: const Center(
-        child: Icon(Icons.camera_alt_rounded, size: 14, color: Colors.black),
+      child: Center(
+        child: Icon(
+          Icons.camera_alt_rounded,
+          size: 14,
+          color: AppColors.textPrimary(context),
+        ),
       ),
     );
   }

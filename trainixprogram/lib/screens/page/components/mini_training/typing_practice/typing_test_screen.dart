@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/typing/typing_passage.dart';
@@ -25,11 +26,8 @@ class TypingTestScreen extends StatefulWidget {
 }
 
 class _TypingTestScreenState extends State<TypingTestScreen> {
-  static const _green = Color(0xFF70BD8A);
-  static const _red = Color(0xFFF87171);
-  static const _muted = Color(0xFF9CA3AF);
-  static const _card = Color(0xFF1A1A1A);
-  static const _border = Color(0xFF333333);
+  static Color get _green => AppColors.primaryText();
+  static Color get _red => AppColors.errorText();
 
   final FocusNode _focusNode = FocusNode();
   final TextEditingController _controller = TextEditingController();
@@ -221,7 +219,7 @@ class _TypingTestScreenState extends State<TypingTestScreen> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.scaffold(context),
       body: Focus(
         focusNode: _focusNode,
         onKeyEvent: _onKey,
@@ -251,9 +249,10 @@ class _TypingTestScreenState extends State<TypingTestScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: _card,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: _border),
+                            border: Border.all(
+                                color: AppColors.borderIdle(context)),
                           ),
                           child: _PassageHighlight(
                             target: _target,
@@ -266,30 +265,33 @@ class _TypingTestScreenState extends State<TypingTestScreen> {
                           autofocus: true,
                           enabled: !_finished,
                           maxLines: 3,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             height: 1.5,
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                           ),
                           cursorColor: _green,
                           decoration: InputDecoration(
                             filled: true,
-                            fillColor: _card,
+                            fillColor: AppColors.card(context),
                             hintText: _started
                                 ? 'Keep typing...'
                                 : 'Start typing to begin the timer',
-                            hintStyle: const TextStyle(color: _muted),
+                            hintStyle:
+                                TextStyle(color: AppColors.textMuted(context)),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: _border),
+                              borderSide: BorderSide(
+                                  color: AppColors.borderIdle(context)),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: _border),
+                              borderSide: BorderSide(
+                                  color: AppColors.borderIdle(context)),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: _green),
+                              borderSide: BorderSide(color: _green),
                             ),
                           ),
                           onChanged: _onTextChanged,
@@ -299,9 +301,9 @@ class _TypingTestScreenState extends State<TypingTestScreen> {
                           widget.noBackspace
                               ? 'No-backspace mode is on. Escape to exit.'
                               : 'Timer starts on first key. Escape to exit.',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: _muted,
+                            color: AppColors.textMuted(context),
                           ),
                         ),
                       ],
@@ -314,13 +316,16 @@ class _TypingTestScreenState extends State<TypingTestScreen> {
                   Text(
                     'Passage ${_passagesCompleted + 1}'
                     '${_queue.isNotEmpty ? ' · ${_queue[_passageIndex].label}' : ''}',
-                    style: const TextStyle(fontSize: 12, color: _muted),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
                   const Spacer(),
                   Text(
                     '$_passagesCompleted completed · $_totalKeystrokes keys',
-                    style: const TextStyle(fontSize: 12, color: _muted),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
+                  const SizedBox(width: 64),
                 ],
               ),
             ],
@@ -371,33 +376,44 @@ class _TopBar extends StatelessWidget {
       children: [
         TextButton.icon(
           onPressed: onExit,
-          icon: const Icon(Icons.close, size: 18, color: Colors.white70),
-          label: const Text('Exit', style: TextStyle(color: Colors.white70)),
+          icon: Icon(Icons.close,
+              size: 18, color: AppColors.textSecondary(context)),
+          label: Text('Exit',
+              style: TextStyle(color: AppColors.textSecondary(context))),
         ),
         const Gap(16),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: const Color(0xFF333333)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Text(
             '$_packLabel · ${durationSeconds}s'
             '${noBackspace ? ' · No BS' : ''}',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
           ),
         ),
         const Spacer(),
         _StatChip(
           label: 'Time',
           value: '$mm:$ss',
+          icon: Icons.timer_outlined,
           emphasize: urgent,
         ),
         const Gap(12),
-        _StatChip(label: 'WPM', value: wpm.toStringAsFixed(0)),
+        _StatChip(
+          label: 'WPM',
+          value: wpm.toStringAsFixed(0),
+          icon: Icons.speed_rounded,
+        ),
         const Gap(12),
-        _StatChip(label: 'Accuracy', value: '${accuracy.round()}%'),
+        _StatChip(
+          label: 'Accuracy',
+          value: '${accuracy.round()}%',
+          icon: Icons.check_circle_outline,
+        ),
       ],
     );
   }
@@ -406,31 +422,49 @@ class _TopBar extends StatelessWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
+  final IconData? icon;
   final bool emphasize;
 
   const _StatChip({
     required this.label,
     required this.value,
+    this.icon,
     this.emphasize = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final icon = this.icon;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: emphasize ? const Color(0xFFF87171) : const Color(0xFF333333),
+          color: emphasize ? AppColors.errorText() : AppColors.border(context),
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+          Row(
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 13,
+                  color: emphasize
+                      ? AppColors.errorText()
+                      : AppColors.textMuted(context),
+                ),
+                const Gap(4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                    fontSize: 11, color: AppColors.textMuted(context)),
+              ),
+            ],
           ),
           const Gap(2),
           Text(
@@ -438,7 +472,9 @@ class _StatChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: emphasize ? const Color(0xFFF87171) : Colors.white,
+              color: emphasize
+                  ? AppColors.errorText()
+                  : AppColors.textPrimary(context),
             ),
           ),
         ],
@@ -456,8 +492,7 @@ class _PassageHighlight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final spans = <TextSpan>[];
-    final maxLen =
-        typed.length > target.length ? typed.length : target.length;
+    final maxLen = typed.length > target.length ? typed.length : target.length;
 
     for (var i = 0; i < maxLen; i++) {
       if (i < typed.length && i < target.length) {
@@ -466,9 +501,9 @@ class _PassageHighlight extends StatelessWidget {
           TextSpan(
             text: target[i],
             style: TextStyle(
-              color: ok ? const Color(0xFF70BD8A) : const Color(0xFFF87171),
+              color: ok ? AppColors.primaryText() : AppColors.errorText(),
               backgroundColor:
-                  ok ? null : const Color(0xFFF87171).withValues(alpha: 0.18),
+                  ok ? null : AppColors.errorText().withValues(alpha: 0.18),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -478,9 +513,8 @@ class _PassageHighlight extends StatelessWidget {
           TextSpan(
             text: typed[i],
             style: TextStyle(
-              color: const Color(0xFFF87171),
-              backgroundColor:
-                  const Color(0xFFF87171).withValues(alpha: 0.18),
+              color: AppColors.errorText(),
+              backgroundColor: AppColors.errorText().withValues(alpha: 0.18),
             ),
           ),
         );
@@ -488,10 +522,10 @@ class _PassageHighlight extends StatelessWidget {
         spans.add(
           TextSpan(
             text: target[i],
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               decoration: TextDecoration.underline,
-              decorationColor: Color(0xFF70BD8A),
+              decorationColor: AppColors.primaryText(),
             ),
           ),
         );
@@ -499,7 +533,7 @@ class _PassageHighlight extends StatelessWidget {
         spans.add(
           TextSpan(
             text: target[i],
-            style: const TextStyle(color: Color(0xFF6B7280)),
+            style: TextStyle(color: AppColors.textMuted(context)),
           ),
         );
       }
@@ -507,9 +541,9 @@ class _PassageHighlight extends StatelessWidget {
 
     if (target.isEmpty) {
       spans.add(
-        const TextSpan(
+        TextSpan(
           text: 'No passage loaded.',
-          style: TextStyle(color: Color(0xFF9CA3AF)),
+          style: TextStyle(color: AppColors.textMuted(context)),
         ),
       );
     }
@@ -558,21 +592,21 @@ class _ResultBody extends StatelessWidget {
         best.netWpm == result.netWpm;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.scaffold(context),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 520),
           child: Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF333333)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
+                Text(
                   'Run complete',
                   style: TextStyle(
                     fontSize: 22,
@@ -583,9 +617,9 @@ class _ResultBody extends StatelessWidget {
                 Text(
                   '$_packLabel · ${result.durationSeconds}s'
                   '${result.noBackspace ? ' · No backspace' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textMuted(context),
                   ),
                 ),
                 if (isNewBest) ...[
@@ -596,17 +630,17 @@ class _ResultBody extends StatelessWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF70BD8A).withValues(alpha: 0.15),
+                      color: AppColors.primaryText().withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: const Color(0xFF70BD8A).withValues(alpha: 0.5),
+                        color: AppColors.primaryText().withValues(alpha: 0.5),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Personal best for this mode',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF70BD8A),
+                        color: AppColors.primaryText(),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -619,6 +653,7 @@ class _ResultBody extends StatelessWidget {
                       child: _ResultMetric(
                         label: 'Net WPM',
                         value: '${result.roundedNetWpm}',
+                        icon: Icons.speed_rounded,
                         large: true,
                       ),
                     ),
@@ -626,6 +661,7 @@ class _ResultBody extends StatelessWidget {
                       child: _ResultMetric(
                         label: 'Accuracy',
                         value: '${result.roundedAccuracy}%',
+                        icon: Icons.check_circle_outline,
                         large: true,
                       ),
                     ),
@@ -638,18 +674,21 @@ class _ResultBody extends StatelessWidget {
                       child: _ResultMetric(
                         label: 'Raw WPM',
                         value: '${result.roundedRawWpm}',
+                        icon: Icons.bolt_outlined,
                       ),
                     ),
                     Expanded(
                       child: _ResultMetric(
                         label: 'Errors',
                         value: '${result.incorrectChars}',
+                        icon: Icons.error_outline,
                       ),
                     ),
                     Expanded(
                       child: _ResultMetric(
                         label: 'Passages',
                         value: '${result.passagesCompleted}',
+                        icon: Icons.layers_outlined,
                       ),
                     ),
                   ],
@@ -661,8 +700,9 @@ class _ResultBody extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: onDone,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white70,
-                          side: const BorderSide(color: Color(0xFF444444)),
+                          foregroundColor: AppColors.textSecondary(context),
+                          side: BorderSide(
+                              color: AppColors.borderStrong(context)),
                           minimumSize: const Size.fromHeight(46),
                         ),
                         child: const Text('Back to hub'),
@@ -673,8 +713,8 @@ class _ResultBody extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: onRetry,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF70BD8A),
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppColors.primaryText(),
+                          foregroundColor: AppColors.onPrimary(context),
                           minimumSize: const Size.fromHeight(46),
                         ),
                         child: const Text('Try again'),
@@ -694,21 +734,34 @@ class _ResultBody extends StatelessWidget {
 class _ResultMetric extends StatelessWidget {
   final String label;
   final String value;
+  final IconData? icon;
   final bool large;
 
   const _ResultMetric({
     required this.label,
     required this.value,
+    this.icon,
     this.large = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final icon = this.icon;
     return Column(
       children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 13, color: AppColors.textMuted(context)),
+              const Gap(4),
+            ],
+            Text(
+              label,
+              style:
+                  TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
+            ),
+          ],
         ),
         const Gap(4),
         Text(

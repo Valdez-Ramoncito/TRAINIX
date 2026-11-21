@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -82,12 +83,12 @@ class _GrandFinalAssessmentScreenState
               style: TextStyle(fontSize: 15, height: 1.4),
             ),
             const Gap(8),
-            const Text(
+            Text(
               "It includes quiz, typing, and voice items.",
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: Colors.white70,
+                color: AppColors.textSecondary(context),
               ),
             ),
             const Gap(40),
@@ -96,8 +97,10 @@ class _GrandFinalAssessmentScreenState
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: alreadyPassed ? Colors.grey : Colors.green,
-                  foregroundColor: Colors.white,
+                  backgroundColor: alreadyPassed
+                      ? AppColors.border(context)
+                      : AppColors.primary(context),
+                  foregroundColor: AppColors.onPrimary(context),
                 ),
                 onPressed: alreadyPassed ? null : _startFinal,
                 child: Text(

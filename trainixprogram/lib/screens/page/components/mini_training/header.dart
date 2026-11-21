@@ -1,5 +1,6 @@
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/widgets/screen_help_button.dart';
@@ -19,16 +20,16 @@ class Header extends StatelessWidget {
             Text(
               "Mini Training",
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontSize: context.responsiveFont(7),
-              ),
+                    fontSize: context.responsiveFont(7),
+                  ),
             ),
             Gap(10),
             Text(
               "Practice the basics and slowly build your confidence",
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white54,
-                fontSize: 13,
-              ),
+                    color: AppColors.textMuted(context),
+                    fontSize: 13,
+                  ),
             ),
           ],
         ),
@@ -52,7 +53,7 @@ class Header extends StatelessWidget {
                     Stack(
                       children: [
                         CircleAvatar(
-                          backgroundColor: const Color(0xFF374151),
+                          backgroundColor: AppColors.borderStrong(context),
                           backgroundImage: const AssetImage(
                             'assets/images/defaultProfile.png',
                           ),
@@ -66,9 +67,9 @@ class Header extends StatelessWidget {
                             height: 10,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: const Color.fromARGB(255, 138, 251, 9),
+                              color: AppColors.primaryText(),
                               border: Border.all(
-                                color: const Color.fromARGB(255, 23, 23, 23),
+                                color: AppColors.card(context),
                                 width: 1.5,
                               ),
                             ),

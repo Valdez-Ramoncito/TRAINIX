@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/toolbar_button.dart';
 import 'package:trainixprogram/components/size.dart';
@@ -40,10 +41,10 @@ class Header extends StatelessWidget {
     );
 
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(
-            color: Color.fromARGB(255, 105, 106, 106),
+            color: AppColors.textMuted(context),
             width: 0.3,
           ),
         ),
@@ -57,8 +58,8 @@ class Header extends StatelessWidget {
               Text(
                 _title,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontSize: context.responsiveFont(6),
-                ),
+                      fontSize: context.responsiveFont(6),
+                    ),
               ),
               const Gap(10),
               Container(
@@ -67,17 +68,17 @@ class Header extends StatelessWidget {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 21, 44, 76),
+                  color: AppColors.completeTint(context),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 130, 174, 240),
+                    color: AppColors.secondaryText(),
                     width: 0.5,
                   ),
                 ),
                 child: Text(
                   sector.toUpperCase(),
-                  style: const TextStyle(
-                    color: Color.fromARGB(255, 160, 200, 255),
+                  style: TextStyle(
+                    color: AppColors.secondaryText(),
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.6,
@@ -88,10 +89,10 @@ class Header extends StatelessWidget {
           ),
           Row(
             children: [
-              const Text(
+              Text(
                 'Customer',
                 style: TextStyle(
-                  color: Color(0xFFB0B8C4),
+                  color: AppColors.textSecondary(context),
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                 ),
@@ -101,18 +102,18 @@ class Header extends StatelessWidget {
                 width: 52,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: const Color.fromARGB(180, 21, 21, 21),
+                  color: AppColors.panel(context),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 49, 48, 48),
+                    color: AppColors.borderIdle(context),
                     width: 0.5,
                   ),
                 ),
                 child: Center(
                   child: Text(
                     '$currentCustomerNum / $requiredInteractions',
-                    style: const TextStyle(
-                      color: Color(0xFFE5E7EB),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -130,8 +131,8 @@ class Header extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: filled
-                          ? const Color.fromARGB(255, 112, 189, 138)
-                          : const Color.fromARGB(255, 49, 48, 48),
+                          ? AppColors.primaryText()
+                          : AppColors.borderIdle(context),
                     ),
                   );
                 }),

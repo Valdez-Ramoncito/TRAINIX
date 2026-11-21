@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/notifications/training_notification.dart';
 
 class TrainingNotificationHost extends StatefulWidget {

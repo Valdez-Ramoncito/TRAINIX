@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/session_score.dart';
@@ -54,10 +55,10 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
   }
 
   Color _scoreColor(double score) {
-    if (score >= 8.5) return const Color(0xFF70BD8A);
-    if (score >= 7.0) return const Color(0xFF3B82F6);
-    if (score >= 5.0) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (score >= 8.5) return AppColors.primaryText();
+    if (score >= 7.0) return AppColors.secondaryText();
+    if (score >= 5.0) return AppColors.warningText();
+    return AppColors.errorStrongText();
   }
 
   String _scoreBand(double score) {
@@ -104,16 +105,16 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
         children: [
           Text(
             _title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
           const Gap(6),
           Text(
             widget.modeFilter == null
                 ? 'Past simulation runs from every mode. Debug runs are hidden.'
                 : 'Past runs for this session type only. Debug runs are hidden.',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               height: 1.4,
             ),
           ),
@@ -171,8 +172,8 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                           child: Text(
                             _emptyHint,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF94A3B8),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
                               height: 1.4,
                             ),
                           ),
@@ -226,18 +227,18 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '$label:',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -245,10 +246,10 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: options.contains(value) ? value : options.first,
-              dropdownColor: const Color(0xFF1C1C1C),
-              style: const TextStyle(
+              dropdownColor: AppColors.card(context),
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontWeight: FontWeight.w600,
               ),
               items: options
@@ -302,9 +303,9 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
           child: Container(
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: const Color(0xFF151515),
+              color: AppColors.listBase(context),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2A2A2B)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: IntrinsicHeight(
               child: Row(
@@ -329,6 +330,23 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: AppColors.secondaryWash(context),
+                                  borderRadius: BorderRadius.circular(9),
+                                ),
+                                child: Icon(
+                                  session.mode == SimulationMode.voice
+                                      ? Icons.mic_rounded
+                                      : Icons.chat_bubble_outline_rounded,
+                                  size: 18,
+                                  color: AppColors.secondaryText(),
+                                ),
+                              ),
+                              const Gap(10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -337,18 +355,18 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                                       session.sector.isEmpty
                                           ? 'Session #$number'
                                           : '${session.sector}  ·  #$number',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w700,
                                         fontSize: 15,
-                                        color: Colors.white,
+                                        color: AppColors.textPrimary(context),
                                       ),
                                     ),
                                     const Gap(4),
                                     Text(
                                       '${_modeLabel(session.mode)} · ${session.evaluations.length} customer(s)',
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 12,
-                                        color: Color(0xFF94A3B8),
+                                        color: AppColors.textSecondary(context),
                                       ),
                                     ),
                                   ],
@@ -402,8 +420,8 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                                     : Icons.chat_bubble_outline_rounded,
                                 _modeLabel(session.mode),
                                 session.mode == SimulationMode.voice
-                                    ? const Color(0xFF70BD8A)
-                                    : const Color(0xFF3B82F6),
+                                    ? AppColors.primaryText()
+                                    : AppColors.secondaryText(),
                               ),
                               _metaChip(
                                 session.guidedMode
@@ -411,14 +429,14 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                                     : Icons.school_outlined,
                                 session.guidedMode ? 'Guided' : 'Unguided',
                                 session.guidedMode
-                                    ? const Color(0xFF3B82F6)
-                                    : const Color(0xFFA78BFA),
+                                    ? AppColors.secondaryText()
+                                    : AppColors.secondaryText(),
                               ),
                               if (score >= 7)
                                 _metaChip(
                                   Icons.verified_outlined,
                                   'Pass bar met',
-                                  const Color(0xFF70BD8A),
+                                  AppColors.primaryText(),
                                 ),
                             ],
                           ),
@@ -434,17 +452,17 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                                     vertical: 5,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF1C1C1C),
+                                    color: AppColors.card(context),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: const Color(0xFF2A2A2B),
+                                      color: AppColors.border(context),
                                     ),
                                   ),
                                   child: Text(
                                     n,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Color(0xFFCBD5E1),
+                                      color: AppColors.textSecondary(context),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -453,13 +471,13 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                             ),
                           ],
                           const Gap(8),
-                          const Row(
+                          Row(
                             children: [
                               Text(
                                 'View report',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textSecondary(context),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -467,7 +485,7 @@ class _SessionHistoryListState extends State<SessionHistoryList> {
                               Icon(
                                 Icons.chevron_right_rounded,
                                 size: 16,
-                                color: Color(0xFF94A3B8),
+                                color: AppColors.textSecondary(context),
                               ),
                             ],
                           ),
@@ -524,10 +542,10 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
   String _sort = 'Newest';
 
   Color _scoreColor(double score) {
-    if (score >= 8.5) return const Color(0xFF70BD8A);
-    if (score >= 7.0) return const Color(0xFF3B82F6);
-    if (score >= 5.0) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (score >= 8.5) return AppColors.primaryText();
+    if (score >= 7.0) return AppColors.secondaryText();
+    if (score >= 5.0) return AppColors.warningText();
+    return AppColors.errorStrongText();
   }
 
   List<SessionEvaluation> _applyFilters(List<SessionEvaluation> source) {
@@ -572,9 +590,10 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
             style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
           ),
           const Gap(6),
-          const Text(
+          Text(
             'Saved chat and voice conversation stacks from completed customers.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+            style: TextStyle(
+                fontSize: 13, color: AppColors.textSecondary(context)),
           ),
           const Gap(16),
           Expanded(
@@ -582,15 +601,12 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
               builder: (context, history, _) {
                 final all = history.evaluations
                     .where(
-                      (e) =>
-                          e.conversation.isNotEmpty && !isDebugEvaluation(e),
+                      (e) => e.conversation.isNotEmpty && !isDebugEvaluation(e),
                     )
                     .toList();
                 final sectors = <String>{
                   'All',
-                  ...all
-                      .where((e) => e.sector.isNotEmpty)
-                      .map((e) => e.sector),
+                  ...all.where((e) => e.sector.isNotEmpty).map((e) => e.sector),
                 }.toList();
                 final items = _applyFilters(history.evaluations);
 
@@ -628,13 +644,13 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                     ),
                     const Gap(14),
                     if (items.isEmpty)
-                      const Expanded(
+                      Expanded(
                         child: Center(
                           child: Text(
                             'No saved conversations yet.\nComplete a simulation so message stacks appear here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                               height: 1.4,
                             ),
                           ),
@@ -669,10 +685,15 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                                   child: Container(
                                     margin: const EdgeInsets.only(bottom: 12),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF151515),
+                                      color: AppColors.listBase(context),
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(
-                                        color: const Color(0xFF2A2A2B),
+                                        color: AppColors.border(context),
+                                      ),
+                                      boxShadow: AppColors.cardShadow(
+                                        context,
+                                        blur: 12,
+                                        offset: const Offset(0, 3),
                                       ),
                                     ),
                                     child: IntrinsicHeight(
@@ -693,8 +714,7 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                                           ),
                                           Expanded(
                                             child: Padding(
-                                              padding:
-                                                  const EdgeInsets.all(14),
+                                              padding: const EdgeInsets.all(14),
                                               child: Column(
                                                 crossAxisAlignment:
                                                     CrossAxisAlignment.start,
@@ -703,8 +723,7 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                                                     children: [
                                                       Expanded(
                                                         child: Text(
-                                                          e.customerName
-                                                                  .isEmpty
+                                                          e.customerName.isEmpty
                                                               ? 'Customer'
                                                               : friendlyCustomerName(
                                                                   e.customerName,
@@ -743,25 +762,24 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                                                             ? 'VOICE'
                                                             : 'CHAT',
                                                         isVoice
-                                                            ? const Color(
-                                                                0xFF70BD8A,
-                                                              )
-                                                            : const Color(
-                                                                0xFF3B82F6,
-                                                              ),
+                                                            ? AppColors
+                                                                .primaryText()
+                                                            : AppColors
+                                                                .secondaryText(),
                                                       ),
                                                       if (e.sector.isNotEmpty)
                                                         _msgChip(
-                                                          Icons.apartment_rounded,
+                                                          Icons
+                                                              .apartment_rounded,
                                                           e.sector,
-                                                          const Color(
-                                                            0xFF94A3B8,
-                                                          ),
+                                                          AppColors.textMuted(
+                                                              context),
                                                         ),
                                                       _msgChip(
                                                         Icons.forum_outlined,
                                                         '${e.conversation.length} turns',
-                                                        const Color(0xFFA78BFA),
+                                                        AppColors
+                                                            .secondaryText(),
                                                       ),
                                                     ],
                                                   ),
@@ -770,13 +788,13 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
                                                     Text(
                                                       e.problem,
                                                       maxLines: 2,
-                                                      overflow: TextOverflow
-                                                          .ellipsis,
-                                                      style: const TextStyle(
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
                                                         fontSize: 12,
-                                                        color: Color(
-                                                          0xFF94A3B8,
-                                                        ),
+                                                        color: AppColors
+                                                            .textSecondary(
+                                                                context),
                                                       ),
                                                     ),
                                                   ],
@@ -813,18 +831,18 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '$label:',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
-              color: Color(0xFF94A3B8),
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -832,10 +850,10 @@ class _MessagesArchiveListState extends State<MessagesArchiveList> {
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: options.contains(value) ? value : options.first,
-              dropdownColor: const Color(0xFF1C1C1C),
-              style: const TextStyle(
+              dropdownColor: AppColors.card(context),
+              style: TextStyle(
                 fontSize: 12,
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontWeight: FontWeight.w600,
               ),
               items: options

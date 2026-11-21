@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 
 class ScenarioChatBubbleData {
@@ -25,10 +26,10 @@ class ScenarioChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final align =
-        bubble.isAgent ? Alignment.centerRight : Alignment.centerLeft;
-    final color =
-        bubble.isAgent ? const Color(0xFF1A3A1A) : const Color(0xFF1A1A1A);
+    final align = bubble.isAgent ? Alignment.centerRight : Alignment.centerLeft;
+    final color = bubble.isAgent
+        ? AppColors.nextTint(context)
+        : AppColors.elevated(context);
     final label = bubble.isAgent ? 'You' : customerName;
 
     return Align(
@@ -40,14 +41,15 @@ class ScenarioChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFF333333)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: Colors.white54),
+              style:
+                  TextStyle(fontSize: 11, color: AppColors.textMuted(context)),
             ),
             const Gap(4),
             Text(

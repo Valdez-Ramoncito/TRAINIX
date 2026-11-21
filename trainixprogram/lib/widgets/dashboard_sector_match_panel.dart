@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
@@ -12,10 +13,10 @@ class SectorMatchPanel extends StatelessWidget {
   static const double strongBar = 8.5;
 
   Color _c(double score) {
-    if (score >= strongBar) return const Color(0xFF70BD8A);
-    if (score >= passBar) return const Color(0xFF3B82F6);
-    if (score >= 5) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (score >= strongBar) return AppColors.primaryText();
+    if (score >= passBar) return AppColors.secondaryText();
+    if (score >= 5) return AppColors.warningText();
+    return AppColors.errorStrongText();
   }
 
   String _band(double score) {
@@ -25,15 +26,29 @@ class SectorMatchPanel extends StatelessWidget {
     return 'Needs work';
   }
 
+  IconData _sectorIcon(String sector) {
+    final s = sector.toLowerCase();
+    if (s.contains('telco') || s.contains('telecom')) {
+      return Icons.cell_tower_rounded;
+    }
+    if (s.contains('finance') || s.contains('bank')) {
+      return Icons.account_balance_rounded;
+    }
+    if (s.contains('health')) return Icons.local_hospital_outlined;
+    if (s.contains('tech') || s.contains('support')) {
+      return Icons.support_agent_rounded;
+    }
+    return Icons.business_center_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SimulationHistoryProvider>(
       builder: (context, history, _) {
         final liveSessions =
             history.sessions.where((s) => !isDebugSession(s)).toList();
-        final liveEvals = history.evaluations
-            .where((e) => !isDebugEvaluation(e))
-            .toList();
+        final liveEvals =
+            history.evaluations.where((e) => !isDebugEvaluation(e)).toList();
 
         if (liveSessions.length < minSessions) {
           return Center(
@@ -47,23 +62,23 @@ class SectorMatchPanel extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 21, 21, 21),
+                        color: AppColors.listBase(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color.fromARGB(255, 42, 42, 43),
+                          color: AppColors.border(context),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.hub_outlined,
                         size: 36,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textMuted(context),
                       ),
                     ),
                     const Gap(16),
-                    const Text(
+                    Text(
                       'Sector fit not ready',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -72,8 +87,8 @@ class SectorMatchPanel extends StatelessWidget {
                     Text(
                       'Needs at least $minSessions real practice sessions so averages are stable enough to compare.\nYou have ${liveSessions.length} so far. Debug and sample runs do not count.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                      style: TextStyle(
+                        color: AppColors.textSecondary(context),
                         height: 1.45,
                         fontSize: 13,
                       ),
@@ -96,18 +111,17 @@ class SectorMatchPanel extends StatelessWidget {
         }
 
         if (bySector.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
               'No sector-tagged practice scores yet.',
-              style: TextStyle(color: Color(0xFF94A3B8)),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
           );
         }
 
         final averages = <String, double>{
           for (final entry in bySector.entries)
-            entry.key:
-                entry.value.reduce((a, b) => a + b) / entry.value.length,
+            entry.key: entry.value.reduce((a, b) => a + b) / entry.value.length,
         };
         final counts = <String, int>{
           for (final entry in bySector.entries) entry.key: entry.value.length,
@@ -146,10 +160,10 @@ class SectorMatchPanel extends StatelessWidget {
               'Lead average and sample size clearly separate the top sector from the rest.';
         }
         final confidenceColor = confidence == 'High'
-            ? const Color(0xFF70BD8A)
+            ? AppColors.primaryText()
             : confidence == 'Moderate'
-                ? const Color(0xFF3B82F6)
-                : const Color(0xFFF59E0B);
+                ? AppColors.secondaryText()
+                : AppColors.warningText();
 
         final recScores = bySector[recommended]!;
         final recMin = recScores.reduce((a, b) => a < b ? a : b);
@@ -211,27 +225,27 @@ class SectorMatchPanel extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 21, 21, 21),
+                        color: AppColors.listBase(context),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: const Color(0xFF70BD8A).withValues(alpha: 0.4),
+                          color: AppColors.primaryText().withValues(alpha: 0.4),
                         ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(
+                          Row(
                             children: [
                               Icon(
                                 Icons.emoji_events_outlined,
                                 size: 20,
-                                color: Color(0xFF70BD8A),
+                                color: AppColors.primaryText(),
                               ),
                               Gap(8),
                               Text(
                                 'Recommended sector fit',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.textPrimary(context),
                                   fontWeight: FontWeight.w700,
                                   fontSize: 16,
                                 ),
@@ -241,8 +255,8 @@ class SectorMatchPanel extends StatelessWidget {
                           const Gap(8),
                           Text(
                             recommended,
-                            style: const TextStyle(
-                              color: Color(0xFF70BD8A),
+                            style: TextStyle(
+                              color: AppColors.primaryText(),
                               fontWeight: FontWeight.w800,
                               fontSize: 26,
                             ),
@@ -253,30 +267,35 @@ class SectorMatchPanel extends StatelessWidget {
                             runSpacing: 10,
                             children: [
                               _statChip(
+                                context,
                                 Icons.speed_rounded,
                                 'Lead average',
                                 '${recAvg.toStringAsFixed(2)} / 10',
                                 _c(recAvg),
                               ),
                               _statChip(
+                                context,
                                 Icons.people_outline_rounded,
                                 'Sample size',
                                 '$recCount customers',
-                                const Color(0xFF3B82F6),
+                                AppColors.secondaryText(),
                               ),
                               _statChip(
+                                context,
                                 Icons.verified_outlined,
                                 'Pass rate',
                                 '${(recPassRate * 100).toStringAsFixed(0)}%',
-                                const Color(0xFFA78BFA),
+                                AppColors.secondaryText(),
                               ),
                               _statChip(
+                                context,
                                 Icons.stacked_bar_chart_rounded,
                                 'Spread',
                                 '${spread.toStringAsFixed(2)} pts',
-                                const Color(0xFF0EA5E9),
+                                AppColors.secondaryText(),
                               ),
                               _statChip(
+                                context,
                                 Icons.shield_outlined,
                                 'Confidence',
                                 confidence,
@@ -287,8 +306,8 @@ class SectorMatchPanel extends StatelessWidget {
                           const Gap(12),
                           Text(
                             confidenceDetail,
-                            style: const TextStyle(
-                              color: Color(0xFF94A3B8),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
                               fontSize: 12,
                               height: 1.4,
                             ),
@@ -298,25 +317,26 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(14),
                     _sectionCard(
+                      context: context,
                       icon: Icons.rule_folder_outlined,
-                      iconColor: const Color(0xFF60A5FA),
+                      iconColor: AppColors.secondaryText(),
                       title: 'Formula and rules',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Sector score = mean of overall scores for every real scored customer in that sector.',
                             style: TextStyle(
-                              color: Color(0xFFCBD5E1),
+                              color: AppColors.textSecondary(context),
                               fontSize: 13,
                               height: 1.4,
                             ),
                           ),
                           const Gap(8),
-                          const Text(
+                          Text(
                             'Recommended sector = sector with the highest sector score. If two sectors tie on average, the larger sample wins.',
                             style: TextStyle(
-                              color: Color(0xFFCBD5E1),
+                              color: AppColors.textSecondary(context),
                               fontSize: 13,
                               height: 1.4,
                             ),
@@ -326,16 +346,17 @@ class SectorMatchPanel extends StatelessWidget {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF151515),
+                              color: AppColors.listBase(context),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFF2A2A2B)),
+                              border:
+                                  Border.all(color: AppColors.border(context)),
                             ),
-                            child: const Text(
+                            child: Text(
                               'sector_score(S) = sum(overall of customers in S) / count(customers in S)\n'
                               'recommend = argmax over S of sector_score(S)\n'
                               'Debug and sample runs are excluded from every total.',
                               style: TextStyle(
-                                color: Color(0xFF94A3B8),
+                                color: AppColors.textSecondary(context),
                                 fontSize: 12,
                                 height: 1.45,
                                 fontFamily: 'monospace',
@@ -343,10 +364,10 @@ class SectorMatchPanel extends StatelessWidget {
                             ),
                           ),
                           const Gap(10),
-                          const Text(
+                          Text(
                             'This is a practice ranking only. It is not a TESDA grade, hiring decision, or certification result.',
                             style: TextStyle(
-                              color: Color(0xFF64748B),
+                              color: AppColors.textMuted(context),
                               fontSize: 11,
                               height: 1.35,
                             ),
@@ -356,16 +377,17 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(14),
                     _sectionCard(
+                      context: context,
                       icon: Icons.calculate_outlined,
-                      iconColor: const Color(0xFFA78BFA),
+                      iconColor: AppColors.secondaryText(),
                       title: 'Computation for your data',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Using ${liveSessions.length} real sessions and ${liveEvals.length} scored customers after debug filtering.',
-                            style: const TextStyle(
-                              color: Color(0xFF94A3B8),
+                            style: TextStyle(
+                              color: AppColors.textSecondary(context),
                               fontSize: 12,
                               height: 1.4,
                             ),
@@ -382,13 +404,13 @@ class SectorMatchPanel extends StatelessWidget {
                               margin: const EdgeInsets.only(bottom: 8),
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF151515),
+                                color: AppColors.listBase(context),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
                                   color: isTop
-                                      ? const Color(0xFF70BD8A)
+                                      ? AppColors.primaryText()
                                           .withValues(alpha: 0.5)
-                                      : const Color(0xFF2A2A2B),
+                                      : AppColors.border(context),
                                 ),
                               ),
                               child: Column(
@@ -396,11 +418,20 @@ class SectorMatchPanel extends StatelessWidget {
                                 children: [
                                   Row(
                                     children: [
+                                      Icon(
+                                        _sectorIcon(e.key),
+                                        size: 18,
+                                        color: isTop
+                                            ? AppColors.primaryText()
+                                            : AppColors.secondaryText(),
+                                      ),
+                                      const Gap(8),
                                       Expanded(
                                         child: Text(
                                           e.key,
                                           style: TextStyle(
-                                            color: Colors.white,
+                                            color:
+                                                AppColors.textPrimary(context),
                                             fontWeight: isTop
                                                 ? FontWeight.w700
                                                 : FontWeight.w600,
@@ -417,18 +448,18 @@ class SectorMatchPanel extends StatelessWidget {
                                             vertical: 2,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFF70BD8A)
+                                            color: AppColors.primaryText()
                                                 .withValues(alpha: 0.15),
                                             borderRadius:
                                                 BorderRadius.circular(20),
                                             border: Border.all(
-                                              color: const Color(0xFF70BD8A),
+                                              color: AppColors.primaryText(),
                                             ),
                                           ),
-                                          child: const Text(
+                                          child: Text(
                                             'WINNER',
                                             style: TextStyle(
-                                              color: Color(0xFF70BD8A),
+                                              color: AppColors.primaryText(),
                                               fontSize: 10,
                                               fontWeight: FontWeight.w800,
                                             ),
@@ -447,8 +478,8 @@ class SectorMatchPanel extends StatelessWidget {
                                   const Gap(6),
                                   Text(
                                     'sum ${sum.toStringAsFixed(2)} ÷ $n customer${n == 1 ? '' : 's'} = ${e.value.toStringAsFixed(2)}  ·  band ${_band(e.value)}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF94A3B8),
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary(context),
                                       fontSize: 12,
                                       height: 1.35,
                                     ),
@@ -462,8 +493,9 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(14),
                     _sectionCard(
+                      context: context,
                       icon: Icons.help_outline_rounded,
-                      iconColor: const Color(0xFFFBBF24),
+                      iconColor: AppColors.warningText(),
                       title: 'Why $recommended',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,20 +506,20 @@ class SectorMatchPanel extends StatelessWidget {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Padding(
+                                  Padding(
                                     padding: EdgeInsets.only(top: 2),
                                     child: Icon(
                                       Icons.check_circle_outline,
                                       size: 14,
-                                      color: Color(0xFF70BD8A),
+                                      color: AppColors.primaryText(),
                                     ),
                                   ),
                                   const Gap(8),
                                   Expanded(
                                     child: Text(
                                       line,
-                                      style: const TextStyle(
-                                        color: Color(0xFFCBD5E1),
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary(context),
                                         fontSize: 13,
                                         height: 1.4,
                                       ),
@@ -502,13 +534,14 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(14),
                     _sectionCard(
+                      context: context,
                       icon: Icons.psychology_outlined,
-                      iconColor: const Color(0xFF0EA5E9),
+                      iconColor: AppColors.secondaryText(),
                       title: 'General analysis',
                       child: Text(
                         analysis.toString(),
-                        style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 13,
                           height: 1.45,
                         ),
@@ -516,37 +549,42 @@ class SectorMatchPanel extends StatelessWidget {
                     ),
                     const Gap(14),
                     _sectionCard(
+                      context: context,
                       icon: Icons.menu_book_outlined,
-                      iconColor: const Color(0xFFA78BFA),
+                      iconColor: AppColors.secondaryText(),
                       title: 'How to read the ranking',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _rubricRow(
+                            context,
                             '9.0 – 10.0',
                             'Excellent sector average',
-                            const Color(0xFF70BD8A),
+                            AppColors.primaryText(),
                           ),
                           _rubricRow(
+                            context,
                             '7.0 – 8.4',
                             'Good / practice pass band',
-                            const Color(0xFF3B82F6),
+                            AppColors.secondaryText(),
                           ),
                           _rubricRow(
+                            context,
                             '5.0 – 6.9',
                             'Developing — keep guided practice',
-                            const Color(0xFFF59E0B),
+                            AppColors.warningText(),
                           ),
                           _rubricRow(
+                            context,
                             '0.0 – 4.9',
                             'Needs work — prioritize fundamentals',
-                            const Color(0xFFEF4444),
+                            AppColors.errorStrongText(),
                           ),
                           const Gap(8),
-                          const Text(
+                          Text(
                             'Overall per customer is still the mean of the 10 skill scores on that interaction. Sector fit only averages those customer overalls by sector tag.',
                             style: TextStyle(
-                              color: Color(0xFF94A3B8),
+                              color: AppColors.textSecondary(context),
                               fontSize: 12,
                               height: 1.4,
                             ),
@@ -555,18 +593,18 @@ class SectorMatchPanel extends StatelessWidget {
                       ),
                     ),
                     const Gap(14),
-                    const Row(
+                    Row(
                       children: [
                         Icon(
                           Icons.hub_outlined,
                           size: 18,
-                          color: Color(0xFFA78BFA),
+                          color: AppColors.secondaryText(),
                         ),
                         Gap(8),
                         Text(
                           'Sector readiness ranking',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                           ),
@@ -585,12 +623,12 @@ class SectorMatchPanel extends StatelessWidget {
                         margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 21, 21, 21),
+                          color: AppColors.listBase(context),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isTop
-                                ? const Color(0xFF70BD8A)
-                                : const Color.fromARGB(255, 42, 42, 43),
+                                ? AppColors.primaryText()
+                                : AppColors.border(context),
                           ),
                         ),
                         child: Column(
@@ -598,11 +636,19 @@ class SectorMatchPanel extends StatelessWidget {
                           children: [
                             Row(
                               children: [
+                                Icon(
+                                  _sectorIcon(e.key),
+                                  size: 18,
+                                  color: isTop
+                                      ? AppColors.primaryText()
+                                      : AppColors.secondaryText(),
+                                ),
+                                const Gap(8),
                                 Expanded(
                                   child: Text(
                                     e.key,
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary(context),
                                       fontWeight: isTop
                                           ? FontWeight.w700
                                           : FontWeight.w600,
@@ -618,17 +664,17 @@ class SectorMatchPanel extends StatelessWidget {
                                       vertical: 3,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF70BD8A)
+                                      color: AppColors.primaryText()
                                           .withValues(alpha: 0.15),
                                       borderRadius: BorderRadius.circular(20),
                                       border: Border.all(
-                                        color: const Color(0xFF70BD8A),
+                                        color: AppColors.primaryText(),
                                       ),
                                     ),
-                                    child: const Text(
+                                    child: Text(
                                       'TOP FIT',
                                       style: TextStyle(
-                                        color: Color(0xFF70BD8A),
+                                        color: AppColors.primaryText(),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w800,
                                       ),
@@ -650,15 +696,15 @@ class SectorMatchPanel extends StatelessWidget {
                               child: LinearProgressIndicator(
                                 value: pct,
                                 minHeight: 8,
-                                backgroundColor: const Color(0xFF2A2A2A),
+                                backgroundColor: AppColors.border(context),
                                 color: color,
                               ),
                             ),
                             const Gap(6),
                             Text(
                               '$n customers · $passPct% ≥ $passBar · ${_band(e.value)}',
-                              style: const TextStyle(
-                                color: Color(0xFF64748B),
+                              style: TextStyle(
+                                color: AppColors.textMuted(context),
                                 fontSize: 11,
                               ),
                             ),
@@ -676,13 +722,14 @@ class SectorMatchPanel extends StatelessWidget {
     );
   }
 
-  Widget _statChip(IconData icon, String label, String value, Color color) {
+  Widget _statChip(BuildContext context, IconData icon, String label,
+      String value, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -694,8 +741,8 @@ class SectorMatchPanel extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF64748B),
+                style: TextStyle(
+                  color: AppColors.textMuted(context),
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -716,6 +763,7 @@ class SectorMatchPanel extends StatelessWidget {
   }
 
   Widget _sectionCard({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -725,9 +773,9 @@ class SectorMatchPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -739,8 +787,8 @@ class SectorMatchPanel extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -755,7 +803,8 @@ class SectorMatchPanel extends StatelessWidget {
     );
   }
 
-  Widget _rubricRow(String range, String meaning, Color color) {
+  Widget _rubricRow(
+      BuildContext context, String range, String meaning, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -783,8 +832,8 @@ class SectorMatchPanel extends StatelessWidget {
           Expanded(
             child: Text(
               meaning,
-              style: const TextStyle(
-                color: Color(0xFFCBD5E1),
+              style: TextStyle(
+                color: AppColors.textSecondary(context),
                 fontSize: 12,
               ),
             ),

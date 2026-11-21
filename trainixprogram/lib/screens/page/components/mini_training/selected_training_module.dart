@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/script_personalization.dart';
@@ -27,11 +28,11 @@ class _CategoryModuleState extends State<CategoryModule> {
         const Gap(6),
         Text(
           trimmed.substring(4),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
             height: 1.35,
-            color: Color(0xFF70BD8A),
+            color: AppColors.primaryText(),
           ),
         ),
         const Gap(6),
@@ -50,27 +51,27 @@ class _CategoryModuleState extends State<CategoryModule> {
       final emotion = widget.categoryName.toLowerCase().contains('empathy')
           ? 'empathetic'
           : widget.categoryName.toLowerCase().contains('escalat')
-          ? 'firm'
-          : 'professional';
+              ? 'firm'
+              : 'professional';
       return [
         Container(
           width: double.infinity,
           margin: const EdgeInsets.only(top: 6, bottom: 6),
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: const Color(0xFF15201A),
+            color: AppColors.nextTint(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF2E4A38)),
+            border: Border.all(color: AppColors.nextTint(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 body,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   height: 1.45,
-                  color: Color(0xFFD7E8DB),
+                  color: AppColors.primaryText(),
                 ),
               ),
               if (speakText.isNotEmpty) ...[
@@ -85,7 +86,7 @@ class _CategoryModuleState extends State<CategoryModule> {
                   icon: const Icon(Icons.volume_up_outlined, size: 16),
                   label: const Text('Hear line'),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF70BD8A),
+                    foregroundColor: AppColors.primaryText(),
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(0, 28),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -104,13 +105,13 @@ class _CategoryModuleState extends State<CategoryModule> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 2),
                 child: Text(
                   '•',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Color(0xFF70BD8A),
+                    color: AppColors.primaryText(),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -119,10 +120,10 @@ class _CategoryModuleState extends State<CategoryModule> {
               Expanded(
                 child: Text(
                   trimmed.substring(2),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     height: 1.5,
-                    color: Color(0xFFE0E0E0),
+                    color: AppColors.textPrimary(context),
                   ),
                 ),
               ),
@@ -136,10 +137,10 @@ class _CategoryModuleState extends State<CategoryModule> {
         padding: const EdgeInsets.only(bottom: 6),
         child: Text(
           trimmed,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             height: 1.55,
-            color: Color(0xFFD1D5DB),
+            color: AppColors.textSecondary(context),
           ),
         ),
       ),
@@ -160,9 +161,9 @@ class _CategoryModuleState extends State<CategoryModule> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF151A21),
+            color: AppColors.card(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFF2A313A)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,7 +175,7 @@ class _CategoryModuleState extends State<CategoryModule> {
                       width: 4,
                       height: 18,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF70BD8A),
+                        color: AppColors.primaryText(),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
@@ -182,10 +183,10 @@ class _CategoryModuleState extends State<CategoryModule> {
                     Expanded(
                       child: Text(
                         sectionTitle!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: AppColors.textPrimary(context),
                         ),
                       ),
                     ),
@@ -220,16 +221,17 @@ class _CategoryModuleState extends State<CategoryModule> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1A2E24), Color(0xFF15201A)],
+          gradient: LinearGradient(
+            colors: [AppColors.nextTint(context), AppColors.nextTint(context)],
           ),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF2E4A38)),
+          border: Border.all(color: AppColors.nextTint(context)),
         ),
-        child: const Row(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.lightbulb_outline, color: Color(0xFF70BD8A), size: 18),
+            Icon(Icons.lightbulb_outline,
+                color: AppColors.primaryText(), size: 18),
             Gap(10),
             Expanded(
               child: Text(
@@ -237,7 +239,7 @@ class _CategoryModuleState extends State<CategoryModule> {
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.4,
-                  color: Color(0xFFD7E8DB),
+                  color: AppColors.primaryText(),
                 ),
               ),
             ),
@@ -297,7 +299,7 @@ class _CategoryModuleState extends State<CategoryModule> {
     }
     setState(() {});
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("DEBUG: Lesson assessment auto-finished")),
+      SnackBar(content: Text("DEBUG: Lesson assessment auto-finished")),
     );
   }
 
@@ -308,11 +310,11 @@ class _CategoryModuleState extends State<CategoryModule> {
 
     final score = widget.lesson.lastScorePercent;
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1419),
+      backgroundColor: AppColors.scaffold(context),
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: const Color(0xFF0F1419),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.scaffold(context),
+        foregroundColor: AppColors.textPrimary(context),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
@@ -320,7 +322,7 @@ class _CategoryModuleState extends State<CategoryModule> {
         ),
         title: Text(
           'Lesson ${widget.lesson.order} · ${widget.lesson.title}',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
         ),
       ),
       body: SingleChildScrollView(
@@ -335,9 +337,9 @@ class _CategoryModuleState extends State<CategoryModule> {
                   width: double.infinity,
                   padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF15201A),
+                    color: AppColors.nextTint(context),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF2E4A38)),
+                    border: Border.all(color: AppColors.nextTint(context)),
                   ),
                   child: Row(
                     children: [
@@ -345,12 +347,12 @@ class _CategoryModuleState extends State<CategoryModule> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1F3A2A),
+                          color: AppColors.nextTint(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.menu_book_rounded,
-                          color: Color(0xFF70BD8A),
+                          color: AppColors.primaryText(),
                         ),
                       ),
                       const Gap(12),
@@ -360,8 +362,8 @@ class _CategoryModuleState extends State<CategoryModule> {
                           children: [
                             Text(
                               widget.lesson.title,
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.textPrimary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
                               ),
@@ -370,11 +372,11 @@ class _CategoryModuleState extends State<CategoryModule> {
                             Text(
                               isDone
                                   ? (score != null
-                                        ? 'Completed · Last score $score%'
-                                        : 'Completed')
+                                      ? 'Completed · Last score $score%'
+                                      : 'Completed')
                                   : 'Read the lesson, then take the assessment when ready.',
-                              style: const TextStyle(
-                                color: Color(0xFF9CA3AF),
+                              style: TextStyle(
+                                color: AppColors.textMuted(context),
                                 fontSize: 12,
                               ),
                             ),
@@ -398,9 +400,9 @@ class _CategoryModuleState extends State<CategoryModule> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: isDone
-                                ? const Color(0xFF374151)
-                                : const Color(0xFF16A34A),
-                            foregroundColor: Colors.white,
+                                ? AppColors.borderStrong(context)
+                                : AppColors.primaryText(),
+                            foregroundColor: AppColors.onPrimary(context),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -409,8 +411,8 @@ class _CategoryModuleState extends State<CategoryModule> {
                           child: Text(
                             isDone
                                 ? (score != null
-                                      ? 'Assessment Passed ($score%)'
-                                      : 'Assessment Passed')
+                                    ? 'Assessment Passed ($score%)'
+                                    : 'Assessment Passed')
                                 : 'Start Assessment',
                             style: const TextStyle(
                               fontSize: 15,
@@ -448,8 +450,8 @@ class _CategoryModuleState extends State<CategoryModule> {
                             height: 48,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF16A34A),
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppColors.primaryText(),
+                                foregroundColor: AppColors.onPrimary(context),
                               ),
                               onPressed: _openNextLesson,
                               child: const Text('Continue to next lesson'),
@@ -468,8 +470,8 @@ class _CategoryModuleState extends State<CategoryModule> {
                             height: 48,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2563EB),
-                                foregroundColor: Colors.white,
+                                backgroundColor: AppColors.secondaryText(),
+                                foregroundColor: AppColors.onPrimary(context),
                               ),
                               onPressed: () => Navigator.of(context).maybePop(),
                               child: const Text('Back to category'),
@@ -498,9 +500,9 @@ class _CategoryModuleState extends State<CategoryModule> {
                   ],
                 ],
                 if (!hasAssessment)
-                  const Text(
+                  Text(
                     'No assessment available for this lesson yet.',
-                    style: TextStyle(color: Colors.white54),
+                    style: TextStyle(color: AppColors.textMuted(context)),
                   ),
               ],
             ),

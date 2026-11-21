@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/components/size.dart';
 
 class CreateButton extends StatefulWidget {
   final String text;
   final VoidCallback? onTap;
-  const CreateButton({super.key, required this.text, required this.onTap});
+  final IconData? icon;
+
+  const CreateButton({
+    super.key,
+    required this.text,
+    required this.onTap,
+    this.icon,
+  });
 
   @override
   State<CreateButton> createState() => _CreateButtonState();
@@ -15,6 +23,11 @@ class _CreateButtonState extends State<CreateButton> {
 
   @override
   Widget build(BuildContext context) {
+    final icon = widget.icon;
+    final elevated = AppColors.elevated(context);
+    final cardHover = AppColors.cardHover(context);
+    final border = AppColors.borderStrong(context);
+
     return GestureDetector(
       onTap: widget.onTap,
       child: MouseRegion(
@@ -22,25 +35,42 @@ class _CreateButtonState extends State<CreateButton> {
         onEnter: (_) => setState(() => isHovered = true),
         onExit: (_) => setState(() => isHovered = false),
         child: AnimatedContainer(
-          duration: Duration(milliseconds: 80),
-          width: 70,
+          duration: const Duration(milliseconds: 80),
           height: 40,
+          constraints: const BoxConstraints(minWidth: 70),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
-            color: widget.text == "Exit"
+            color: widget.text == 'Exit'
                 ? Colors.transparent
                 : isHovered
-                ? Color.fromARGB(255, 59, 53, 64)
-                : Color.fromARGB(255, 38, 34, 41),
-            borderRadius: .circular(10),
-            border: .all(color: Color.fromARGB(109, 235, 218, 253)),
+                    ? cardHover
+                    : elevated,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border),
           ),
-          child: Center(
-            child: Text(
-              widget.text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontSize: context.responsiveFont(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isHovered
+                      ? AppColors.textPrimary(context)
+                      : AppColors.textSecondary(context),
+                ),
+                const SizedBox(width: 7),
+              ],
+              Text(
+                widget.text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontSize: context.responsiveFont(4),
+                    ),
               ),
-            ),
+            ],
           ),
         ),
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 
@@ -31,7 +32,7 @@ class _ScenarioMissionPanelState extends State<ScenarioMissionPanel> {
 
     if (!_expanded) {
       return Material(
-        color: const Color(0xFF1A1A1A),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -41,26 +42,28 @@ class _ScenarioMissionPanelState extends State<ScenarioMissionPanel> {
             padding: const EdgeInsets.symmetric(vertical: 12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF333333)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               children: [
-                const Icon(Icons.flag_rounded, color: Color(0xFF34D399), size: 20),
+                Icon(Icons.flag_rounded,
+                    color: AppColors.successText(), size: 20),
                 const Gap(8),
                 RotatedBox(
                   quarterTurns: 3,
                   child: Text(
                     'MISSION  $doneCount/${widget.steps.length}',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF34D399),
+                      color: AppColors.successText(),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1,
                     ),
                   ),
                 ),
                 const Gap(8),
-                const Icon(Icons.chevron_right, color: Colors.white54, size: 18),
+                Icon(Icons.chevron_right,
+                    color: AppColors.textMuted(context), size: 18),
               ],
             ),
           ),
@@ -72,38 +75,41 @@ class _ScenarioMissionPanelState extends State<ScenarioMissionPanel> {
       width: 240,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF333333)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.flag_rounded, size: 16, color: Color(0xFF34D399)),
+              Icon(Icons.flag_rounded,
+                  size: 16, color: AppColors.successText()),
               const Gap(8),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'MISSION',
                   style: TextStyle(
                     fontSize: 11,
                     letterSpacing: 1.1,
-                    color: Color(0xFF34D399),
+                    color: AppColors.successText(),
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
                 '$doneCount/${widget.steps.length}',
-                style: const TextStyle(fontSize: 11, color: Colors.white54),
+                style: TextStyle(
+                    fontSize: 11, color: AppColors.textMuted(context)),
               ),
               IconButton(
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                 onPressed: () => setState(() => _expanded = false),
-                icon: const Icon(Icons.chevron_left, color: Colors.white54, size: 20),
+                icon: Icon(Icons.chevron_left,
+                    color: AppColors.textMuted(context), size: 20),
               ),
             ],
           ),
@@ -116,13 +122,13 @@ class _ScenarioMissionPanelState extends State<ScenarioMissionPanel> {
                 Color color;
                 IconData icon;
                 if (done) {
-                  color = const Color(0xFF34D399);
+                  color = AppColors.successText();
                   icon = Icons.check_circle_rounded;
                 } else if (current) {
-                  color = const Color(0xFF60A5FA);
+                  color = AppColors.secondaryText();
                   icon = Icons.radio_button_checked;
                 } else {
-                  color = const Color(0xFF6B7280);
+                  color = AppColors.textMuted(context);
                   icon = Icons.radio_button_unchecked;
                 }
                 return Padding(
@@ -139,10 +145,10 @@ class _ScenarioMissionPanelState extends State<ScenarioMissionPanel> {
                             fontSize: 12.5,
                             height: 1.3,
                             color: done
-                                ? const Color(0xFF9CA3AF)
+                                ? AppColors.textMuted(context)
                                 : current
-                                    ? Colors.white
-                                    : const Color(0xFF9CA3AF),
+                                    ? AppColors.textPrimary(context)
+                                    : AppColors.textMuted(context),
                             fontWeight:
                                 current ? FontWeight.w600 : FontWeight.w400,
                             decoration:

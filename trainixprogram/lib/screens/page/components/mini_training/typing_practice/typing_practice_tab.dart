@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/typing/typing_passage.dart';
 import 'package:trainixprogram/models/training/typing/typing_practice_store.dart';
@@ -15,10 +16,7 @@ class TypingPracticeTab extends StatefulWidget {
 }
 
 class _TypingPracticeTabState extends State<TypingPracticeTab> {
-  static const _green = Color(0xFF70BD8A);
-  static const _card = Color(0xFF151515);
-  static const _border = Color(0xFF2F2F2F);
-  static const _muted = Color(0xFF9CA3AF);
+  static Color get _green => AppColors.primaryText();
 
   int _durationSeconds = 60;
   TypingPack _pack = TypingPack.scripts;
@@ -79,7 +77,7 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                 flagKey: 'typing_practice_intro',
                 title: 'Typing Practice',
                 body:
-                    'Optional speed drills for chat work. Timer starts on your first key. Scores stay on this device for now and do not gate Mini Training.',
+                    'Optional speed drills for chat work. Timer starts on your first key. Scores stay in memory for this session only and clear when the app restarts. They do not gate Mini Training.',
               ),
             ),
             const ScreenHelpButton(content: ScreenHelpCatalog.typingPractice),
@@ -95,13 +93,23 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Duration',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _muted,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.timer_outlined,
+                            size: 16,
+                            color: AppColors.textMuted(context),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Duration',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textMuted(context),
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(10),
                       Wrap(
@@ -121,19 +129,28 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                           _ChoiceChip(
                             label: '2 min',
                             selected: _durationSeconds == 120,
-                            onTap: () =>
-                                setState(() => _durationSeconds = 120),
+                            onTap: () => setState(() => _durationSeconds = 120),
                           ),
                         ],
                       ),
                       const Gap(22),
-                      const Text(
-                        'Passage pack',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: _muted,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.article_outlined,
+                            size: 16,
+                            color: AppColors.textMuted(context),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Passage pack',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textMuted(context),
+                            ),
+                          ),
+                        ],
                       ),
                       const Gap(10),
                       ...TypingPack.values.map((pack) {
@@ -160,10 +177,12 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                             vertical: 12,
                           ),
                           decoration: BoxDecoration(
-                            color: _card,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: _noBackspace ? _green : _border,
+                              color: _noBackspace
+                                  ? _green
+                                  : AppColors.borderIdle(context),
                             ),
                           ),
                           child: Row(
@@ -173,10 +192,12 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                                     ? Icons.check_box
                                     : Icons.check_box_outline_blank,
                                 size: 20,
-                                color: _noBackspace ? _green : _muted,
+                                color: _noBackspace
+                                    ? _green
+                                    : AppColors.borderStrong(context),
                               ),
                               const Gap(10),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -192,7 +213,7 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                                       'Blocks delete and backspace. Builds clean first-pass typing.',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: _muted,
+                                        color: AppColors.textMuted(context),
                                       ),
                                     ),
                                   ],
@@ -210,7 +231,7 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                           onPressed: _start,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _green,
-                            foregroundColor: Colors.white,
+                            foregroundColor: AppColors.onPrimary(context),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -225,9 +246,12 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                         ),
                       ),
                       const Gap(12),
-                      const Text(
+                      Text(
                         'Chat agents often aim for 40 to 60+ net WPM with high accuracy. Use Scripts and Chat packs to mirror real replies.',
-                        style: TextStyle(fontSize: 12, color: _muted, height: 1.4),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textMuted(context),
+                            height: 1.4),
                       ),
                     ],
                   ),
@@ -252,12 +276,12 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                         emptyLabel: 'Complete a run to see your best net WPM.',
                       ),
                       const Gap(18),
-                      const Text(
+                      Text(
                         'Recent runs',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: _muted,
+                          color: AppColors.textMuted(context),
                         ),
                       ),
                       const Gap(10),
@@ -266,13 +290,16 @@ class _TypingPracticeTabState extends State<TypingPracticeTab> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: _card,
+                            color: AppColors.card(context),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _border),
+                            border: Border.all(
+                                color: AppColors.borderIdle(context)),
                           ),
-                          child: const Text(
-                            'Your last 20 runs will appear here for this session.',
-                            style: TextStyle(fontSize: 13, color: _muted),
+                          child: Text(
+                            'Your last 20 runs appear here. History clears when the app restarts.',
+                            style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textMuted(context)),
                           ),
                         )
                       else
@@ -316,11 +343,13 @@ class _ChoiceChip extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF70BD8A).withValues(alpha: 0.16)
-                : const Color(0xFF151515),
+                ? AppColors.primaryText().withValues(alpha: 0.16)
+                : AppColors.listBase(context),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: selected ? const Color(0xFF70BD8A) : const Color(0xFF2F2F2F),
+              color: selected
+                  ? AppColors.primaryText()
+                  : AppColors.borderIdle(context),
             ),
           ),
           child: Text(
@@ -328,7 +357,9 @@ class _ChoiceChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? const Color(0xFF70BD8A) : Colors.white70,
+              color: selected
+                  ? AppColors.primaryText(context)
+                  : AppColors.textMuted(context),
             ),
           ),
         ),
@@ -362,17 +393,18 @@ class _PackCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             color: selected
-                ? const Color(0xFF141C18)
-                : const Color(0xFF151515),
+                ? AppColors.stageSelected(context)
+                : AppColors.listBase(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: selected ? const Color(0xFF70BD8A) : const Color(0xFF2F2F2F),
+              color: selected
+                  ? AppColors.primaryText()
+                  : AppColors.borderIdle(context),
             ),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color:
-                          const Color(0xFF70BD8A).withValues(alpha: 0.12),
+                      color: AppColors.primaryText().withValues(alpha: 0.12),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
@@ -387,7 +419,7 @@ class _PackCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
                       ),
@@ -395,9 +427,9 @@ class _PackCard extends StatelessWidget {
                     const Gap(4),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: AppColors.textMuted(context),
                         height: 1.35,
                       ),
                     ),
@@ -405,13 +437,11 @@ class _PackCard extends StatelessWidget {
                 ),
               ),
               Icon(
-                selected
-                    ? Icons.radio_button_checked
-                    : Icons.radio_button_off,
+                selected ? Icons.radio_button_checked : Icons.radio_button_off,
                 size: 20,
                 color: selected
-                    ? const Color(0xFF70BD8A)
-                    : const Color(0xFF6B7280),
+                    ? AppColors.primaryText()
+                    : AppColors.borderStrong(context),
               ),
             ],
           ),
@@ -438,49 +468,51 @@ class _BestCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2F2F2F)),
+        border: Border.all(color: AppColors.borderIdle(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
             ),
           ),
           const Gap(10),
           if (result == null)
             Text(
               emptyLabel,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style:
+                  TextStyle(fontSize: 13, color: AppColors.textMuted(context)),
             )
           else
             Row(
               children: [
                 Text(
                   '${result!.roundedNetWpm}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF70BD8A),
+                    color: AppColors.primaryText(),
                   ),
                 ),
                 const Gap(8),
-                const Text(
+                Text(
                   'WPM',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                  style: TextStyle(
+                      fontSize: 14, color: AppColors.textMuted(context)),
                 ),
                 const Spacer(),
                 Text(
                   '${result!.roundedAccuracy}% · ${result!.durationSeconds}s',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textMuted(context),
                   ),
                 ),
               ],
@@ -513,15 +545,15 @@ class _HistoryRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFF2F2F2F)),
+        border: Border.all(color: AppColors.borderIdle(context)),
       ),
       child: Row(
         children: [
           Text(
             '${result.roundedNetWpm} WPM',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
@@ -529,13 +561,13 @@ class _HistoryRow extends StatelessWidget {
           const Gap(10),
           Text(
             '${result.roundedAccuracy}%',
-            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            style: TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
           ),
           const Spacer(),
           Text(
             '$_pack · ${result.durationSeconds}s'
             '${result.noBackspace ? ' · NB' : ''}',
-            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted(context)),
           ),
         ],
       ),

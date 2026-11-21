@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:gap/gap.dart';
@@ -82,17 +83,14 @@ class _LoginScreenState extends State<LoginScreen> {
     await AuthService.instance.loadProfileIntoApp();
     final sessionUser = AuthService.instance.currentUser;
     final sessionEmail = (sessionUser?.email ?? '').trim().toLowerCase();
-    final sessionMetaRole = '${sessionUser?.userMetadata?['role'] ?? ''}'
-        .trim()
+    final sessionMetaRole =
+        '${sessionUser?.userMetadata?['role'] ?? ''}'.trim().toLowerCase();
+    final email = (ProfileData.email.trim().isEmpty
+            ? sessionEmail
+            : ProfileData.email.trim())
         .toLowerCase();
-    final email =
-        (ProfileData.email.trim().isEmpty
-                ? sessionEmail
-                : ProfileData.email.trim())
-            .toLowerCase();
     final name = ProfileData.displayName.trim().toLowerCase();
-    final forceTrainer =
-        AuthService.isKnownTrainerEmail(email) ||
+    final forceTrainer = AuthService.isKnownTrainerEmail(email) ||
         AuthService.isKnownTrainerEmail(sessionEmail) ||
         ProfileData.role == AppRole.trainer ||
         sessionMetaRole == 'trainer' ||
@@ -108,8 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await AuthService.saveProfileDetails();
       } catch (_) {}
     }
-    final forceAdmin =
-        AuthService.isKnownAdminEmail(email) ||
+    final forceAdmin = AuthService.isKnownAdminEmail(email) ||
         AuthService.isKnownAdminEmail(sessionEmail) ||
         ProfileData.role == AppRole.admin ||
         sessionMetaRole == 'admin' ||
@@ -258,13 +255,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             children: [
                               Text(
                                 "Turn Practice Into Confidence.",
-                                style: Theme.of(context).textTheme.titleMedium
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
                                     ?.copyWith(fontSize: 50, height: 1.2),
                               ),
                               Gap(20),
                               Text(
                                 "Prepare for your BPO career through realistic AI-powered training simulations designed to build your communication, customer service, and professional skills.",
-                                style: Theme.of(context).textTheme.bodySmall
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
                                     ?.copyWith(fontSize: 12, height: 1.2),
                               ),
                             ],
@@ -280,19 +281,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           width: 400,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(25),
-                            color: const Color.fromARGB(
-                              255,
-                              111,
-                              109,
-                              109,
-                            ).withOpacity(0.03),
+                            color:
+                                AppColors.card(context).withValues(alpha: 0.55),
                             border: Border.all(
-                              color: const Color.fromARGB(
-                                255,
-                                30,
-                                29,
-                                29,
-                              ).withOpacity(0.5),
+                              color: AppColors.border(context),
+                            ),
+                            boxShadow: AppColors.cardShadow(
+                              context,
+                              blur: 24,
+                              offset: const Offset(0, 10),
                             ),
                           ),
                           child: Padding(
@@ -305,7 +302,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               children: [
                                 Text(
                                   "Welcome!",
-                                  style: Theme.of(context).textTheme.bodyMedium
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
                                       ?.copyWith(fontSize: 15),
                                 ),
                                 Gap(10),
@@ -320,6 +319,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   AppTextField(
                                     label: 'Display name',
                                     controller: _nameController,
+                                    prefixIcon: const Icon(
+                                      Icons.person_outline_rounded,
+                                      size: 19,
+                                    ),
                                   ),
                                   const Gap(12),
                                   Row(
@@ -353,6 +356,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 AppTextField(
                                   label: 'Email',
                                   controller: _emailController,
+                                  prefixIcon: const Icon(
+                                    Icons.mail_outline_rounded,
+                                    size: 19,
+                                  ),
                                   textInputAction: TextInputAction.next,
                                 ),
                                 Gap(15),
@@ -360,6 +367,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                   label: 'Password',
                                   controller: _passwordController,
                                   isPassword: true,
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 19,
+                                  ),
                                   textInputAction: TextInputAction.done,
                                   onSubmitted: (_) {
                                     if (!_busy) _handleAuth();
@@ -369,30 +380,38 @@ class _LoginScreenState extends State<LoginScreen> {
                                 SizedBox(
                                   width: double.infinity,
                                   height: 40,
-                                  child: ElevatedButton(
+                                  child: ElevatedButton.icon(
                                     onPressed: _busy ? null : _handleAuth,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color.fromARGB(
-                                        255,
-                                        9,
-                                        118,
-                                        214,
+                                      backgroundColor: AppColors.secondary(
+                                        context,
                                       ),
-                                      foregroundColor: Colors.white,
+                                      foregroundColor:
+                                          AppColors.onSecondary(context),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(10),
                                       ),
                                       enabledMouseCursor:
                                           SystemMouseCursors.click,
                                     ),
-                                    child: Text(
+                                    icon: Icon(
+                                      _isSignUp
+                                          ? Icons.person_add_alt_1_rounded
+                                          : Icons.login_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(
                                       _busy
                                           ? 'Please wait...'
                                           : (_isSignUp ? 'Sign up' : 'Login'),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyMedium
-                                          ?.copyWith(fontSize: 13),
+                                          ?.copyWith(
+                                            fontSize: 13,
+                                            color:
+                                                AppColors.onSecondary(context),
+                                          ),
                                     ),
                                   ),
                                 ),
@@ -401,15 +420,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: _busy
                                       ? null
                                       : () => setState(
-                                          () => _isSignUp = !_isSignUp,
-                                        ),
+                                            () => _isSignUp = !_isSignUp,
+                                          ),
                                   child: Text(
                                     _isSignUp
                                         ? 'Already have an account? Login'
                                         : 'Need an account? Sign up',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: Colors.white54,
+                                      color: AppColors.textMuted(context),
                                     ),
                                   ),
                                 ),

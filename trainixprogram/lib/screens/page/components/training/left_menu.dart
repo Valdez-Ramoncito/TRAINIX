@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
 import 'package:trainixprogram/components/button/menu_button_training.dart';

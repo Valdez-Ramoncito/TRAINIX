@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/trainee_next_step.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
@@ -36,9 +37,11 @@ class ScreenHelpCatalog {
       'Finish a category final to open the next category.',
       'After all categories, take the Grand Final.',
       'Scenario Practice tab unlocks after the Grand Final (Chat, Voice).',
-      'Typing Practice is optional speed and accuracy drills. It never gates progress.',
+      'Typing and Speaking Practice are optional drills. They never gate progress.',
+      'Results open with a How this was scored card and band chips, so every score points to its rule.',
     ],
-    footer: 'Use the Scenario Practice tab after the Grand Final.',
+    footer:
+        'Use the Scenario Practice tab after the Grand Final. Scenario results show the mistake budget; assessments show the item formula.',
   );
 
   static const typingPractice = ScreenHelpContent(
@@ -48,7 +51,20 @@ class ScreenHelpCatalog {
       'Packs: General warm-up, agent Scripts, or Chat-style turns.',
       'Net WPM counts correct characters. Accuracy tracks keystroke quality.',
       'No-backspace mode blocks delete to train clean first-pass typing.',
-      'Personal bests and recent runs stay in memory for this session.',
+      'Personal bests and recent runs stay in memory for this session and clear when the app restarts.',
+    ],
+    footer:
+        'Optional tool only. It does not unlock or lock Mini Training or Simulation.',
+  );
+
+  static const speakingPractice = ScreenHelpContent(
+    title: 'Speaking Practice',
+    bullets: [
+      'Choose a pack and difficulty, then press Start. Mic access is requested only then.',
+      'Read or respond to the prompt. Recording auto-stops at target time plus 15 seconds.',
+      'Scores cover grammar, word choice, fluency, pronunciation, fillers, confidence, and completeness.',
+      'Pronunciation and confidence need audio. If audio is missing those dimensions stay not scored.',
+      'History stays in memory for this session and clears when the app restarts.',
     ],
     footer:
         'Optional tool only. It does not unlock or lock Mini Training or Simulation.',
@@ -226,7 +242,10 @@ class ScreenHelpButton extends StatelessWidget {
     return IconButton(
       tooltip: 'Help',
       onPressed: () => _open(context),
-      icon: const Icon(Icons.help_outline_rounded, color: Color(0xFF9CA3AF)),
+      icon: Icon(
+        Icons.help_outline_rounded,
+        color: AppColors.textMuted(context),
+      ),
     );
   }
 }
@@ -243,6 +262,13 @@ class _HelpPanel extends StatefulWidget {
 
 class _HelpPanelState extends State<_HelpPanel> {
   int _tab = 0;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +278,7 @@ class _HelpPanelState extends State<_HelpPanel> {
     final wide = size.width >= 900;
 
     return Dialog(
-      backgroundColor: const Color(0xFF141A22),
+      backgroundColor: AppColors.elevated(context),
       insetPadding: EdgeInsets.symmetric(
         horizontal: wide ? size.width * 0.18 : 24,
         vertical: wide ? 48 : 24,
@@ -269,13 +295,16 @@ class _HelpPanelState extends State<_HelpPanel> {
               padding: const EdgeInsets.fromLTRB(20, 16, 8, 8),
               child: Row(
                 children: [
-                  const Icon(Icons.menu_book_rounded, color: Color(0xFF70BD8A)),
+                  Icon(
+                    Icons.menu_book_rounded,
+                    color: AppColors.primary(context),
+                  ),
                   const Gap(10),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Help and guidance',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.textPrimary(context),
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                       ),
@@ -283,7 +312,10 @@ class _HelpPanelState extends State<_HelpPanel> {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Color(0xFF9CA3AF)),
+                    icon: Icon(
+                      Icons.close,
+                      color: AppColors.textMuted(context),
+                    ),
                   ),
                 ],
               ),
@@ -292,28 +324,37 @@ class _HelpPanelState extends State<_HelpPanel> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _tabChip(0, 'This screen'),
+                  _tabChip(context, 0, 'This screen'),
                   const Gap(8),
-                  _tabChip(1, 'All screens'),
+                  _tabChip(context, 1, 'All screens'),
                   if (ProfileData.role != AppRole.trainer) ...[
                     const Gap(8),
-                    _tabChip(2, 'Guide settings'),
+                    _tabChip(context, 2, 'Guide settings'),
                   ],
                 ],
               ),
             ),
             const Gap(8),
-            const Divider(height: 1, color: Color(0xFF2A2A2A)),
+            Divider(height: 1, color: AppColors.divider(context)),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                child: _tab == 0
-                    ? _thisScreen(next, guided)
-                    : _tab == 1
-                    ? _allScreens()
-                    : ProfileData.role == AppRole.trainer
-                    ? _allScreens()
-                    : _settings(context, guided),
+              child: Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  child: _tab == 0
+                      ? _thisScreen(context, next, guided)
+                      : _tab == 1
+                          ? _allScreens(
+                              context,
+                            )
+                          : ProfileData.role == AppRole.trainer
+                              ? _allScreens(
+                                  context,
+                                )
+                              : _settings(context, guided),
+                ),
               ),
             ),
           ],
@@ -322,48 +363,63 @@ class _HelpPanelState extends State<_HelpPanel> {
     );
   }
 
-  Widget _tabChip(int index, String label) {
+  Widget _tabChip(BuildContext context, int index, String label) {
     final selected = _tab == index;
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => setState(() => _tab = index),
-      selectedColor: const Color(0xFF243447),
+      selectedColor: AppColors.completeTint(context),
       labelStyle: TextStyle(
-        color: selected ? const Color(0xFF70BD8A) : const Color(0xFF9CA3AF),
+        color: selected
+            ? AppColors.primary(context)
+            : AppColors.textMuted(context),
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
-      backgroundColor: const Color(0xFF1A1F26),
+      backgroundColor: AppColors.card(context),
       side: BorderSide(
-        color: selected ? const Color(0xFF70BD8A) : const Color(0xFF333333),
+        color:
+            selected ? AppColors.primary(context) : AppColors.border(context),
       ),
     );
   }
 
-  Widget _thisScreen(TraineeNextStep next, bool guided) {
+  Widget _thisScreen(BuildContext context, TraineeNextStep next, bool guided) {
     final isTrainer = ProfileData.role == AppRole.trainer;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.content.title,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.info_outline_rounded,
+              size: 18,
+              color: AppColors.secondaryText(),
+            ),
+            const Gap(8),
+            Expanded(
+              child: Text(
+                widget.content.title,
+                style: TextStyle(
+                  color: AppColors.textPrimary(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
         ),
         const Gap(10),
         for (final line in widget.content.bullets) ...[
-          _bullet(line),
+          _bullet(context, line),
           const Gap(8),
         ],
         if (widget.content.footer != null) ...[
           const Gap(4),
           Text(
             widget.content.footer!,
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           ),
         ],
         if (!isTrainer) ...[
@@ -372,17 +428,17 @@ class _HelpPanelState extends State<_HelpPanel> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1F26),
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2A3441)),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   guided ? 'Current guide step' : 'Suggested next step',
-                  style: const TextStyle(
-                    color: Color(0xFF70BD8A),
+                  style: TextStyle(
+                    color: AppColors.primaryText(),
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
                   ),
@@ -390,16 +446,16 @@ class _HelpPanelState extends State<_HelpPanel> {
                 const Gap(6),
                 Text(
                   next.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const Gap(4),
                 Text(
                   next.reason,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 13,
                   ),
                 ),
@@ -409,43 +465,47 @@ class _HelpPanelState extends State<_HelpPanel> {
         ],
         if (widget.showPathOverview && !isTrainer) ...[
           const Gap(16),
-          const Text(
+          Text(
             'Training path',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontWeight: FontWeight.w700,
               fontSize: 14,
             ),
           ),
           const Gap(8),
-          _bullet('1. Complete your profile'),
-          _bullet('2. Mini Training lessons and category finals'),
-          _bullet('3. Grand Final, then Scenario Practice (Non-Voice → Voice)'),
-          _bullet('4. Simulation Training for fuller practice'),
-          _bullet('5. Progress Dashboard for scores and history'),
+          _bullet(context, '1. Complete your profile'),
+          _bullet(context, '2. Mini Training lessons and category finals'),
+          _bullet(context,
+              '3. Grand Final, then Scenario Practice (Non-Voice → Voice)'),
+          _bullet(context, '4. Simulation Training for fuller practice'),
+          _bullet(context, '5. Progress Dashboard for scores and history'),
         ],
         if (isTrainer) ...[
           const Gap(16),
-          const Text(
+          Text(
             'Trainer workflow',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontWeight: FontWeight.w700,
               fontSize: 14,
             ),
           ),
           const Gap(8),
-          _bullet('1. Complete your profile'),
-          _bullet('2. Open Trainee Session to create a live room'),
-          _bullet('3. Share the room code with the trainee'),
-          _bullet('4. Use session tools for notes while coaching'),
-          _bullet('5. Review activity in Log Monitoring after the session'),
+          _bullet(context, '1. Complete your profile'),
+          _bullet(context, '2. Open Trainee Session to create a live room'),
+          _bullet(context, '3. Share the room code with the trainee'),
+          _bullet(context, '4. Use session tools for notes while coaching'),
+          _bullet(context,
+              '5. Review activity in Log Monitoring after the session'),
         ],
       ],
     );
   }
 
-  Widget _allScreens() {
+  Widget _allScreens(
+    BuildContext context,
+  ) {
     final isTrainer = ProfileData.role == AppRole.trainer;
     final items = isTrainer
         ? ScreenHelpCatalog.trainerAllScreens
@@ -453,10 +513,10 @@ class _HelpPanelState extends State<_HelpPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'What each area is for',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
@@ -465,14 +525,17 @@ class _HelpPanelState extends State<_HelpPanel> {
         for (final item in items) ...[
           Text(
             item.title,
-            style: const TextStyle(
-              color: Color(0xFF70BD8A),
+            style: TextStyle(
+              color: AppColors.primaryText(),
               fontWeight: FontWeight.w700,
               fontSize: 14,
             ),
           ),
           const Gap(6),
-          for (final line in item.bullets) ...[_bullet(line), const Gap(4)],
+          for (final line in item.bullets) ...[
+            _bullet(context, line),
+            const Gap(4)
+          ],
           const Gap(12),
         ],
       ],
@@ -481,13 +544,13 @@ class _HelpPanelState extends State<_HelpPanel> {
 
   Widget _settings(BuildContext context, bool guided) {
     if (ProfileData.role == AppRole.trainer) {
-      return const Column(
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Guide settings',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -496,7 +559,7 @@ class _HelpPanelState extends State<_HelpPanel> {
           Text(
             'The step-by-step training guide and intro tips apply to trainee accounts only. Trainer tools stay open without guide locks.',
             style: TextStyle(
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
               fontSize: 13,
               height: 1.4,
             ),
@@ -507,23 +570,25 @@ class _HelpPanelState extends State<_HelpPanel> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Guide and tips',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary(context),
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
         ),
         const Gap(8),
-        const Text(
+        Text(
           'Guide mode highlights the next step and locks unrelated Home cards until you finish that step or skip the guide.',
-          style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13, height: 1.4),
+          style: TextStyle(
+              color: AppColors.textMuted(context), fontSize: 13, height: 1.4),
         ),
         const Gap(8),
-        const Text(
+        Text(
           'Intro tips are short banners on first visit. Dismissing them only hides those banners. Help always stays available.',
-          style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13, height: 1.4),
+          style: TextStyle(
+              color: AppColors.textMuted(context), fontSize: 13, height: 1.4),
         ),
         const Gap(16),
         if (guided)
@@ -623,7 +688,7 @@ class _HelpPanelState extends State<_HelpPanel> {
         return StatefulBuilder(
           builder: (ctx, setLocal) {
             return Dialog(
-              backgroundColor: const Color(0xFF14181E),
+              backgroundColor: AppColors.surface(context),
               insetPadding: const EdgeInsets.symmetric(
                 horizontal: 28,
                 vertical: 36,
@@ -631,7 +696,7 @@ class _HelpPanelState extends State<_HelpPanel> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: const Color(0xFF70BD8A).withValues(alpha: 0.45),
+                  color: AppColors.primaryText().withValues(alpha: 0.45),
                 ),
               ),
               child: ConstrainedBox(
@@ -645,11 +710,11 @@ class _HelpPanelState extends State<_HelpPanel> {
                       padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
                               'Quick walkthrough',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 18,
                               ),
@@ -657,9 +722,9 @@ class _HelpPanelState extends State<_HelpPanel> {
                           ),
                           IconButton(
                             onPressed: () => Navigator.pop(ctx),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close,
-                              color: Colors.white54,
+                              color: AppColors.textMuted(context),
                             ),
                           ),
                         ],
@@ -677,57 +742,57 @@ class _HelpPanelState extends State<_HelpPanel> {
                           return MouseRegion(
                             cursor: SystemMouseCursors.click,
                             child: GestureDetector(
-                            onTap: () {
-                              setLocal(() => index = i);
-                              pageController.animateToPage(
-                                i,
-                                duration: const Duration(milliseconds: 220),
-                                curve: Curves.easeOut,
-                              );
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: active
-                                    ? const Color(0xFF1F3A2A)
-                                    : const Color(0xFF1A1F26),
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
+                              onTap: () {
+                                setLocal(() => index = i);
+                                pageController.animateToPage(
+                                  i,
+                                  duration: const Duration(milliseconds: 220),
+                                  curve: Curves.easeOut,
+                                );
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
                                   color: active
-                                      ? const Color(0xFF70BD8A)
-                                      : const Color(0xFF2A313A),
-                                  width: active ? 1.5 : 1,
+                                      ? AppColors.nextTint(context)
+                                      : AppColors.card(context),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: active
+                                        ? AppColors.primaryText()
+                                        : AppColors.border(context),
+                                    width: active ? 1.5 : 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      steps[i].$3,
+                                      size: 16,
+                                      color: active
+                                          ? AppColors.primaryText()
+                                          : AppColors.textMuted(context),
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      steps[i].$1,
+                                      style: TextStyle(
+                                        color: active
+                                            ? AppColors.textPrimary(context)
+                                            : AppColors.textSecondary(context),
+                                        fontWeight: active
+                                            ? FontWeight.w700
+                                            : FontWeight.w500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    steps[i].$3,
-                                    size: 16,
-                                    color: active
-                                        ? const Color(0xFF70BD8A)
-                                        : Colors.white54,
-                                  ),
-                                  const Gap(6),
-                                  Text(
-                                    steps[i].$1,
-                                    style: TextStyle(
-                                      color: active
-                                          ? Colors.white
-                                          : Colors.white70,
-                                      fontWeight: active
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                             ),
                           );
                         },
@@ -747,12 +812,11 @@ class _HelpPanelState extends State<_HelpPanel> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(18),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1A1F26),
+                                color: AppColors.card(context),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color(
-                                    0xFF70BD8A,
-                                  ).withValues(alpha: 0.35),
+                                  color: AppColors.primaryText(context)
+                                      .withValues(alpha: 0.35),
                                 ),
                               ),
                               child: Column(
@@ -764,22 +828,23 @@ class _HelpPanelState extends State<_HelpPanel> {
                                         width: 40,
                                         height: 40,
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF1F3A2A),
+                                          color: AppColors.nextTint(context),
                                           borderRadius: BorderRadius.circular(
                                             10,
                                           ),
                                         ),
                                         child: Icon(
                                           step.$3,
-                                          color: const Color(0xFF70BD8A),
+                                          color: AppColors.primaryText(),
                                         ),
                                       ),
                                       const Gap(12),
                                       Expanded(
                                         child: Text(
                                           step.$1,
-                                          style: const TextStyle(
-                                            color: Colors.white,
+                                          style: TextStyle(
+                                            color:
+                                                AppColors.textPrimary(context),
                                             fontWeight: FontWeight.w700,
                                             fontSize: 18,
                                           ),
@@ -790,8 +855,8 @@ class _HelpPanelState extends State<_HelpPanel> {
                                   const Gap(14),
                                   Text(
                                     step.$2,
-                                    style: const TextStyle(
-                                      color: Color(0xFFB7C0CB),
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary(context),
                                       fontSize: 15,
                                       height: 1.45,
                                     ),
@@ -799,8 +864,8 @@ class _HelpPanelState extends State<_HelpPanel> {
                                   const Gap(16),
                                   Text(
                                     'Step ${i + 1} of ${steps.length}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF70BD8A),
+                                    style: TextStyle(
+                                      color: AppColors.primaryText(),
                                       fontWeight: FontWeight.w600,
                                       fontSize: 12,
                                     ),
@@ -830,7 +895,7 @@ class _HelpPanelState extends State<_HelpPanel> {
                                       curve: Curves.easeOut,
                                     );
                                   },
-                            child: const Text('Back'),
+                            child: Text('Back'),
                           ),
                           const Spacer(),
                           ...List.generate(steps.length, (i) {
@@ -841,8 +906,8 @@ class _HelpPanelState extends State<_HelpPanel> {
                               margin: const EdgeInsets.symmetric(horizontal: 3),
                               decoration: BoxDecoration(
                                 color: active
-                                    ? const Color(0xFF70BD8A)
-                                    : const Color(0xFF3A4450),
+                                    ? AppColors.primaryText()
+                                    : AppColors.borderStrong(context),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             );
@@ -863,8 +928,11 @@ class _HelpPanelState extends State<_HelpPanel> {
                               );
                             },
                             style: TextButton.styleFrom(
-                              backgroundColor: const Color(0xFF70BD8A),
-                              foregroundColor: const Color(0xFF0F1419),
+                              backgroundColor: AppColors.primaryText(),
+                              foregroundColor: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? AppColors.scaffold(context)
+                                  : AppColors.onPrimary(context),
                             ),
                             child: Text(
                               index >= steps.length - 1 ? 'Done' : 'Next',
@@ -894,55 +962,60 @@ class _HelpPanelState extends State<_HelpPanel> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Material(
-        color: const Color(0xFF1A1F26),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           mouseCursor: SystemMouseCursors.click,
           onTap: onTap,
           borderRadius: BorderRadius.circular(10),
           child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              const Gap(4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: Color(0xFF9CA3AF),
-                  fontSize: 12,
-                  height: 1.35,
+                const Gap(4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
+                    fontSize: 12,
+                    height: 1.35,
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _bullet(String line) {
+  Widget _bullet(BuildContext context, String line) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '•  ',
-          style: TextStyle(color: Color(0xFF70BD8A), height: 1.4),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.check_circle_outline_rounded,
+            size: 16,
+            color: AppColors.primaryText(),
+          ),
         ),
+        const Gap(8),
         Expanded(
           child: Text(
             line,
-            style: const TextStyle(
-              color: Color(0xFFE5E7EB),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               height: 1.4,
               fontSize: 14,
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/services/auth_service.dart';
@@ -88,8 +89,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     try {
       await SupabaseService.client
           .from('profiles')
-          .update({'role': role})
-          .eq('id', id);
+          .update({'role': role}).eq('id', id);
       await _loadProfiles();
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -121,10 +121,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         return StatefulBuilder(
           builder: (ctx, setLocal) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1A1F26),
-              title: const Text(
+              backgroundColor: AppColors.card(context),
+              title: Text(
                 'Edit account',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
               ),
               content: SizedBox(
                 width: 420,
@@ -134,25 +134,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   children: [
                     Text(
                       '${profile['email'] ?? ''}',
-                      style: const TextStyle(color: Color(0xFF9CA3AF)),
+                      style: TextStyle(color: AppColors.textMuted(context)),
                     ),
                     const Gap(12),
                     TextField(
                       controller: nameCtrl,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Display name',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                     ),
                     const Gap(10),
                     DropdownButtonFormField<String>(
                       value: role,
-                      dropdownColor: const Color(0xFF1A1F26),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      dropdownColor: AppColors.card(context),
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Role',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                       items: const [
                         DropdownMenuItem(
@@ -174,7 +176,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       const Gap(12),
                       Text(
                         formError!,
-                        style: const TextStyle(color: Color(0xFFF87171)),
+                        style: TextStyle(color: AppColors.errorText()),
                       ),
                     ],
                   ],
@@ -200,12 +202,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             await SupabaseService.client
                                 .from('profiles')
                                 .update({
-                                  'display_name': nameCtrl.text.trim().isEmpty
-                                      ? (profile['email'] ?? 'User')
-                                      : nameCtrl.text.trim(),
-                                  'role': role,
-                                })
-                                .eq('id', id);
+                              'display_name': nameCtrl.text.trim().isEmpty
+                                  ? (profile['email'] ?? 'User')
+                                  : nameCtrl.text.trim(),
+                              'role': role,
+                            }).eq('id', id);
                             if (ctx.mounted) Navigator.pop(ctx);
                             await _loadProfiles();
                             if (!mounted) return;
@@ -236,14 +237,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1F26),
-        title: const Text(
+        backgroundColor: AppColors.card(context),
+        title: Text(
           'Delete account?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: AppColors.textPrimary(context)),
         ),
         content: Text(
           'Remove $name permanently? This cannot be undone.',
-          style: const TextStyle(color: Color(0xFF9CA3AF)),
+          style: TextStyle(color: AppColors.textMuted(context)),
         ),
         actions: [
           TextButton(
@@ -252,9 +253,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: Color(0xFFF87171)),
+              style: TextStyle(color: AppColors.errorText()),
             ),
           ),
         ],
@@ -308,10 +309,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         return StatefulBuilder(
           builder: (ctx, setLocal) {
             return AlertDialog(
-              backgroundColor: const Color(0xFF1A1F26),
-              title: const Text(
-                'Create account',
-                style: TextStyle(color: Colors.white),
+              backgroundColor: AppColors.card(context),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.person_add_alt_1_rounded,
+                    size: 20,
+                    color: AppColors.primaryText(),
+                  ),
+                  const Gap(8),
+                  Text(
+                    'Create account',
+                    style: TextStyle(color: AppColors.textPrimary(context)),
+                  ),
+                ],
               ),
               content: SizedBox(
                 width: 420,
@@ -320,39 +331,59 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                   children: [
                     TextField(
                       controller: emailCtrl,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Email',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        prefixIcon: Icon(
+                          Icons.email_outlined,
+                          color: AppColors.textMuted(context),
+                        ),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                     ),
                     const Gap(10),
                     TextField(
                       controller: passCtrl,
                       obscureText: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Password (min 8)',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        prefixIcon: Icon(
+                          Icons.lock_outline_rounded,
+                          color: AppColors.textMuted(context),
+                        ),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                     ),
                     const Gap(10),
                     TextField(
                       controller: nameCtrl,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Display name',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        prefixIcon: Icon(
+                          Icons.badge_outlined,
+                          color: AppColors.textMuted(context),
+                        ),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                     ),
                     const Gap(10),
                     DropdownButtonFormField<String>(
                       value: role,
-                      dropdownColor: const Color(0xFF1A1F26),
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
+                      dropdownColor: AppColors.card(context),
+                      style: TextStyle(color: AppColors.textPrimary(context)),
+                      decoration: InputDecoration(
                         labelText: 'Role',
-                        labelStyle: TextStyle(color: Color(0xFF9CA3AF)),
+                        prefixIcon: Icon(
+                          Icons.manage_accounts_outlined,
+                          color: AppColors.textMuted(context),
+                        ),
+                        labelStyle:
+                            TextStyle(color: AppColors.textMuted(context)),
                       ),
                       items: const [
                         DropdownMenuItem(
@@ -374,7 +405,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                       const Gap(12),
                       Text(
                         formError!,
-                        style: const TextStyle(color: Color(0xFFF87171)),
+                        style: TextStyle(color: AppColors.errorText()),
                       ),
                     ],
                   ],
@@ -397,16 +428,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             if (!SupabaseService.isReady) {
                               throw Exception('Supabase is not connected');
                             }
-                            final res = await SupabaseService.client.functions
-                                .invoke(
-                                  'admin-create-user',
-                                  body: {
-                                    'email': emailCtrl.text.trim(),
-                                    'password': passCtrl.text,
-                                    'display_name': nameCtrl.text.trim(),
-                                    'role': role,
-                                  },
-                                );
+                            final res =
+                                await SupabaseService.client.functions.invoke(
+                              'admin-create-user',
+                              body: {
+                                'email': emailCtrl.text.trim(),
+                                'password': passCtrl.text,
+                                'display_name': nameCtrl.text.trim(),
+                                'role': role,
+                              },
+                            );
                             final data = res.data;
                             if (res.status != 200) {
                               final err = data is Map
@@ -446,7 +477,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0B0F14),
+      backgroundColor: AppColors.scaffold(context),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -455,29 +486,58 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Row(
                 children: [
-                  const Text(
+                  Container(
+                    padding: const EdgeInsets.all(9),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondaryText().withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.admin_panel_settings_outlined,
+                      size: 20,
+                      color: AppColors.secondaryText(),
+                    ),
+                  ),
+                  const Gap(10),
+                  Text(
                     'Admin',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary(context),
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const Gap(12),
-                  Text(
-                    ProfileData.displayName,
-                    style: const TextStyle(color: Color(0xFF9CA3AF)),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.person_outline_rounded,
+                        size: 14,
+                        color: AppColors.textMuted(context),
+                      ),
+                      const Gap(4),
+                      Text(
+                        ProfileData.displayName,
+                        style: TextStyle(color: AppColors.textMuted(context)),
+                      ),
+                    ],
                   ),
                   const Spacer(),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _openCreateUser,
-                    child: const Text('Create account'),
+                    icon: const Icon(Icons.person_add_alt_1_outlined, size: 16),
+                    label: const Text('Create account'),
                   ),
-                  TextButton(
+                  TextButton.icon(
                     onPressed: _loadProfiles,
-                    child: const Text('Refresh'),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text('Refresh'),
                   ),
-                  TextButton(onPressed: _logout, child: const Text('Sign out')),
+                  TextButton.icon(
+                    onPressed: _logout,
+                    icon: const Icon(Icons.logout_rounded, size: 16),
+                    label: const Text('Sign out'),
+                  ),
                 ],
               ),
             ),
@@ -485,11 +545,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _tabChip('Accounts', 0),
+                  _tabChip('Accounts', 0, Icons.people_alt_outlined),
                   const Gap(8),
-                  _tabChip('Activity', 1),
+                  _tabChip('Activity', 1, Icons.monitor_heart_outlined),
                   const Gap(8),
-                  _tabChip('Notes', 2),
+                  _tabChip('Notes', 2, Icons.sticky_note_2_outlined),
                 ],
               ),
             ),
@@ -498,11 +558,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               child: _tab == 0
                   ? _buildAccounts()
                   : _tab == 1
-                  ? const LogMonitoringScreen(
-                      showAllRoles: true,
-                      embedded: true,
-                    )
-                  : _buildNotes(),
+                      ? const LogMonitoringScreen(
+                          showAllRoles: true,
+                          embedded: true,
+                        )
+                      : _buildNotes(),
             ),
           ],
         ),
@@ -510,7 +570,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     );
   }
 
-  Widget _tabChip(String label, int index) {
+  Widget _tabChip(String label, int index, IconData icon) {
     final selected = _tab == index;
     return InkWell(
       onTap: () => setState(() => _tab = index),
@@ -518,15 +578,37 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF1D4ED8) : const Color(0xFF1A1F26),
+          color: selected
+              ? AppColors.secondaryText()
+              : AppColors.card(context),
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.white : const Color(0xFF9CA3AF),
-            fontWeight: FontWeight.w600,
+          border: Border.all(
+            color: selected
+                ? AppColors.secondaryText()
+                : AppColors.borderIdle(context),
           ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: selected
+                  ? AppColors.onPrimary(context)
+                  : AppColors.textMuted(context),
+            ),
+            const Gap(6),
+            Text(
+              label,
+              style: TextStyle(
+                color: selected
+                    ? AppColors.onPrimary(context)
+                    : AppColors.textMuted(context),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -543,7 +625,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           child: Text(
             _error!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFFF87171)),
+            style: TextStyle(color: AppColors.errorText()),
           ),
         ),
       );
@@ -559,12 +641,17 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 520),
               child: TextField(
-                style: const TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
                 decoration: InputDecoration(
                   hintText: 'Search name, email, or role',
-                  hintStyle: const TextStyle(color: Color(0xFF6B7280)),
+                  hintStyle: TextStyle(color: AppColors.textMuted(context)),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
+                    size: 20,
+                    color: AppColors.textMuted(context),
+                  ),
                   filled: true,
-                  fillColor: const Color(0xFF12171D),
+                  fillColor: AppColors.surface(context),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -576,16 +663,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           const Gap(12),
           Text(
             '${rows.length} account(s)',
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           ),
           const Gap(8),
           Expanded(
             child: rows.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No accounts found yet. Use Create account to add the first user.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF9CA3AF)),
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.group_off_outlined,
+                          size: 38,
+                          color: AppColors.textMuted(context),
+                        ),
+                        const Gap(10),
+                        Text(
+                          'No accounts found yet. Use Create account to add the first user.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textMuted(context)),
+                        ),
+                      ],
                     ),
                   )
                 : Align(
@@ -604,14 +702,29 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                           return Container(
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF12171D),
+                              color: AppColors.surface(context),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: const Color(0xFF1F2937),
+                                color: AppColors.chipBg(context),
                               ),
                             ),
                             child: Row(
                               children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        _roleTone(role).withValues(alpha: 0.12),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _roleIcon(role),
+                                    size: 18,
+                                    color: _roleTone(role),
+                                  ),
+                                ),
+                                const Gap(12),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -619,31 +732,46 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                     children: [
                                       Text(
                                         name,
-                                        style: const TextStyle(
-                                          color: Colors.white,
+                                        style: TextStyle(
+                                          color: AppColors.textPrimary(context),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
-                                      const Gap(4),
-                                      Text(
-                                        email,
-                                        style: const TextStyle(
-                                          color: Color(0xFF9CA3AF),
-                                          fontSize: 13,
-                                        ),
+                                      const Gap(3),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.mail_outline_rounded,
+                                            size: 12,
+                                            color: AppColors.textMuted(context),
+                                          ),
+                                          const Gap(4),
+                                          Flexible(
+                                            child: Text(
+                                              email,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: AppColors.textMuted(
+                                                    context),
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
                                 DropdownButton<String>(
-                                  value:
-                                      role == 'admin' ||
+                                  value: role == 'admin' ||
                                           role == 'trainer' ||
                                           role == 'trainee'
                                       ? role
                                       : 'trainee',
-                                  dropdownColor: const Color(0xFF1A1F26),
-                                  style: const TextStyle(color: Colors.white),
+                                  dropdownColor: AppColors.card(context),
+                                  style: TextStyle(
+                                      color: AppColors.textPrimary(context)),
                                   items: const [
                                     DropdownMenuItem(
                                       value: 'trainee',
@@ -667,18 +795,18 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                 IconButton(
                                   tooltip: 'Edit',
                                   onPressed: () => _openEditUser(p),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.edit_outlined,
-                                    color: Color(0xFF9CA3AF),
+                                    color: AppColors.textMuted(context),
                                     size: 20,
                                   ),
                                 ),
                                 IconButton(
                                   tooltip: 'Delete',
                                   onPressed: () => _confirmDelete(p),
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete_outline,
-                                    color: Color(0xFFF87171),
+                                    color: AppColors.errorText(),
                                     size: 20,
                                   ),
                                 ),
@@ -696,38 +824,103 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   }
 
   Widget _buildNotes() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Admin tips',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
+          Row(
+            children: [
+              Icon(
+                Icons.sticky_note_2_outlined,
+                size: 18,
+                color: AppColors.secondaryText(),
+              ),
+              const Gap(8),
+              Text(
+                'Admin tips',
+                style: TextStyle(
+                  color: AppColors.textPrimary(context),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                ),
+              ),
+            ],
           ),
-          Gap(12),
-          Text(
-            '• Create account adds a new trainee, trainer, or admin login.',
-            style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5),
+          const Gap(12),
+          _tip(
+            Icons.person_add_alt_1_outlined,
+            'Create account adds a new trainee, trainer, or admin login.',
           ),
-          Text(
-            '• Edit changes display name and role. Delete removes the account.',
-            style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5),
+          _tip(
+            Icons.edit_outlined,
+            'Edit changes display name and role. Delete removes the account.',
           ),
-          Text(
-            '• Activity shows logins and practice sessions for trainees and trainers.',
-            style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5),
+          _tip(
+            Icons.monitor_heart_outlined,
+            'Activity shows logins and practice sessions for trainees and trainers.',
           ),
-          Text(
-            '• If Create account fails, finish the admin setup scripts in the project docs.',
-            style: TextStyle(color: Color(0xFF9CA3AF), height: 1.5),
+          _tip(
+            Icons.build_outlined,
+            'If Create account fails, finish the admin setup scripts in the project docs.',
           ),
         ],
       ),
     );
+  }
+
+  Widget _tip(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: AppColors.chipBg(context),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(
+              icon,
+              size: 14,
+              color: AppColors.textSecondary(context),
+            ),
+          ),
+          const Gap(10),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: AppColors.textMuted(context),
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _roleIcon(String role) {
+    switch (role) {
+      case 'admin':
+        return Icons.admin_panel_settings_outlined;
+      case 'trainer':
+        return Icons.co_present_outlined;
+      default:
+        return Icons.school_outlined;
+    }
+  }
+
+  Color _roleTone(String role) {
+    switch (role) {
+      case 'admin':
+        return AppColors.errorText();
+      case 'trainer':
+        return AppColors.warningText();
+      default:
+        return AppColors.primaryText();
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/add_button.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
@@ -10,6 +11,7 @@ import 'package:trainixprogram/services/profile_directory_service.dart';
 import 'package:trainixprogram/components/class/room_generate.dart';
 import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/components/decoration/text_field.dart';
+import 'package:trainixprogram/components/layout/content_bounds.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/home/trainer/home_screen.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
@@ -94,7 +96,9 @@ class _TraineeSessionState extends State<TraineeSession> {
                       children: [
                         Text(
                           'TRAINIX',
-                          style: Theme.of(context).textTheme.titleMedium
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
                               ?.copyWith(fontSize: context.responsiveFont(7)),
                         ),
                         const Gap(40),
@@ -150,198 +154,264 @@ class _TraineeSessionState extends State<TraineeSession> {
                 ),
               ),
             ),
-            const VerticalDivider(
+            VerticalDivider(
               width: .5,
               thickness: .3,
-              color: Color.fromARGB(255, 105, 106, 106),
+              color: AppColors.textMuted(context),
             ),
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const TrainerHeader(),
-                    const Gap(28),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const ScreenHelpButton(
-                              content: ScreenHelpCatalog.trainerSession,
-                            ),
-                            const Gap(10),
-                            CreateButton(
-                              text: 'Logs',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const LogMonitoringScreen(),
-                                  ),
-                                );
-                              },
-                            ),
-                            const Gap(10),
-                            AddButton(onTap: () => _openEditor()),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const Gap(20),
-                    if (_upcoming.isNotEmpty) ...[
-                      Text(
-                        'Upcoming',
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontSize: context.responsiveFont(4),
-                        ),
-                      ),
-                      const Gap(10),
-                      SizedBox(
-                        height: 88,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _upcoming.length,
-                          separatorBuilder: (_, __) => const Gap(12),
-                          itemBuilder: (_, i) {
-                            final s = _upcoming[i];
-                            final open = canJoinBySchedule(s);
-                            final scheduledAt = s.scheduledAt;
-                            return GestureDetector(
-                              onTap: () {
-                                if (!open) {
-                                  final when = scheduledAt == null
-                                      ? 'the scheduled time'
-                                      : formatCreatedAt(scheduledAt);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Opens 15 minutes before $when',
-                                      ),
+              child: ContentBounds(
+                maxWidth: 1100,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40,
+                    vertical: 20,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const TrainerHeader(),
+                      const Gap(28),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const ScreenHelpButton(
+                                content: ScreenHelpCatalog.trainerSession,
+                              ),
+                              const Gap(10),
+                              CreateButton(
+                                text: 'Logs',
+                                icon: Icons.receipt_long_outlined,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          const LogMonitoringScreen(),
                                     ),
                                   );
-                                  return;
-                                }
-                                _enterAsTrainer(s);
-                              },
-                              child: Container(
-                                width: 200,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 10,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color.fromARGB(180, 21, 21, 21),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: open
-                                        ? const Color(0xFF0D82FE)
-                                        : const Color.fromARGB(255, 49, 48, 48),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      s.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const Gap(6),
-                                    Text(
-                                      scheduledAt == null
-                                          ? 'Scheduled'
-                                          : 'Starts ${compactScheduleTime(scheduledAt)}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white54,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                    const Gap(4),
-                                    Text(
-                                      open ? 'Join open' : 'Not open yet',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: open
-                                            ? const Color(0xFF8AFB09)
-                                            : Colors.white38,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                },
                               ),
-                            );
-                          },
-                        ),
+                              const Gap(10),
+                              AddButton(onTap: () => _openEditor()),
+                            ],
+                          ),
+                        ],
                       ),
                       const Gap(20),
-                    ],
-                    Expanded(
-                      child: _rooms.isEmpty
-                          ? const _EmptyRooms()
-                          : GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    mainAxisSpacing: 15,
-                                    crossAxisSpacing: 15,
-                                    childAspectRatio: 0.95,
+                      if (_upcoming.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.event_available_outlined,
+                              size: 16,
+                              color: AppColors.secondaryText(),
+                            ),
+                            const Gap(7),
+                            Text(
+                              'Upcoming',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(
+                                    fontSize: context.responsiveFont(4),
                                   ),
-                              itemCount: _rooms.length,
-                              itemBuilder: (_, index) {
-                                final session = _rooms[index];
-                                return _TrainerRoomCard(
-                                  session: session,
-                                  onStartNow: () => _enterAsTrainer(session),
-                                  onEdit: () => _openEditor(existing: session),
-                                  onDelete: () => _confirmDelete(session),
-                                  onReopen: () {
-                                    final ok = LiveSessionStore.instance
-                                        .reopenRoom(
-                                          session.id,
-                                          byTrainerName:
-                                              ProfileData.displayName,
-                                        );
-                                    if (ok == null) {
-                                      ScaffoldMessenger.of(
-                                        context,
-                                      ).showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'You can only reopen rooms you created.',
-                                          ),
-                                        ),
-                                      );
-                                      return;
-                                    }
-                                    _refresh();
+                            ),
+                          ],
+                        ),
+                        const Gap(10),
+                        SizedBox(
+                          height: 88,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _upcoming.length,
+                            separatorBuilder: (_, __) => const Gap(12),
+                            itemBuilder: (_, i) {
+                              final s = _upcoming[i];
+                              final open = canJoinBySchedule(s);
+                              final scheduledAt = s.scheduledAt;
+                              return GestureDetector(
+                                onTap: () {
+                                  if (!open) {
+                                    final when = scheduledAt == null
+                                        ? 'the scheduled time'
+                                        : formatCreatedAt(scheduledAt);
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
+                                      SnackBar(
                                         content: Text(
-                                          'Room reopened. You can enter again.',
+                                          'Opens 15 minutes before $when',
                                         ),
                                       ),
                                     );
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                  ],
+                                    return;
+                                  }
+                                  _enterAsTrainer(s);
+                                },
+                                child: Container(
+                                  width: 200,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.panel(context),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: open
+                                          ? AppColors.secondaryText()
+                                          : AppColors.borderIdle(context),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        s.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      const Gap(6),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.schedule_rounded,
+                                            size: 12,
+                                            color: AppColors.textMuted(context),
+                                          ),
+                                          const Gap(5),
+                                          Expanded(
+                                            child: Text(
+                                              scheduledAt == null
+                                                  ? 'Scheduled'
+                                                  : 'Starts ${compactScheduleTime(scheduledAt)}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: AppColors.textMuted(
+                                                    context),
+                                                fontSize: 11,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const Gap(4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            open
+                                                ? Icons.lock_open_rounded
+                                                : Icons.lock_clock_outlined,
+                                            size: 12,
+                                            color: open
+                                                ? AppColors.primaryText()
+                                                : AppColors.textMuted(context),
+                                          ),
+                                          const Gap(5),
+                                          Expanded(
+                                            child: Text(
+                                              open
+                                                  ? 'Join open'
+                                                  : 'Not open yet',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                color: open
+                                                    ? AppColors.primaryText()
+                                                    : AppColors.textMuted(
+                                                        context),
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const Gap(20),
+                      ],
+                      Expanded(
+                        child: _rooms.isEmpty
+                            ? const _EmptyRooms()
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final maxW = constraints.maxWidth;
+                                  final extent = maxW >= 1400
+                                      ? 320.0
+                                      : maxW >= 1100
+                                          ? 360.0
+                                          : maxW >= 800
+                                              ? 400.0
+                                              : maxW;
+                                  return GridView.builder(
+                                    gridDelegate:
+                                        SliverGridDelegateWithMaxCrossAxisExtent(
+                                      maxCrossAxisExtent: extent,
+                                      mainAxisSpacing: 14,
+                                      crossAxisSpacing: 14,
+                                      mainAxisExtent: 296,
+                                    ),
+                                    itemCount: _rooms.length,
+                                    itemBuilder: (_, index) {
+                                      final session = _rooms[index];
+                                      return _TrainerRoomCard(
+                                        session: session,
+                                        onStartNow: () =>
+                                            _enterAsTrainer(session),
+                                        onEdit: () =>
+                                            _openEditor(existing: session),
+                                        onDelete: () =>
+                                            _confirmDelete(session),
+                                        onReopen: () {
+                                          final ok = LiveSessionStore.instance
+                                              .reopenRoom(
+                                            session.id,
+                                            byTrainerName:
+                                                ProfileData.displayName,
+                                          );
+                                          if (ok == null) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'You can only reopen rooms you created.',
+                                                ),
+                                              ),
+                                            );
+                                            return;
+                                          }
+                                          _refresh();
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Room reopened. You can enter again.',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -387,9 +457,9 @@ class _TraineeSessionState extends State<TraineeSession> {
                 constraints: const BoxConstraints(maxHeight: 620),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: const Color.fromARGB(240, 21, 21, 21),
+                  color: AppColors.panel(context),
                   border: Border.all(
-                    color: const Color.fromARGB(255, 49, 48, 48),
+                    color: AppColors.borderIdle(context),
                   ),
                 ),
                 child: SingleChildScrollView(
@@ -400,17 +470,36 @@ class _TraineeSessionState extends State<TraineeSession> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        isEdit ? 'Edit room' : 'Create room',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontSize: context.responsiveFont(6)),
+                      Row(
+                        children: [
+                          Icon(
+                            isEdit
+                                ? Icons.edit_note_rounded
+                                : Icons.add_home_work_outlined,
+                            size: 20,
+                            color: AppColors.secondaryText(),
+                          ),
+                          const Gap(8),
+                          Text(
+                            isEdit ? 'Edit room' : 'Create room',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontSize: context.responsiveFont(6),
+                                ),
+                          ),
+                        ],
                       ),
                       const Gap(20),
                       Text(
                         'Room code (auto-generated)',
                         style: Theme.of(
                           context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.white54),
+                        )
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: AppColors.textMuted(context)),
                       ),
                       const Gap(6),
                       Container(
@@ -420,16 +509,16 @@ class _TraineeSessionState extends State<TraineeSession> {
                           vertical: 14,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
+                          color: AppColors.inputFill(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: const Color.fromARGB(255, 49, 48, 48),
+                            color: AppColors.borderIdle(context),
                           ),
                         ),
                         child: SelectableText(
                           codeCtrl.text,
-                          style: const TextStyle(
-                            color: Color(0xFF93C5FD),
+                          style: TextStyle(
+                            color: AppColors.secondaryText(),
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -449,11 +538,22 @@ class _TraineeSessionState extends State<TraineeSession> {
                         controller: focusCtrl,
                       ),
                       const Gap(16),
-                      Text(
-                        'Visibility',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.white54),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.visibility_outlined,
+                            size: 14,
+                            color: AppColors.textMuted(context),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Visibility',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textMuted(context),
+                                    ),
+                          ),
+                        ],
                       ),
                       const Gap(8),
                       Row(
@@ -481,8 +581,10 @@ class _TraineeSessionState extends State<TraineeSession> {
                         const Gap(12),
                         Text(
                           'Designated trainee',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white54),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: AppColors.textMuted(context)),
                         ),
                         const Gap(6),
                         Autocomplete<RegisteredTrainee>(
@@ -500,43 +602,45 @@ class _TraineeSessionState extends State<TraineeSession> {
                           },
                           fieldViewBuilder:
                               (context, controller, focusNode, onSubmit) {
-                                if (traineeCtrl.text.isNotEmpty &&
-                                    controller.text.isEmpty) {
-                                  controller.text = traineeCtrl.text;
-                                }
-                                controller.addListener(() {
-                                  traineeCtrl.text = controller.text;
-                                });
-                                return TextField(
-                                  controller: controller,
-                                  focusNode: focusNode,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    hintText: 'Type a registered trainee name',
-                                    hintStyle: const TextStyle(
-                                      color: Colors.white38,
-                                    ),
-                                    filled: true,
-                                    fillColor: const Color(0xFF121212),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  onSubmitted: (_) => onSubmit(),
-                                );
-                              },
+                            if (traineeCtrl.text.isNotEmpty &&
+                                controller.text.isEmpty) {
+                              controller.text = traineeCtrl.text;
+                            }
+                            controller.addListener(() {
+                              traineeCtrl.text = controller.text;
+                            });
+                            return TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              style: TextStyle(
+                                  color: AppColors.textPrimary(context)),
+                              decoration: InputDecoration(
+                                hintText: 'Type a registered trainee name',
+                                hintStyle: TextStyle(
+                                  color: AppColors.textMuted(context),
+                                ),
+                                filled: true,
+                                fillColor: AppColors.inputFill(context),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                              onSubmitted: (_) => onSubmit(),
+                            );
+                          },
                           optionsViewBuilder: (context, onSelected, options) {
                             final list = options.toList();
                             if (list.isEmpty) {
-                              return const Align(
+                              return Align(
                                 alignment: Alignment.topLeft,
                                 child: Material(
-                                  color: Color(0xFF1A1A1A),
+                                  color: AppColors.elevated(context),
                                   child: Padding(
                                     padding: EdgeInsets.all(12),
                                     child: Text(
                                       'No registered trainee matches.',
-                                      style: TextStyle(color: Colors.white54),
+                                      style: TextStyle(
+                                          color: AppColors.textMuted(context)),
                                     ),
                                   ),
                                 ),
@@ -545,7 +649,7 @@ class _TraineeSessionState extends State<TraineeSession> {
                             return Align(
                               alignment: Alignment.topLeft,
                               child: Material(
-                                color: const Color(0xFF1A1A1A),
+                                color: AppColors.elevated(context),
                                 elevation: 4,
                                 borderRadius: BorderRadius.circular(10),
                                 child: SizedBox(
@@ -561,8 +665,8 @@ class _TraineeSessionState extends State<TraineeSession> {
                                         title: Text(t.displayName),
                                         subtitle: Text(
                                           t.email,
-                                          style: const TextStyle(
-                                            color: Colors.white38,
+                                          style: TextStyle(
+                                            color: AppColors.textMuted(context),
                                             fontSize: 11,
                                           ),
                                         ),
@@ -578,16 +682,31 @@ class _TraineeSessionState extends State<TraineeSession> {
                         const Gap(6),
                         Text(
                           'Must match a registered trainee account. Only that trainee should know the code.',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white38, fontSize: 11),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(
+                                  color: AppColors.textMuted(context),
+                                  fontSize: 11),
                         ),
                       ],
                       const Gap(16),
-                      Text(
-                        'Session type',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: Colors.white54),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.category_outlined,
+                            size: 14,
+                            color: AppColors.textMuted(context),
+                          ),
+                          const Gap(6),
+                          Text(
+                            'Session type',
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textMuted(context),
+                                    ),
+                          ),
+                        ],
                       ),
                       const Gap(8),
                       Wrap(
@@ -609,8 +728,10 @@ class _TraineeSessionState extends State<TraineeSession> {
                         children: [
                           Text(
                             'Schedule (optional)',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.white54),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(color: AppColors.textMuted(context)),
                           ),
                           const Spacer(),
                           TextButton(
@@ -801,7 +922,7 @@ class _TraineeSessionState extends State<TraineeSession> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: const Color.fromARGB(255, 28, 28, 28),
+        backgroundColor: AppColors.card(context),
         title: const Text('Delete room?'),
         content: Text('Remove "${session.name}" (${session.id}) permanently?'),
         actions: [
@@ -830,9 +951,9 @@ class _TraineeSessionState extends State<TraineeSession> {
               if (ctx.mounted) Navigator.pop(ctx);
               _refresh();
             },
-            child: const Text(
+            child: Text(
               'Delete',
-              style: TextStyle(color: Colors.redAccent),
+              style: TextStyle(color: AppColors.errorText()),
             ),
           ),
         ],
@@ -899,21 +1020,27 @@ class _EmptyRooms extends StatelessWidget {
           Icon(
             Icons.add_home_work_outlined,
             size: 48,
-            color: Colors.white.withValues(alpha: 0.25),
+            color: AppColors.textMuted(context),
           ),
           const Gap(16),
           Text(
             'No rooms yet',
             style: Theme.of(
               context,
-            ).textTheme.titleSmall?.copyWith(color: Colors.white54),
+            )
+                .textTheme
+                .titleSmall
+                ?.copyWith(color: AppColors.textMuted(context)),
           ),
           const Gap(8),
           Text(
             'Tap + to create a coaching room for a trainee.',
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: Colors.white38),
+            )
+                .textTheme
+                .bodySmall
+                ?.copyWith(color: AppColors.textMuted(context)),
           ),
         ],
       ),
@@ -941,20 +1068,22 @@ class _ChoiceChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF0D82FE).withValues(alpha: 0.25)
-              : const Color.fromARGB(255, 38, 34, 41),
+              ? AppColors.secondaryText().withValues(alpha: 0.25)
+              : AppColors.cardHover(context),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: selected
-                ? const Color(0xFF0D82FE)
-                : const Color.fromARGB(109, 235, 218, 253),
+                ? AppColors.secondaryText()
+                : AppColors.borderStrong(context),
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
-            color: selected ? Colors.white : Colors.white70,
+            color: selected
+                ? AppColors.textPrimary(context)
+                : AppColors.textSecondary(context),
             fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),
@@ -981,7 +1110,7 @@ class _TrainerRoomCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final info = computeRoomStatus(session);
-    final tone = _toneColor(info.tone);
+    final tone = _toneColor(context, info.tone);
 
     return ListContainer(
       child: Padding(
@@ -1018,8 +1147,8 @@ class _TrainerRoomCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: session.isPrivate
-                        ? Colors.amber.withValues(alpha: 0.12)
-                        : Colors.white.withValues(alpha: 0.06),
+                        ? AppColors.warningText().withValues(alpha: 0.12)
+                        : AppColors.chipBg(context),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1027,19 +1156,19 @@ class _TrainerRoomCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       color: session.isPrivate
-                          ? Colors.amber.shade200
-                          : Colors.white54,
+                          ? AppColors.warningText()
+                          : AppColors.textMuted(context),
                     ),
                   ),
                 ),
                 const Spacer(),
                 PopupMenuButton<String>(
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.more_vert,
                     size: 18,
-                    color: Colors.white54,
+                    color: AppColors.textMuted(context),
                   ),
-                  color: const Color.fromARGB(255, 35, 35, 35),
+                  color: AppColors.elevated(context),
                   onSelected: (v) {
                     if (v == 'edit') onEdit();
                     if (v == 'delete') onDelete();
@@ -1061,62 +1190,59 @@ class _TrainerRoomCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const Gap(4),
-            Text(
-              'Trainer: ${session.trainerName}',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            _MetaRow(
+              icon: Icons.person_outline_rounded,
+              text: 'Trainer: ${session.trainerName}',
+              color: AppColors.textSecondary(context),
             ),
             const Gap(4),
-            Text(
-              'Code: ${session.id}',
-              style: const TextStyle(
-                color: Colors.white38,
-                fontSize: 11,
-                fontFamily: 'monospace',
-              ),
+            _MetaRow(
+              icon: Icons.vpn_key_outlined,
+              text: session.id,
+              color: AppColors.secondaryText(context),
+              mono: true,
             ),
             if (session.designatedTraineeName != null) ...[
               const Gap(4),
-              Text(
-                'Trainee: ${session.designatedTraineeName}',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+              _MetaRow(
+                icon: Icons.school_outlined,
+                text: 'Trainee: ${session.designatedTraineeName}',
               ),
             ],
             if (session.description case final description?
                 when description.isNotEmpty) ...[
               const Gap(6),
-              Text(
-                description,
+              _MetaRow(
+                icon: Icons.notes_rounded,
+                text: description,
                 maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white38, fontSize: 11),
               ),
             ],
             const Gap(6),
-            Text(
-              info.detail,
-              style: TextStyle(
-                color: tone.withValues(alpha: 0.85),
-                fontSize: 11,
-              ),
+            _MetaRow(
+              icon: Icons.info_outline_rounded,
+              text: info.detail,
+              color: tone.withValues(alpha: 0.85),
             ),
             const Gap(4),
-            Text(
-              'Created ${formatCreatedAt(session.createdAt)}',
-              style: const TextStyle(color: Colors.white24, fontSize: 10),
+            _MetaRow(
+              icon: Icons.history_rounded,
+              text: 'Created ${formatCreatedAt(session.createdAt)}',
+              fontSize: 10,
             ),
             const Spacer(),
-            SizedBox(
-              width: double.infinity,
+            Align(
+              alignment: Alignment.centerLeft,
               child: session.closed
                   ? _SmallAction(
                       label: 'Reopen room',
+                      icon: Icons.lock_open_rounded,
                       primary: true,
                       onTap: onReopen,
                     )
                   : _SmallAction(
                       label: 'Enter room',
+                      icon: Icons.login_rounded,
                       primary: true,
                       onTap: onStartNow,
                     ),
@@ -1127,19 +1253,64 @@ class _TrainerRoomCard extends StatelessWidget {
     );
   }
 
-  Color _toneColor(ColorTone tone) {
+  Color _toneColor(BuildContext context, ColorTone tone) {
     switch (tone) {
       case ColorTone.green:
-        return const Color(0xFF8AFB09);
+        return AppColors.primaryText();
       case ColorTone.blue:
-        return const Color(0xFF0D82FE);
+        return AppColors.secondaryText();
       case ColorTone.amber:
-        return const Color(0xFFFFB74D);
+        return AppColors.warningText();
       case ColorTone.red:
-        return const Color(0xFFFF8A80);
+        return AppColors.errorText();
       case ColorTone.neutral:
-        return Colors.white54;
+        return AppColors.textMuted(context);
     }
+  }
+}
+
+class _MetaRow extends StatelessWidget {
+  const _MetaRow({
+    required this.icon,
+    required this.text,
+    this.color,
+    this.mono = false,
+    this.maxLines = 1,
+    this.fontSize = 11,
+  });
+
+  final IconData icon;
+  final String text;
+  final Color? color;
+  final bool mono;
+  final int maxLines;
+  final double fontSize;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = color ?? AppColors.textMuted(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: 13, color: tone),
+        ),
+        const Gap(6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: tone,
+              fontSize: fontSize,
+              fontFamily: mono ? 'monospace' : null,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -1148,11 +1319,13 @@ class _SmallAction extends StatefulWidget {
     required this.label,
     required this.primary,
     required this.onTap,
+    this.icon,
   });
 
   final String label;
   final bool primary;
   final VoidCallback onTap;
+  final IconData? icon;
 
   @override
   State<_SmallAction> createState() => _SmallActionState();
@@ -1163,6 +1336,7 @@ class _SmallActionState extends State<_SmallAction> {
 
   @override
   Widget build(BuildContext context) {
+    final icon = widget.icon;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
@@ -1172,28 +1346,47 @@ class _SmallActionState extends State<_SmallAction> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 80),
           height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           decoration: BoxDecoration(
             color: widget.primary
-                ? (_hover ? const Color(0xFF0A6AD4) : const Color(0xFF0D82FE))
+                ? (_hover
+                    ? AppColors.secondaryText()
+                    : AppColors.secondaryText())
                 : (_hover
-                      ? const Color.fromARGB(255, 55, 52, 58)
-                      : const Color.fromARGB(255, 38, 34, 41)),
+                    ? AppColors.cardHover(context)
+                    : AppColors.cardHover(context)),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: widget.primary
                   ? Colors.transparent
-                  : const Color.fromARGB(109, 235, 218, 253),
+                  : AppColors.borderStrong(context),
             ),
           ),
-          child: Center(
-            child: Text(
-              widget.label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: widget.primary ? Colors.white : Colors.white70,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 15,
+                  color: widget.primary
+                      ? AppColors.onSecondary(context)
+                      : AppColors.textSecondary(context),
+                ),
+                const Gap(6),
+              ],
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: widget.primary
+                      ? AppColors.onSecondary(context)
+                      : AppColors.textSecondary(context),
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),

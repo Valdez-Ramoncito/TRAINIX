@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
+import 'package:trainixprogram/components/layout/content_bounds.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -160,11 +162,11 @@ class _CategoryTrainState extends State<CategoryTrain> {
 
     final progress = lessons.isEmpty ? 0.0 : completedCount / lessons.length;
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1419),
+      backgroundColor: AppColors.scaffold(context),
       appBar: AppBar(
         centerTitle: true,
-        backgroundColor: const Color(0xFF0F1419),
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.scaffold(context),
+        foregroundColor: AppColors.textPrimary(context),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
@@ -172,7 +174,7 @@ class _CategoryTrainState extends State<CategoryTrain> {
         ),
         title: Text(
           'Mini Training · ${widget.categoryChosen}',
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(fontWeight: FontWeight.w700),
         ),
         actions: [
           Padding(
@@ -180,8 +182,8 @@ class _CategoryTrainState extends State<CategoryTrain> {
             child: Center(
               child: Text(
                 '$completedCount / ${lessons.length}',
-                style: const TextStyle(
-                  color: Color(0xFF70BD8A),
+                style: TextStyle(
+                  color: AppColors.primaryText(),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -200,8 +202,8 @@ class _CategoryTrainState extends State<CategoryTrain> {
                   widget.categoryDescription.isEmpty
                       ? 'Complete each lesson in order, then take the category final.'
                       : widget.categoryDescription,
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -212,9 +214,9 @@ class _CategoryTrainState extends State<CategoryTrain> {
                   child: LinearProgressIndicator(
                     value: progress,
                     minHeight: 8,
-                    backgroundColor: const Color(0xFF1A1F26),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Color(0xFF70BD8A),
+                    backgroundColor: AppColors.card(context),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryText(),
                     ),
                   ),
                 ),
@@ -229,9 +231,8 @@ class _CategoryTrainState extends State<CategoryTrain> {
                         child: const Text('DEBUG: Finish all lessons'),
                       ),
                       OutlinedButton(
-                        onPressed: categoryCompleted
-                            ? null
-                            : _debugClearCategory,
+                        onPressed:
+                            categoryCompleted ? null : _debugClearCategory,
                         child: const Text('DEBUG: Clear whole category'),
                       ),
                     ],
@@ -240,8 +241,8 @@ class _CategoryTrainState extends State<CategoryTrain> {
             ),
           ),
           Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
+            child: ContentBounds(
+              maxWidth: 1100,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: GridView.builder(
@@ -263,17 +264,17 @@ class _CategoryTrainState extends State<CategoryTrain> {
                     final Color border;
                     final Color accent;
                     if (isDone) {
-                      bg = const Color(0xFF152238);
-                      border = const Color(0xFF3B82F6);
-                      accent = const Color(0xFF93C5FD);
+                      bg = AppColors.completeTint(context);
+                      border = AppColors.secondaryText();
+                      accent = AppColors.secondaryText();
                     } else if (isLocked) {
-                      bg = const Color(0xFF15181D);
-                      border = const Color(0xFF2A2F36);
-                      accent = const Color(0xFF6B7280);
+                      bg = AppColors.surface(context);
+                      border = AppColors.borderIdle(context);
+                      accent = AppColors.textMuted(context);
                     } else {
-                      bg = const Color(0xFF12261A);
-                      border = const Color(0xFF70BD8A);
-                      accent = const Color(0xFF86EFAC);
+                      bg = AppColors.nextTint(context);
+                      border = AppColors.primaryText();
+                      accent = AppColors.successText();
                     }
 
                     return MouseRegion(
@@ -281,132 +282,133 @@ class _CategoryTrainState extends State<CategoryTrain> {
                           ? SystemMouseCursors.basic
                           : SystemMouseCursors.click,
                       child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: isLocked
-                            ? null
-                            : () async {
-                                Lesson? open = data;
-                                while (open != null && mounted) {
-                                  final result = await Navigator.of(context)
-                                      .push(
-                                        MaterialPageRoute(
-                                          builder: (_) => CategoryModule(
-                                            lesson: open!,
-                                            categoryName: widget.categoryChosen,
-                                          ),
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(16),
+                          onTap: isLocked
+                              ? null
+                              : () async {
+                                  Lesson? open = data;
+                                  while (open != null && mounted) {
+                                    final result =
+                                        await Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => CategoryModule(
+                                          lesson: open!,
+                                          categoryName: widget.categoryChosen,
                                         ),
-                                      );
-                                  _refresh();
-                                  if (result is Lesson) {
-                                    open = result;
-                                  } else {
-                                    open = null;
+                                      ),
+                                    );
+                                    _refresh();
+                                    if (result is Lesson) {
+                                      open = result;
+                                    } else {
+                                      open = null;
+                                    }
                                   }
-                                }
-                                if (mounted) _refresh();
-                              },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: bg,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: border.withValues(alpha: 0.85),
-                              width: 1.2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: border.withValues(alpha: 0.12),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
+                                  if (mounted) _refresh();
+                                },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: bg,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: border.withValues(alpha: 0.85),
+                                width: 1.2,
                               ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    alignment: Alignment.center,
-                                    decoration: BoxDecoration(
-                                      color: accent.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      '${data.order}',
-                                      style: TextStyle(
+                              boxShadow: [
+                                BoxShadow(
+                                  color: border.withValues(alpha: 0.12),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: accent.withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        isDone
+                                            ? Icons.check_rounded
+                                            : isLocked
+                                                ? Icons.lock_outline_rounded
+                                                : Icons.play_lesson_outlined,
+                                        size: 16,
                                         color: accent,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 13,
                                       ),
                                     ),
+                                    const Spacer(),
+                                    if (isDone)
+                                      Icon(
+                                        Icons.check_circle_rounded,
+                                        size: 20,
+                                        color: accent,
+                                      )
+                                    else if (isLocked)
+                                      Icon(
+                                        Icons.lock_rounded,
+                                        size: 18,
+                                        color: accent,
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.play_circle_fill_rounded,
+                                        size: 22,
+                                        color: accent,
+                                      ),
+                                  ],
+                                ),
+                                const Gap(12),
+                                Text(
+                                  data.title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: isLocked
+                                        ? AppColors.textMuted(context)
+                                        : AppColors.textPrimary(context),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.2,
                                   ),
-                                  const Spacer(),
-                                  if (isDone)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      size: 20,
-                                      color: accent,
-                                    )
-                                  else if (isLocked)
-                                    Icon(
-                                      Icons.lock_rounded,
-                                      size: 18,
-                                      color: accent,
-                                    )
-                                  else
-                                    Icon(
-                                      Icons.play_circle_fill_rounded,
-                                      size: 22,
-                                      color: accent,
-                                    ),
-                                ],
-                              ),
-                              const Gap(12),
-                              Text(
-                                data.title,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isLocked
-                                      ? Colors.white54
-                                      : Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
-                                  height: 1.2,
                                 ),
-                              ),
-                              const Gap(8),
-                              if (isLocked)
-                                _statusChip(
-                                  'Locked',
-                                  const Color(0xFF2A2A2A),
-                                  const Color(0xFF9CA3AF),
-                                )
-                              else if (isDone)
-                                _statusChip(
-                                  data.lastScorePercent != null
-                                      ? 'Completed · ${data.lastScorePercent}%'
-                                      : 'Completed',
-                                  const Color(0xFF1A2A3A),
-                                  const Color(0xFF93C5FD),
-                                )
-                              else
-                                _statusChip(
-                                  'Ready',
-                                  const Color(0xFF1A3A24),
-                                  const Color(0xFF86EFAC),
-                                ),
-                            ],
+                                const Gap(8),
+                                if (isLocked)
+                                  _statusChip(
+                                    'Locked',
+                                    AppColors.border(context),
+                                    AppColors.textMuted(context),
+                                  )
+                                else if (isDone)
+                                  _statusChip(
+                                    data.lastScorePercent != null
+                                        ? 'Completed · ${data.lastScorePercent}%'
+                                        : 'Completed',
+                                    AppColors.completeTint(context),
+                                    AppColors.secondaryText(),
+                                  )
+                                else
+                                  _statusChip(
+                                    'Ready',
+                                    AppColors.nextTint(context),
+                                    AppColors.successText(),
+                                  ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
                     );
                   },
                 ),
@@ -426,24 +428,52 @@ class _CategoryTrainState extends State<CategoryTrain> {
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: categoryCompleted
-                            ? const Color(0xFF374151)
-                            : const Color(0xFF16A34A),
-                        foregroundColor: Colors.white,
+                            ? AppColors.completeTint(context)
+                            : AppColors.primaryText(),
+                        foregroundColor: categoryCompleted
+                            ? AppColors.successText()
+                            : AppColors.onPrimary(context),
+                        disabledBackgroundColor:
+                            AppColors.completeTint(context),
+                        disabledForegroundColor: AppColors.successText(),
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: categoryCompleted
+                              ? BorderSide(
+                                  color: AppColors.successText()
+                                      .withValues(alpha: 0.35),
+                                )
+                              : BorderSide.none,
                         ),
                       ),
-                      onPressed: categoryCompleted
-                          ? null
-                          : _openFinalAssessment,
-                      child: Text(
-                        categoryCompleted
-                            ? 'Category Final Assessment · Completed'
-                            : 'Take Category Final Assessment',
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      onPressed:
+                          categoryCompleted ? null : _openFinalAssessment,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (categoryCompleted) ...[
+                            Icon(
+                              Icons.check_circle_rounded,
+                              size: 18,
+                              color: AppColors.successText(),
+                            ),
+                            const Gap(8),
+                          ],
+                          Flexible(
+                            child: Text(
+                              categoryCompleted
+                                  ? 'Category Final Assessment · Completed'
+                                  : 'Take Category Final Assessment',
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -463,8 +493,8 @@ class _CategoryTrainState extends State<CategoryTrain> {
                     height: 48,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.secondaryText(),
+                        foregroundColor: AppColors.onPrimary(context),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

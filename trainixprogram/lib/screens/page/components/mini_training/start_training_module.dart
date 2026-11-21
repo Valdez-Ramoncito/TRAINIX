@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class StartModuleTrainingScreen extends StatefulWidget {
   const StartModuleTrainingScreen({super.key});

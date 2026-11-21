@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/typing/typing_practice_store.dart';
+import 'package:trainixprogram/models/training/speaking/speaking_practice_store.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
 import 'package:trainixprogram/services/notification_inbox_service.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
@@ -212,9 +214,7 @@ class AuthService {
       }
       final uid = res.user!.id;
       final safeEmail = sanitizeEmail(email);
-      final name = safeName.isEmpty
-          ? safeEmail.split('@').first
-          : safeName;
+      final name = safeName.isEmpty ? safeEmail.split('@').first : safeName;
 
       ProfileData.current = AppUser(
         id: uid,
@@ -243,14 +243,11 @@ class AuthService {
       if (ProfileData.role != role) {
         ProfileData.current = ProfileData.current.copyWith(role: role);
         try {
-          await SupabaseService.client
-              .from('profiles')
-              .update({
-                'role': role.name,
-                'display_name': name,
-                'email': email.trim(),
-              })
-              .eq('id', uid);
+          await SupabaseService.client.from('profiles').update({
+            'role': role.name,
+            'display_name': name,
+            'email': email.trim(),
+          }).eq('id', uid);
         } catch (e) {
           debugPrint('signup role force update failed: $e');
         }
@@ -271,31 +268,99 @@ class AuthService {
   }
 
   static Future<bool> confirmSignOut(BuildContext context) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
-        title: const Text(
-          'Sign out?',
-          style: TextStyle(color: Colors.white),
+      builder: (ctx) => Dialog(
+        backgroundColor: AppColors.elevated(ctx),
+        surfaceTintColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: AppColors.border(ctx)),
         ),
-        content: const Text(
-          'You will need your email and password to sign back in.',
-          style: TextStyle(color: Colors.white70),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Sign out',
-              style: TextStyle(color: Color(0xFFF87171)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 20, 22, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.errorText(ctx).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.logout_rounded,
+                        size: 18,
+                        color: AppColors.errorText(ctx),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Sign out?',
+                      style: TextStyle(
+                        color: AppColors.textPrimary(ctx),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'You will need your email and password to sign back in.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary(ctx),
+                    fontSize: 13,
+                    height: 1.45,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.textSecondary(ctx),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 6),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.errorText(ctx),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text(
+                        'Sign out',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+        elevation: isDark ? 0 : 8,
+        shadowColor: AppColors.shadowStrong(ctx),
       ),
     );
     return confirmed == true;
@@ -304,6 +369,7 @@ class AuthService {
   Future<void> signOut() async {
     MiniTrainingProgress.resetAll();
     TypingPracticeStore.reset();
+    SpeakingPracticeStore.reset();
     TrainixDebug.resetForLogout();
     NotificationInboxService.instance.clearLocalOnly();
     NotificationInboxService.instance.stopRealtime();
@@ -335,8 +401,7 @@ class AuthService {
           metadataRole: meta['role'],
           email: row['email'] as String? ?? user.email,
         );
-        final displayName =
-            row['display_name'] as String? ??
+        final displayName = row['display_name'] as String? ??
             meta['display_name']?.toString() ??
             user.email?.split('@').first ??
             'User';
@@ -356,8 +421,7 @@ class AuthService {
           try {
             await SupabaseService.client
                 .from('profiles')
-                .update({'role': role.name})
-                .eq('id', user.id);
+                .update({'role': role.name}).eq('id', user.id);
             debugPrint('repaired profiles.role to ${role.name}');
           } catch (e) {
             debugPrint('role repair update failed: $e');

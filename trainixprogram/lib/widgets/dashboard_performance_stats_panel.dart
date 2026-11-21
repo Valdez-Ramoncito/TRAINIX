@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:trainixprogram/models/scoring_transparency.dart';
@@ -24,19 +25,18 @@ class PerformanceStatsPanel extends StatelessWidget {
   }
 
   Color stageColor(double avg) {
-    if (avg >= strongBar) return const Color(0xFF70BD8A);
-    if (avg >= passBar) return const Color(0xFF3B82F6);
-    if (avg >= 5) return const Color(0xFFF59E0B);
-    return const Color(0xFFEF4444);
+    if (avg >= strongBar) return AppColors.primaryText();
+    if (avg >= passBar) return AppColors.secondaryText();
+    if (avg >= 5) return AppColors.warningText();
+    return AppColors.errorStrongText();
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<SimulationHistoryProvider>(
       builder: (context, history, _) {
-        final liveSessions = history.sessions
-            .where((s) => !isDebugSession(s))
-            .toList();
+        final liveSessions =
+            history.sessions.where((s) => !isDebugSession(s)).toList();
         // Match Session History order: newest sessions first, then customers
         // within each session (latest customer first). Avoids flat eval order
         // drifting from what the history list shows.
@@ -99,7 +99,9 @@ class PerformanceStatsPanel extends StatelessWidget {
         final rated = liveEvals.where((e) => e.customerRating != null).toList();
         final csat = rated.isEmpty
             ? null
-            : rated.map((e) => e.customerRating!.toDouble()).reduce((a, b) => a + b) /
+            : rated
+                    .map((e) => e.customerRating!.toDouble())
+                    .reduce((a, b) => a + b) /
                 rated.length;
         final color = stageColor(avg);
         final cats = <(String, double Function(SessionEvaluation))>[
@@ -118,7 +120,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           for (final c in cats)
             c.$1: liveEvals.isEmpty
                 ? 0.0
-                : liveEvals.map(c.$2).reduce((a, b) => a + b) / liveEvals.length,
+                : liveEvals.map(c.$2).reduce((a, b) => a + b) /
+                    liveEvals.length,
         };
         final weakest = catAvgs.entries.reduce(
           (a, b) => a.value <= b.value ? a : b,
@@ -128,11 +131,12 @@ class PerformanceStatsPanel extends StatelessWidget {
         );
         final passCount =
             liveEvals.where((e) => e.overallScore >= passBar).length;
-        final passRate =
-            liveEvals.isEmpty ? 0.0 : passCount / liveEvals.length;
+        final passRate = liveEvals.isEmpty ? 0.0 : passCount / liveEvals.length;
         final bestScore = liveEvals.isEmpty
             ? 0.0
-            : liveEvals.map((e) => e.overallScore).reduce((a, b) => a > b ? a : b);
+            : liveEvals
+                .map((e) => e.overallScore)
+                .reduce((a, b) => a > b ? a : b);
 
         final strengths = <String>{};
         final improvements = <String>{};
@@ -246,9 +250,10 @@ class PerformanceStatsPanel extends StatelessWidget {
                     _rubricExplainerCard(context),
                     const Gap(14),
                     _sectionTitle(
+                      context,
                       Icons.people_outline_rounded,
                       'Recent customers',
-                      const Color(0xFF70BD8A),
+                      AppColors.primaryText(),
                     ),
                     const Gap(10),
                     ...liveEvals.take(6).map((e) {
@@ -297,13 +302,14 @@ class PerformanceStatsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 28, 28, 28),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [
-          reportScoreRing(score: avg, color: color, size: 100, stroke: 9),
+          reportScoreRing(context,
+              score: avg, color: color, size: 100, stroke: 9),
           const Gap(20),
           Expanded(
             child: Column(
@@ -338,13 +344,13 @@ class PerformanceStatsPanel extends StatelessWidget {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
+                        color: AppColors.elevated(context),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         '$sessionCount sessions · $customerCount customers',
-                        style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 11,
                         ),
                       ),
@@ -352,10 +358,10 @@ class PerformanceStatsPanel extends StatelessWidget {
                   ],
                 ),
                 const Gap(10),
-                const Text(
+                Text(
                   'Overall practice average',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -369,8 +375,8 @@ class PerformanceStatsPanel extends StatelessWidget {
                           : avg >= 5
                               ? 'Mixed results. Stay with guided practice and focus on the lowest skill scores below.'
                               : 'Early stage. Use Mini Training and the Script Guide on every simulation before free practice.',
-                  style: const TextStyle(
-                    color: Color(0xFF9CA3AF),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 12,
                     height: 1.4,
                   ),
@@ -397,39 +403,44 @@ class PerformanceStatsPanel extends StatelessWidget {
         final narrow = constraints.maxWidth < 700;
         final items = [
           _kpiTile(
+            context,
             Icons.play_circle_outline_rounded,
             'Sessions',
             '$sessions',
             'Completed runs',
-            const Color(0xFF3B82F6),
+            AppColors.secondaryText(),
           ),
           _kpiTile(
+            context,
             Icons.people_outline_rounded,
             'Customers',
             '$customers',
             'Scored interactions',
-            const Color(0xFF70BD8A),
+            AppColors.primaryText(),
           ),
           _kpiTile(
+            context,
             Icons.star_rounded,
             'Avg CSAT',
             csat == null ? '—' : '${csat.toStringAsFixed(1)}/5',
             'Customer stars',
-            const Color(0xFFFBBF24),
+            AppColors.warningText(),
           ),
           _kpiTile(
+            context,
             Icons.verified_outlined,
             'Pass rate',
             '${(passRate * 100).toStringAsFixed(0)}%',
             '$passCount ≥ $passBar',
-            const Color(0xFFA78BFA),
+            AppColors.secondaryText(),
           ),
           _kpiTile(
+            context,
             Icons.emoji_events_outlined,
             'Best',
             best.toStringAsFixed(1),
             'Highest overall',
-            const Color(0xFF0EA5E9),
+            AppColors.secondaryText(),
           ),
         ];
         if (narrow) {
@@ -459,6 +470,7 @@ class PerformanceStatsPanel extends StatelessWidget {
   }
 
   Widget _kpiTile(
+    BuildContext context,
     IconData icon,
     String title,
     String value,
@@ -468,9 +480,9 @@ class PerformanceStatsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,8 +493,8 @@ class PerformanceStatsPanel extends StatelessWidget {
               const Gap(6),
               Text(
                 title,
-                style: const TextStyle(
-                  color: Color(0xFF94A3B8),
+                style: TextStyle(
+                  color: AppColors.textSecondary(context),
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                 ),
@@ -492,8 +504,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           const Gap(8),
           Text(
             value,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontWeight: FontWeight.w800,
               fontSize: 20,
             ),
@@ -501,7 +513,7 @@ class PerformanceStatsPanel extends StatelessWidget {
           const Gap(2),
           Text(
             hint,
-            style: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 10),
           ),
         ],
       ),
@@ -513,21 +525,22 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255,  21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.show_chart_rounded, size: 18, color: Color(0xFF3B82F6)),
+              Icon(Icons.show_chart_rounded,
+                  size: 18, color: AppColors.secondaryText()),
               Gap(8),
               Text(
                 'Session score trend',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -535,15 +548,19 @@ class PerformanceStatsPanel extends StatelessWidget {
             ],
           ),
           const Gap(4),
-          const Text(
+          Text(
             'Older sessions on the left, newer on the right. Bars use the same level colors as reports.',
-            style: TextStyle(color: Color(0xFF64748B), fontSize: 11, height: 1.35),
+            style: TextStyle(
+                color: AppColors.textMuted(context),
+                fontSize: 11,
+                height: 1.35),
           ),
           const Gap(14),
           if (recent.length < 2)
-            const Text(
+            Text(
               'Complete at least two sessions to see a trend.',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
             )
           else
             SizedBox(
@@ -595,32 +612,33 @@ class PerformanceStatsPanel extends StatelessWidget {
     required Map<String, int> bands,
   }) {
     final segments = <_DonutSegment>[
-      _DonutSegment(bands['Excellent']!.toDouble(), const Color(0xFF70BD8A)),
-      _DonutSegment(bands['Good']!.toDouble(), const Color(0xFF3B82F6)),
-      _DonutSegment(bands['Developing']!.toDouble(), const Color(0xFFF59E0B)),
-      _DonutSegment(bands['Needs work']!.toDouble(), const Color(0xFFEF4444)),
+      _DonutSegment(bands['Excellent']!.toDouble(), AppColors.primaryText()),
+      _DonutSegment(bands['Good']!.toDouble(), AppColors.secondaryText()),
+      _DonutSegment(bands['Developing']!.toDouble(), AppColors.warningText()),
+      _DonutSegment(
+          bands['Needs work']!.toDouble(), AppColors.errorStrongText()),
     ].where((s) => s.value > 0).toList();
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.pie_chart_outline_rounded,
-                  size: 18, color: Color(0xFFA78BFA)),
+                  size: 18, color: AppColors.secondaryText()),
               Gap(8),
               Text(
                 'Score bands',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -630,8 +648,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           const Gap(4),
           Text(
             'Pass rate ${(passRate * 100).toStringAsFixed(0)}% · $passCount of $total customers ≥ $passBar',
-            style: const TextStyle(
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
@@ -643,23 +661,26 @@ class PerformanceStatsPanel extends StatelessWidget {
                 width: 110,
                 height: 110,
                 child: CustomPaint(
-                  painter: _DonutPainter(segments: segments),
+                  painter: _DonutPainter(
+                    segments: segments,
+                    emptyColor: AppColors.border(context),
+                  ),
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           '${(passRate * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppColors.textPrimary(context),
                             fontWeight: FontWeight.w800,
                             fontSize: 18,
                           ),
                         ),
-                        const Text(
+                        Text(
                           'pass',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             fontSize: 11,
                           ),
                         ),
@@ -672,14 +693,14 @@ class PerformanceStatsPanel extends StatelessWidget {
               Expanded(
                 child: Column(
                   children: [
-                    _legendRow('Excellent (8.5+)', bands['Excellent']!,
-                        const Color(0xFF70BD8A)),
-                    _legendRow(
-                        'Good (7.0–8.4)', bands['Good']!, const Color(0xFF3B82F6)),
-                    _legendRow('Developing (5.0–6.9)', bands['Developing']!,
-                        const Color(0xFFF59E0B)),
-                    _legendRow('Needs work (<5)', bands['Needs work']!,
-                        const Color(0xFFEF4444)),
+                    _legendRow(context, 'Excellent (8.5+)', bands['Excellent']!,
+                        AppColors.primaryText()),
+                    _legendRow(context, 'Good (7.0–8.4)', bands['Good']!,
+                        AppColors.secondaryText()),
+                    _legendRow(context, 'Developing (5.0–6.9)',
+                        bands['Developing']!, AppColors.warningText()),
+                    _legendRow(context, 'Needs work (<5)', bands['Needs work']!,
+                        AppColors.errorStrongText()),
                   ],
                 ),
               ),
@@ -690,7 +711,8 @@ class PerformanceStatsPanel extends StatelessWidget {
     );
   }
 
-  Widget _legendRow(String label, int count, Color color) {
+  Widget _legendRow(
+      BuildContext context, String label, int count, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -707,7 +729,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 11),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 11),
             ),
           ),
           Text(
@@ -738,16 +761,24 @@ class PerformanceStatsPanel extends StatelessWidget {
 
     final voiceRows = <(String, double?)>[
       ('Tone', avgOf(voiceEvals.map((e) => e.toneScore))),
-      ('Confidence', avgOf(voiceEvals.map((e) => e.confidenceScore).whereType<double>())),
+      (
+        'Confidence',
+        avgOf(voiceEvals.map((e) => e.confidenceScore).whereType<double>())
+      ),
       (
         'Spoken Clarity',
         avgOf(voiceEvals.map((e) => e.communicationClarityScore)),
       ),
-      ('Diction', avgOf(voiceEvals.map((e) => e.dictionScore).whereType<double>())),
+      (
+        'Diction',
+        avgOf(voiceEvals.map((e) => e.dictionScore).whereType<double>())
+      ),
       (
         'Pronunciation',
         avgOf(
-          voiceEvals.map((e) => e.pronunciationClarityScore).whereType<double>(),
+          voiceEvals
+              .map((e) => e.pronunciationClarityScore)
+              .whereType<double>(),
         ),
       ),
       (
@@ -756,11 +787,15 @@ class PerformanceStatsPanel extends StatelessWidget {
       ),
       (
         'Filler Word Usage',
-        avgOf(voiceEvals.map((e) => e.fillerWordUsageScore).whereType<double>()),
+        avgOf(
+            voiceEvals.map((e) => e.fillerWordUsageScore).whereType<double>()),
       ),
     ];
     final chatRows = <(String, double?)>[
-      ('Grammar', avgOf(chatEvals.map((e) => e.grammarScore).whereType<double>())),
+      (
+        'Grammar',
+        avgOf(chatEvals.map((e) => e.grammarScore).whereType<double>())
+      ),
       (
         'Correct Word Use',
         avgOf(chatEvals.map((e) => e.wordChoiceScore).whereType<double>()),
@@ -785,7 +820,8 @@ class PerformanceStatsPanel extends StatelessWidget {
     final hasChat = chatRows.any((r) => r.$2 != null);
     if (!hasVoice && !hasChat) return const SizedBox.shrink();
 
-    Widget section(String title, Color accent, IconData icon, List<(String, double?)> rows) {
+    Widget section(BuildContext context, String title, Color accent,
+        IconData icon, List<(String, double?)> rows) {
       final visible = rows.where((r) => r.$2 != null).toList();
       if (visible.isEmpty) return const SizedBox.shrink();
       return Column(
@@ -824,21 +860,22 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.tune_rounded, size: 18, color: Color(0xFFA78BFA)),
+              Icon(Icons.tune_rounded,
+                  size: 18, color: AppColors.secondaryText()),
               Gap(8),
               Text(
                 'Channel skill averages',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -846,24 +883,17 @@ class PerformanceStatsPanel extends StatelessWidget {
             ],
           ),
           const Gap(4),
-          const Text(
-            'Voice delivery and Non-Voice language categories, scored separately from the 10 shared overall skills. Expand a skill for criteria, possible deductions, and source notes.',
+          Text(
+            'Voice delivery and Non-Voice language categories, scored separately from the 10 shared overall skills. These channel scores do not change your overall. Expand a skill for criteria, possible deductions, and source notes.',
             style: TextStyle(
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
           ),
           if (hasVoice) ...[
             const Gap(14),
-            section(
-              'Voice delivery',
-              const Color(0xFF70BD8A),
-              Icons.mic_rounded,
-              voiceRows,
-            ),
             if (voiceRows.where((r) => r.$2 != null).length >= 3) ...[
-              const Gap(12),
               _SkillRadarCard(
                 title: 'Voice delivery profile',
                 subtitle:
@@ -872,20 +902,21 @@ class PerformanceStatsPanel extends StatelessWidget {
                     .where((r) => r.$2 != null)
                     .map((r) => MapEntry(r.$1, r.$2!))
                     .toList(),
-                accent: const Color(0xFF70BD8A),
+                accent: AppColors.primaryText(),
               ),
+              const Gap(12),
             ],
+            section(
+              context,
+              'Voice delivery',
+              AppColors.primaryText(),
+              Icons.mic_rounded,
+              voiceRows,
+            ),
           ],
           if (hasChat) ...[
             const Gap(14),
-            section(
-              'Non-Voice language',
-              const Color(0xFF3B82F6),
-              Icons.chat_bubble_outline_rounded,
-              chatRows,
-            ),
             if (chatRows.where((r) => r.$2 != null).length >= 3) ...[
-              const Gap(12),
               _SkillRadarCard(
                 title: 'Non-Voice language profile',
                 subtitle:
@@ -894,9 +925,17 @@ class PerformanceStatsPanel extends StatelessWidget {
                     .where((r) => r.$2 != null)
                     .map((r) => MapEntry(r.$1, r.$2!))
                     .toList(),
-                accent: const Color(0xFF3B82F6),
+                accent: AppColors.secondaryText(),
               ),
+              const Gap(12),
             ],
+            section(
+              context,
+              'Non-Voice language',
+              AppColors.secondaryText(),
+              Icons.chat_bubble_outline_rounded,
+              chatRows,
+            ),
           ],
         ],
       ),
@@ -911,21 +950,22 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.grid_view_rounded, size: 18, color: Color(0xFFA78BFA)),
+              Icon(Icons.grid_view_rounded,
+                  size: 18, color: AppColors.secondaryText()),
               Gap(8),
               Text(
                 'Skill averages',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -933,10 +973,10 @@ class PerformanceStatsPanel extends StatelessWidget {
             ],
           ),
           const Gap(4),
-          const Text(
+          Text(
             'Mean of each of the 10 shared competencies across scored customers. Expand a skill for rubric criteria and possible deductions. Sorted strongest to weakest.',
             style: TextStyle(
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
@@ -948,7 +988,7 @@ class PerformanceStatsPanel extends StatelessWidget {
               subtitle:
                   'Shape of your 10 shared competencies. Outer ring is 10.',
               skills: sortedSkills,
-              accent: const Color(0xFF60A5FA),
+              accent: AppColors.secondaryText(),
             ),
             const Gap(14),
           ],
@@ -980,21 +1020,22 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.psychology_outlined, size: 18, color: Color(0xFF0EA5E9)),
+              Icon(Icons.psychology_outlined,
+                  size: 18, color: AppColors.secondaryText()),
               Gap(8),
               Text(
                 'General analysis',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -1004,8 +1045,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           const Gap(4),
           Text(
             'Based on ${avg.toStringAsFixed(1)} average overall and ${(passRate * 100).toStringAsFixed(0)}% pass rate across your scored customers.',
-            style: const TextStyle(
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
@@ -1015,20 +1056,22 @@ class PerformanceStatsPanel extends StatelessWidget {
             children: [
               Expanded(
                 child: _miniStat(
+                  context,
                   'Strongest skill',
                   strongest.key,
                   strongest.value.toStringAsFixed(1),
-                  const Color(0xFF70BD8A),
+                  AppColors.primaryText(),
                   ScoringTransparency.iconFor(strongest.key),
                 ),
               ),
               const Gap(10),
               Expanded(
                 child: _miniStat(
+                  context,
                   'Focus skill',
                   weakest.key,
                   weakest.value.toStringAsFixed(1),
-                  const Color(0xFFF59E0B),
+                  AppColors.warningText(),
                   ScoringTransparency.iconFor(weakest.key),
                 ),
               ),
@@ -1039,16 +1082,18 @@ class PerformanceStatsPanel extends StatelessWidget {
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 640;
               final well = _focusListCard(
+                context: context,
                 title: 'What went well',
                 icon: Icons.check_circle_outline_rounded,
-                accent: const Color(0xFF70BD8A),
+                accent: AppColors.primaryText(),
                 items: strengths,
                 empty: 'Strength notes will appear after more scored sessions.',
               );
               final focus = _focusListCard(
+                context: context,
                 title: 'Focus next',
                 icon: Icons.flag_outlined,
-                accent: const Color(0xFFF59E0B),
+                accent: AppColors.warningText(),
                 items: improvements,
                 empty: 'Practice areas will appear after more scored sessions.',
               );
@@ -1077,6 +1122,7 @@ class PerformanceStatsPanel extends StatelessWidget {
   }
 
   Widget _miniStat(
+    BuildContext context,
     String label,
     String skill,
     String score,
@@ -1086,9 +1132,9 @@ class PerformanceStatsPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Row(
         children: [
@@ -1107,8 +1153,8 @@ class PerformanceStatsPanel extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: Color(0xFF64748B),
+                  style: TextStyle(
+                    color: AppColors.textMuted(context),
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1118,8 +1164,8 @@ class PerformanceStatsPanel extends StatelessWidget {
                   skill,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1141,6 +1187,7 @@ class PerformanceStatsPanel extends StatelessWidget {
   }
 
   Widget _focusListCard({
+    required BuildContext context,
     required String title,
     required IconData icon,
     required Color accent,
@@ -1151,9 +1198,9 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1176,8 +1223,8 @@ class PerformanceStatsPanel extends StatelessWidget {
           if (items.isEmpty)
             Text(
               empty,
-              style: const TextStyle(
-                color: Color(0xFF64748B),
+              style: TextStyle(
+                color: AppColors.textMuted(context),
                 fontSize: 12,
                 height: 1.35,
               ),
@@ -1197,8 +1244,8 @@ class PerformanceStatsPanel extends StatelessWidget {
                     Expanded(
                       child: Text(
                         text,
-                        style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 12,
                           height: 1.35,
                         ),
@@ -1218,25 +1265,25 @@ class PerformanceStatsPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 21, 21, 21),
+        color: AppColors.listBase(context),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color.fromARGB(255, 42, 42, 43)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.rule_folder_outlined,
                 size: 18,
-                color: Color(0xFF60A5FA),
+                color: AppColors.secondaryText(),
               ),
               Gap(8),
               Text(
                 'How practice scoring works',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
@@ -1244,10 +1291,10 @@ class PerformanceStatsPanel extends StatelessWidget {
             ],
           ),
           const Gap(10),
-          const Text(
+          Text(
             'Each skill starts at 10. The evaluator deducts only for observed gaps in the transcript, audio, or telemetry. Overall is the average of the 10 shared skills. Pass practice mark is 7.0. Excellent is 8.5 and above.',
             style: TextStyle(
-              color: Color(0xFFCBD5E1),
+              color: AppColors.textSecondary(context),
               fontSize: 12,
               height: 1.4,
             ),
@@ -1257,14 +1304,14 @@ class PerformanceStatsPanel extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF15201A),
+              color: AppColors.nextTint(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2E4A38)),
+              border: Border.all(color: AppColors.nextTint(context)),
             ),
-            child: const Text(
+            child: Text(
               'Evidence rule: if the model cannot cite a concrete line, audio moment, or telemetry value, that category stays at 10 (Full marks). Cuts without evidence are rejected by the app.',
               style: TextStyle(
-                color: Color(0xFFD7E8DB),
+                color: AppColors.primaryText(),
                 fontSize: 11,
                 height: 1.4,
               ),
@@ -1274,18 +1321,19 @@ class PerformanceStatsPanel extends StatelessWidget {
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: const [
-              _BandChip('9-10 Excellent', Color(0xFF70BD8A)),
-              _BandChip('7-8.4 Good', Color(0xFF3B82F6)),
-              _BandChip('5-6.9 Developing', Color(0xFFF59E0B)),
-              _BandChip('0-4.9 Needs work', Color(0xFFEF4444)),
+            children: [
+              for (final level in ScoringTransparency.levels)
+                _BandChip(
+                  ScoringTransparency.chipText(level),
+                  AppColors.readable(Color(level.colorValue), context),
+                ),
             ],
           ),
           const Gap(10),
-          const Text(
+          Text(
             'Expand skill rows above for criteria and deductions. Open a session report for per-customer evidence quotes, suggested stronger lines, and CSAT/AHT detail.',
             style: TextStyle(
-              color: Color(0xFF64748B),
+              color: AppColors.textMuted(context),
               fontSize: 11,
               height: 1.35,
             ),
@@ -1295,15 +1343,16 @@ class PerformanceStatsPanel extends StatelessWidget {
     );
   }
 
-  Widget _sectionTitle(IconData icon, String title, Color color) {
+  Widget _sectionTitle(
+      BuildContext context, IconData icon, String title, Color color) {
     return Row(
       children: [
         Icon(icon, size: 18, color: color),
         const Gap(8),
         Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: AppColors.textPrimary(context),
             fontWeight: FontWeight.w700,
             fontSize: 14,
           ),
@@ -1328,52 +1377,52 @@ class PerformanceStatsPanel extends StatelessWidget {
           mouseCursor: SystemMouseCursors.click,
           borderRadius: BorderRadius.circular(12),
           child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 21, 21, 21),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              height: 40,
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.listBase(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.35)),
             ),
-            const Gap(12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+            child: Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                  const Gap(4),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 11,
-                    ),
+                ),
+                const Gap(12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const Gap(4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_right, color: color.withValues(alpha: 0.8)),
+              ],
             ),
-            Icon(Icons.chevron_right, color: color.withValues(alpha: 0.8)),
-          ],
-        ),
           ),
         ),
       ),
@@ -1416,15 +1465,19 @@ class _DonutSegment {
 
 class _DonutPainter extends CustomPainter {
   final List<_DonutSegment> segments;
+  final Color emptyColor;
 
-  _DonutPainter({required this.segments});
+  _DonutPainter({
+    required this.segments,
+    required this.emptyColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final total = segments.fold<double>(0, (a, b) => a + b.value);
     if (total <= 0) {
       final paint = Paint()
-        ..color = const Color(0xFF2A2A2A)
+        ..color = emptyColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 12;
       canvas.drawCircle(
@@ -1483,7 +1536,7 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
     final pct = (widget.score / 10.0).clamp(0.0, 1.0);
 
     return Material(
-      color: const Color(0xFF151515),
+      color: AppColors.card(context),
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         mouseCursor: SystemMouseCursors.click,
@@ -1497,7 +1550,7 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
             border: Border.all(
               color: _open
                   ? widget.color.withValues(alpha: 0.45)
-                  : const Color(0xFF2A2A2B),
+                  : AppColors.border(context),
             ),
           ),
           child: Column(
@@ -1514,8 +1567,8 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                   Expanded(
                     child: Text(
                       widget.label,
-                      style: const TextStyle(
-                        color: Color(0xFFE2E8F0),
+                      style: TextStyle(
+                        color: AppColors.textSecondary(context),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -1557,7 +1610,7 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                         ? Icons.keyboard_arrow_up_rounded
                         : Icons.keyboard_arrow_down_rounded,
                     size: 18,
-                    color: const Color(0xFF94A3B8),
+                    color: AppColors.textSecondary(context),
                   ),
                 ],
               ),
@@ -1567,7 +1620,7 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                 child: LinearProgressIndicator(
                   value: pct,
                   minHeight: 7,
-                  backgroundColor: const Color(0xFF2A2A2A),
+                  backgroundColor: AppColors.border(context),
                   color: widget.color,
                 ),
               ),
@@ -1576,8 +1629,8 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                 if (dim != null) ...[
                   Text(
                     dim.short,
-                    style: const TextStyle(
-                      color: Color(0xFFCBD5E1),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 11,
                       height: 1.4,
                     ),
@@ -1597,8 +1650,8 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                   const Gap(8),
                   Text(
                     'Gaps: ${dim.gapExamples}',
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 11,
                       height: 1.35,
                     ),
@@ -1610,17 +1663,17 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF111827),
+                      color: AppColors.scaffold(context),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFF1F2937)),
+                      border: Border.all(color: AppColors.chipBg(context)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Possible deductions for this skill',
                           style: TextStyle(
-                            color: Color(0xFF94A3B8),
+                            color: AppColors.textSecondary(context),
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1631,8 +1684,8 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                             padding: const EdgeInsets.only(bottom: 3),
                             child: Text(
                               a,
-                              style: const TextStyle(
-                                color: Color(0xFFCBD5E1),
+                              style: TextStyle(
+                                color: AppColors.textSecondary(context),
                                 fontSize: 11,
                                 height: 1.35,
                               ),
@@ -1643,8 +1696,8 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                           const Gap(4),
                           Text(
                             'Source: ${dim.sourceNote}',
-                            style: const TextStyle(
-                              color: Color(0xFF64748B),
+                            style: TextStyle(
+                              color: AppColors.textMuted(context),
                               fontSize: 10,
                               height: 1.35,
                             ),
@@ -1655,10 +1708,10 @@ class _DashboardRubricSkillTileState extends State<_DashboardRubricSkillTile> {
                   ),
                 ],
                 const Gap(6),
-                const Text(
+                Text(
                   'Session reports add customer-level evidence quotes and suggested stronger lines for each interaction.',
                   style: TextStyle(
-                    color: Color(0xFF64748B),
+                    color: AppColors.textMuted(context),
                     fontSize: 10,
                     height: 1.35,
                   ),
@@ -1676,33 +1729,34 @@ class _SkillRadarCard extends StatelessWidget {
   final List<MapEntry<String, double>> skills;
   final String title;
   final String subtitle;
-  final Color accent;
+  final Color? accent;
 
-  const _SkillRadarCard({
+  _SkillRadarCard({
     required this.skills,
     this.title = 'Skill profile',
     this.subtitle = 'Shape of your strongest competencies. Outer ring is 10.',
-    this.accent = const Color(0xFF60A5FA),
+    this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
     final top = skills.take(8).toList();
+    final accentColor = accent ?? AppColors.secondaryText();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF151515),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2B)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFFE2E8F0),
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -1710,8 +1764,8 @@ class _SkillRadarCard extends StatelessWidget {
           const Gap(4),
           Text(
             subtitle,
-            style: const TextStyle(
-              color: Color(0xFF64748B),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 10,
               height: 1.3,
             ),
@@ -1722,7 +1776,12 @@ class _SkillRadarCard extends StatelessWidget {
               width: 220,
               height: 220,
               child: CustomPaint(
-                painter: _RadarPainter(skills: top, accent: accent),
+                painter: _RadarPainter(
+                  skills: top,
+                  accent: accentColor,
+                  gridColor: AppColors.border(context),
+                  axisColor: AppColors.borderStrong(context),
+                ),
               ),
             ),
           ),
@@ -1732,15 +1791,14 @@ class _SkillRadarCard extends StatelessWidget {
             runSpacing: 6,
             children: top.map((e) {
               final c = e.value >= 8.5
-                  ? const Color(0xFF70BD8A)
+                  ? AppColors.primaryText()
                   : e.value >= 7
-                      ? const Color(0xFF3B82F6)
+                      ? AppColors.secondaryText()
                       : e.value >= 5
-                          ? const Color(0xFFF59E0B)
-                          : const Color(0xFFEF4444);
-              final short = e.key.length > 18
-                  ? '${e.key.substring(0, 16)}…'
-                  : e.key;
+                          ? AppColors.warningText()
+                          : AppColors.errorStrongText();
+              final short =
+                  e.key.length > 18 ? '${e.key.substring(0, 16)}…' : e.key;
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -1755,8 +1813,8 @@ class _SkillRadarCard extends StatelessWidget {
                   const Gap(4),
                   Text(
                     '$short ${e.value.toStringAsFixed(1)}',
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
+                    style: TextStyle(
+                      color: AppColors.textSecondary(context),
                       fontSize: 10,
                     ),
                   ),
@@ -1773,10 +1831,14 @@ class _SkillRadarCard extends StatelessWidget {
 class _RadarPainter extends CustomPainter {
   final List<MapEntry<String, double>> skills;
   final Color accent;
+  final Color gridColor;
+  final Color axisColor;
 
   _RadarPainter({
     required this.skills,
-    this.accent = const Color(0xFF60A5FA),
+    required this.accent,
+    required this.gridColor,
+    required this.axisColor,
   });
 
   @override
@@ -1786,11 +1848,11 @@ class _RadarPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = math.min(size.width, size.height) * 0.38;
     final gridPaint = Paint()
-      ..color = const Color(0xFF2A2A2B)
+      ..color = gridColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final axisPaint = Paint()
-      ..color = const Color(0xFF334155)
+      ..color = axisColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final fillPaint = Paint()

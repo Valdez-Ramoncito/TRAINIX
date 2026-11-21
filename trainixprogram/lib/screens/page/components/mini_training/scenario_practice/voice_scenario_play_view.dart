@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/screens/page/components/mini_training/scenario_practice/scenario_account_lookup_panel.dart';
@@ -88,16 +89,17 @@ class VoiceScenarioPlayView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: AppColors.scaffold(context),
       body: Column(
         children: [
           Container(
             height: 56,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF141414),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
               border: Border(
-                bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+                bottom:
+                    BorderSide(color: AppColors.border(context), width: 0.5),
               ),
             ),
             child: Row(
@@ -105,12 +107,12 @@ class VoiceScenarioPlayView extends StatelessWidget {
                 IconButton(
                   onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-                  color: Colors.white70,
+                  color: AppColors.textSecondary(context),
                 ),
-                const Text(
+                Text(
                   'Voice Session',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
                   ),
@@ -122,14 +124,14 @@ class VoiceScenarioPlayView extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E3A5F),
+                    color: AppColors.completeTint(context),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFF3B82F6)),
+                    border: Border.all(color: AppColors.secondaryText()),
                   ),
                   child: Text(
                     scenario.sector.toUpperCase(),
-                    style: const TextStyle(
-                      color: Color(0xFF93C5FD),
+                    style: TextStyle(
+                      color: AppColors.secondaryText(),
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
@@ -138,7 +140,8 @@ class VoiceScenarioPlayView extends StatelessWidget {
                 const Spacer(),
                 Text(
                   scenario.customerName,
-                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                  style: TextStyle(
+                      color: AppColors.textSecondary(context), fontSize: 13),
                 ),
               ],
             ),
@@ -158,7 +161,7 @@ class VoiceScenarioPlayView extends StatelessWidget {
                         ),
                         child: Column(
                           children: [
-                            _guideHud(),
+                            _guideHud(context),
                             if (feedbackKind != null) ...[
                               const Gap(10),
                               ScenarioFeedbackBanner(
@@ -169,12 +172,12 @@ class VoiceScenarioPlayView extends StatelessWidget {
                             ],
                             const Gap(12),
                             if (scenario.usesAccountLookup)
-                              Expanded(child: _tabbedBody())
+                              Expanded(child: _tabbedBody(context))
                             else ...[
-                              Expanded(child: _conversationArea()),
+                              Expanded(child: _conversationArea(context)),
                               if (coachPrompt != null && !isAccountTurn) ...[
                                 const Gap(12),
-                                _coachPanel(),
+                                _coachPanel(context),
                               ],
                             ],
                           ],
@@ -182,15 +185,15 @@ class VoiceScenarioPlayView extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const VerticalDivider(
+                  VerticalDivider(
                     width: 1,
                     thickness: 0.5,
-                    color: Color(0xFF2A2A2A),
+                    color: AppColors.border(context),
                   ),
                   SizedBox(
                     width: 300,
                     child: Container(
-                      color: const Color(0xFF121212),
+                      color: AppColors.inputFill(context),
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 56),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -201,13 +204,13 @@ class VoiceScenarioPlayView extends StatelessWidget {
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF166534),
+                              color: AppColors.nextTint(context),
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Script Guide',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: AppColors.textPrimary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
@@ -215,10 +218,10 @@ class VoiceScenarioPlayView extends StatelessWidget {
                           ),
                           const Gap(12),
                           if (scenario.missionSteps.isNotEmpty) ...[
-                            const Text(
+                            Text(
                               'Missions',
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: AppColors.textSecondary(context),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 12,
                               ),
@@ -238,27 +241,23 @@ class VoiceScenarioPlayView extends StatelessWidget {
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
                                       color: current
-                                          ? const Color(0xFF1A2E1A)
-                                          : const Color(0xFF1A1A1A),
+                                          ? AppColors.nextTint(context)
+                                          : AppColors.elevated(context),
                                       borderRadius: BorderRadius.circular(10),
                                       border: Border.all(
                                         color: done
-                                            ? const Color(0xFF70BD8A)
+                                            ? AppColors.primaryText()
                                             : current
-                                            ? const Color(0xFF34D399)
-                                            : const Color(0xFF333333),
+                                                ? AppColors.successText()
+                                                : AppColors.border(context),
                                       ),
                                     ),
                                     child: Text(
-                                      '${done
-                                          ? "Done"
-                                          : current
-                                          ? "Now"
-                                          : "Todo"} · ${step.label}',
+                                      '${done ? "Done" : current ? "Now" : "Todo"} · ${step.label}',
                                       style: TextStyle(
                                         color: done
-                                            ? const Color(0xFF70BD8A)
-                                            : Colors.white70,
+                                            ? AppColors.primaryText()
+                                            : AppColors.textSecondary(context),
                                         fontSize: 12,
                                         fontWeight: current
                                             ? FontWeight.w700
@@ -272,31 +271,41 @@ class VoiceScenarioPlayView extends StatelessWidget {
                             const Gap(12),
                           ] else
                             const Spacer(),
-                          const Text(
-                            'Coach note',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
+                          Row(
+            children: [
+              Icon(
+                Icons.psychology_outlined,
+                size: 16,
+                color: AppColors.secondaryText(),
+              ),
+              const Gap(6),
+              Text(
+                'Coach note',
+                style: TextStyle(
+                  color: AppColors.textSecondary(context),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
                           const Gap(6),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1E3A5F),
+                              color: AppColors.completeTint(context),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
-                                color: const Color(0xFF3B82F6),
+                                color: AppColors.secondaryText(),
                               ),
                             ),
                             child: Text(
                               coachPrompt ??
                                   hudText ??
                                   'Follow the guided voice steps for this scenario.',
-                              style: const TextStyle(
-                                color: Color(0xFF93C5FD),
+                              style: TextStyle(
+                                color: AppColors.secondaryText(),
                                 fontSize: 12,
                                 height: 1.35,
                               ),
@@ -308,16 +317,16 @@ class VoiceScenarioPlayView extends StatelessWidget {
                               width: double.infinity,
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 12, 67, 30),
+                                color: AppColors.nextTint(context),
                                 borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: const Color(0xFF70BD8A),
+                                  color: AppColors.primaryText(),
                                 ),
                               ),
                               child: Text(
                                 coachTarget!,
-                                style: const TextStyle(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  color: AppColors.textPrimary(context),
                                   fontSize: 13,
                                 ),
                               ),
@@ -336,20 +345,20 @@ class VoiceScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _tabbedBody() {
+  Widget _tabbedBody(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(10),
             ),
             child: TabBar(
-              indicatorColor: Colors.green,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white54,
+              indicatorColor: AppColors.primary(context),
+              labelColor: AppColors.textPrimary(context),
+              unselectedLabelColor: AppColors.textMuted(context),
               tabs: [
                 const Tab(text: 'Conversation'),
                 Tab(
@@ -364,10 +373,10 @@ class VoiceScenarioPlayView extends StatelessWidget {
               children: [
                 Column(
                   children: [
-                    Expanded(child: _conversationArea()),
+                    Expanded(child: _conversationArea(context)),
                     if (coachPrompt != null && !isAccountTurn) ...[
                       const Gap(12),
-                      _coachPanel(),
+                      _coachPanel(context),
                     ],
                     if (isAccountTurn && coachPrompt != null) ...[
                       const Gap(10),
@@ -375,10 +384,11 @@ class VoiceScenarioPlayView extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A2E1A),
+                          color: AppColors.nextTint(context),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: Colors.green.withOpacity(0.4),
+                            color: AppColors.primary(context)
+                                .withValues(alpha: 0.4),
                           ),
                         ),
                         child: Text(
@@ -417,32 +427,32 @@ class VoiceScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _guideHud() {
+  Widget _guideHud(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2A)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.flag_outlined,
                 size: 16,
-                color: Color(0xFF70BD8A),
+                color: AppColors.primaryText(),
               ),
               const Gap(8),
-              const Text(
+              Text(
                 'Objective',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF70BD8A),
+                  color: AppColors.primaryText(),
                 ),
               ),
               const Spacer(),
@@ -453,7 +463,9 @@ class VoiceScenarioPlayView extends StatelessWidget {
                   'Mistakes: $mistakes / ${scenario.maxMistakes}',
                   style: TextStyle(
                     fontSize: 12,
-                    color: mistakes > 0 ? Colors.redAccent : Colors.white54,
+                    color: mistakes > 0
+                        ? AppColors.errorText()
+                        : AppColors.textMuted(context),
                   ),
                 ),
               ],
@@ -462,31 +474,31 @@ class VoiceScenarioPlayView extends StatelessWidget {
           const Gap(6),
           Text(
             hudText ?? 'Follow the guided steps.',
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: AppColors.textSecondary(context),
               fontSize: 13,
               height: 1.35,
             ),
           ),
-          ],
+        ],
       ),
     );
   }
 
-  Widget _conversationArea() {
+  Widget _conversationArea(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF161616),
+        color: AppColors.card(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF2A2A2A)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: bubbles.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 'Customer lines will appear here.',
-                style: TextStyle(color: Colors.white38),
+                style: TextStyle(color: AppColors.textMuted(context)),
               ),
             )
           : ListView.builder(
@@ -503,31 +515,32 @@ class VoiceScenarioPlayView extends StatelessWidget {
     );
   }
 
-  Widget _coachPanel() {
+  Widget _coachPanel(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A2E1A),
+        color: AppColors.nextTint(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.withOpacity(0.45)),
+        border: Border.all(
+            color: AppColors.primary(context).withValues(alpha: 0.45)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'COACH',
             style: TextStyle(
               fontSize: 11,
               letterSpacing: 1,
-              color: Colors.white54,
+              color: AppColors.textMuted(context),
               fontWeight: FontWeight.w700,
             ),
           ),
           const Gap(8),
           Text(
             coachPrompt!,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               height: 1.4,
               fontWeight: FontWeight.w600,
@@ -535,16 +548,17 @@ class VoiceScenarioPlayView extends StatelessWidget {
           ),
           if (coachTarget != null) ...[
             const Gap(10),
-            const Text(
+            Text(
               'Say this:',
-              style: TextStyle(fontSize: 12, color: Colors.white54),
+              style:
+                  TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
             ),
             if (canPlayExample && onPlayExample != null) ...[
               const Gap(6),
               TextButton.icon(
                 onPressed: processing || recording ? null : onPlayExample,
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF70BD8A),
+                  foregroundColor: AppColors.primaryText(),
                 ),
                 icon: const Icon(Icons.volume_up, size: 18),
                 label: const Text('Hear example'),
@@ -553,21 +567,22 @@ class VoiceScenarioPlayView extends StatelessWidget {
             const Gap(4),
             Text(
               coachTarget!,
-              style: const TextStyle(fontSize: 14, height: 1.4),
+              style: TextStyle(fontSize: 14, height: 1.4),
             ),
           ],
           if (lastTranscript != null) ...[
             const Gap(10),
-            const Text(
+            Text(
               'Your transcript:',
-              style: TextStyle(fontSize: 12, color: Colors.white54),
+              style:
+                  TextStyle(fontSize: 12, color: AppColors.textMuted(context)),
             ),
             if (canPlayLastTake && onPlayLastTake != null) ...[
               const Gap(6),
               TextButton.icon(
                 onPressed: processing || recording ? null : onPlayLastTake,
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF70BD8A),
+                  foregroundColor: AppColors.primaryText(),
                 ),
                 icon: const Icon(Icons.play_arrow, size: 18),
                 label: const Text('Play my last take'),
@@ -576,7 +591,8 @@ class VoiceScenarioPlayView extends StatelessWidget {
             const Gap(4),
             Text(
               lastTranscript!,
-              style: const TextStyle(fontSize: 13, color: Colors.white70),
+              style: TextStyle(
+                  fontSize: 13, color: AppColors.textSecondary(context)),
             ),
           ],
           const Gap(12),
@@ -585,8 +601,10 @@ class VoiceScenarioPlayView extends StatelessWidget {
             height: 46,
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
-                backgroundColor: recording ? Colors.redAccent : Colors.green,
-                foregroundColor: Colors.white,
+                backgroundColor: recording
+                    ? AppColors.errorText()
+                    : AppColors.primary(context),
+                foregroundColor: AppColors.onPrimary(context),
               ),
               onPressed: processing ? null : onToggleRecord,
               icon: Icon(recording ? Icons.stop : Icons.mic),

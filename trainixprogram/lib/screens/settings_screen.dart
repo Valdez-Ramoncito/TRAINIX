@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/trainix_debug.dart';
@@ -68,7 +70,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(title: const Text('Settings'), centerTitle: true),
+      appBar: AppBar(title: Text('Settings'), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
         children: [
@@ -76,19 +78,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1F26),
+              color: AppColors.card(context),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: const Color(0xFF70BD8A).withValues(alpha: 0.35),
+                color: AppColors.primary(context).withValues(alpha: 0.35),
               ),
             ),
             child: Text(
               profileReady
                   ? 'These choices stay on this device for now. Account progress and guide status are saved to your login.'
                   : 'Finish your profile to change training aids. You can still sign out or open your profile from here.',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textMuted(context),
                 height: 1.35,
               ),
             ),
@@ -103,9 +105,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: AppSettings.coachTipsEnabled,
               onChanged: profileReady
                   ? (v) => setState(() {
-                      AppSettings.coachTipsEnabled = v;
-                      AppSettings.save();
-                    })
+                        AppSettings.coachTipsEnabled = v;
+                        AppSettings.save();
+                      })
                   : null,
             ),
             _switchTile(
@@ -115,9 +117,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: AppSettings.autoScriptGuideExpanded,
               onChanged: profileReady
                   ? (v) => setState(() {
-                      AppSettings.autoScriptGuideExpanded = v;
-                      AppSettings.save();
-                    })
+                        AppSettings.autoScriptGuideExpanded = v;
+                        AppSettings.save();
+                      })
                   : null,
             ),
             _switchTile(
@@ -127,9 +129,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: AppSettings.ahtAlertsEnabled,
               onChanged: profileReady
                   ? (v) => setState(() {
-                      AppSettings.ahtAlertsEnabled = v;
-                      AppSettings.save();
-                    })
+                        AppSettings.ahtAlertsEnabled = v;
+                        AppSettings.save();
+                      })
                   : null,
             ),
           ]),
@@ -160,6 +162,66 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const Gap(18),
           _sectionTitle('Display'),
           _card([
+            Consumer<ThemeController>(
+              builder: (context, themeController, _) {
+                final mode = themeController.mode;
+                String label;
+                switch (mode) {
+                  case ThemeMode.light:
+                    label = 'Light';
+                    break;
+                  case ThemeMode.system:
+                    label = 'System';
+                    break;
+                  case ThemeMode.dark:
+                    label = 'Dark';
+                    break;
+                }
+                return ListTile(
+                  leading: Icon(
+                    Icons.brightness_6_outlined,
+                    color: Theme.of(context).listTileTheme.iconColor,
+                  ),
+                  title: Text(
+                    'Theme',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  subtitle: Text(
+                    label,
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
+                  trailing: DropdownButtonHideUnderline(
+                    child: DropdownButton<ThemeMode>(
+                      value: mode,
+                      dropdownColor: AppColors.elevated(context),
+                      onChanged: (next) {
+                        if (next != null) themeController.setMode(next);
+                      },
+                      items: const [
+                        DropdownMenuItem(
+                          value: ThemeMode.dark,
+                          child: Text('Dark'),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.light,
+                          child: Text('Light'),
+                        ),
+                        DropdownMenuItem(
+                          value: ThemeMode.system,
+                          child: Text('System'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
             _switchTile(
               icon: Icons.animation_outlined,
               title: 'Reduce motion',
@@ -266,9 +328,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-              title: const Text(
+              title: Text(
                 'Preferred sector',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
               ),
               subtitle: Text(
                 ProfileData.preferredSector,
@@ -280,10 +342,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.logout, color: Color(0xFFF87171)),
-              title: const Text(
+              leading: Icon(Icons.logout, color: AppColors.errorText()),
+              title: Text(
                 'Sign out',
-                style: TextStyle(color: Color(0xFFF87171)),
+                style: TextStyle(color: AppColors.errorText()),
               ),
               onTap: () async {
                 final confirmed = await AuthService.confirmSignOut(context);
@@ -337,9 +399,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context,
                 ).colorScheme.onSurface.withValues(alpha: 0.7),
               ),
-              title: const Text(
+              title: Text(
                 'Reset local settings',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: AppColors.textPrimary(context)),
               ),
               onTap: () {
                 setState(() {
@@ -355,7 +417,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               },
             ),
           ]),
-
           const Gap(28),
           Center(
             child: GestureDetector(
@@ -377,7 +438,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : 'Trainix · v1',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color:
+                      AppColors.borderStrong(context).withValues(alpha: 0.55),
                 ),
               ),
             ),
@@ -404,12 +466,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _card(List<Widget> children) {
     return Material(
-      color: const Color(0xFF161616),
+      color: AppColors.card(context),
       borderRadius: BorderRadius.circular(14),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFF2A2A2A)),
+          border: Border.all(color: AppColors.border(context)),
         ),
         child: Column(children: children),
       ),
@@ -435,7 +497,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       value: value,
-      activeColor: const Color(0xFF70BD8A),
+      activeColor: AppColors.primary(context),
       onChanged: onChanged,
     );
   }

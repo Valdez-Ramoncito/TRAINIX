@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 
@@ -74,16 +75,16 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            _buildSearchInput(),
+            _buildSearchInput(context),
             const Gap(20),
             if (!accountsRevealed)
-              _buildSearchPrompt()
+              _buildSearchPrompt(context)
             else ...[
-              _buildAccountsListHeader(),
+              _buildAccountsListHeader(context),
               const Gap(12),
-              _buildAccountsList(),
+              _buildAccountsList(context),
               const Gap(24),
-              if (_selected != null) _buildAccountDetails(_selected!),
+              if (_selected != null) _buildAccountDetails(context, _selected!),
             ],
             if (allowSearch && onConfirmSearch != null) ...[
               const Gap(16),
@@ -92,8 +93,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                 height: 44,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary(context),
+                    foregroundColor: AppColors.onPrimary(context),
                   ),
                   onPressed: onConfirmSearch,
                   child: const Text('Confirm Search'),
@@ -107,12 +108,11 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                 height: 44,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary(context),
+                    foregroundColor: AppColors.onPrimary(context),
                   ),
-                  onPressed:
-                      selectedAccountId == null ? null : onConfirmSelect,
-                  child: const Text('Confirm Selected Account'),
+                  onPressed: selectedAccountId == null ? null : onConfirmSelect,
+                  child: Text('Confirm Selected Account'),
                 ),
               ),
             ],
@@ -122,28 +122,29 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchInput() {
+  Widget _buildSearchInput(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: flashError
-            ? const Color(0xFF3A1515)
+            ? AppColors.elevated(context)
             : flashSuccess
-                ? const Color(0xFF153A22)
-                : const Color(0xFF1A1A1B),
+                ? AppColors.nextTint(context)
+                : AppColors.card(context),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: flashError
-              ? Colors.redAccent
+              ? AppColors.errorText()
               : flashSuccess
-                  ? Colors.green
-                  : const Color.fromARGB(255, 27, 28, 30),
+                  ? AppColors.primary(context)
+                  : AppColors.border(context),
           width: (flashError || flashSuccess) ? 2 : 1,
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
-          const Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 22),
+          Icon(Icons.search_rounded,
+              color: AppColors.textMuted(context), size: 22),
           const Gap(12),
           Expanded(
             child: TextField(
@@ -156,11 +157,12 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                   onConfirmSearch!();
                 }
               },
-              style: const TextStyle(color: Colors.white, fontSize: 14),
-              decoration: const InputDecoration(
+              style: TextStyle(
+                  color: AppColors.textPrimary(context), fontSize: 14),
+              decoration: InputDecoration(
                 hintText: 'Search by account ID or customer name...',
                 hintStyle: TextStyle(
-                  color: Color.fromARGB(255, 91, 92, 93),
+                  color: AppColors.textMuted(context),
                   fontSize: 14,
                 ),
                 border: InputBorder.none,
@@ -173,9 +175,9 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                 searchController.clear();
                 onSearchChanged('');
               },
-              child: const Icon(
+              child: Icon(
                 Icons.close_rounded,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textMuted(context),
                 size: 20,
               ),
             ),
@@ -184,23 +186,24 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchPrompt() {
+  Widget _buildSearchPrompt(BuildContext context) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(130, 28, 28, 28),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color.fromARGB(255, 40, 40, 40)),
+        border: Border.all(color: AppColors.border(context)),
       ),
-      child: const Column(
+      child: Column(
         children: [
-          Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 36),
+          Icon(Icons.search_rounded,
+              color: AppColors.textMuted(context), size: 36),
           Gap(12),
           Text(
             'Search for an account',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontSize: 16,
               fontWeight: FontWeight.w600,
             ),
@@ -210,7 +213,7 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
             'Type a customer name or account ID, then confirm search. Matching accounts will appear here.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
               fontSize: 13,
               height: 1.45,
             ),
@@ -220,18 +223,19 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountsListHeader() {
+  Widget _buildAccountsListHeader(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Row(
+        Row(
           children: [
-            Icon(Icons.badge_outlined, color: Color(0xFF3B82F6), size: 20),
+            Icon(Icons.badge_outlined,
+                color: AppColors.secondaryText(), size: 20),
             Gap(8),
             Text(
               'Customer Accounts',
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textPrimary(context),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -241,13 +245,13 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E293B),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
             '${_filtered.length} found',
-            style: const TextStyle(
-              color: Color(0xFF9CA3AF),
+            style: TextStyle(
+              color: AppColors.textMuted(context),
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -257,22 +261,22 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountsList() {
+  Widget _buildAccountsList(BuildContext context) {
     final filtered = _filtered;
     if (filtered.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 28, 29, 29),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color.fromARGB(255, 50, 51, 54)),
+          border: Border.all(color: AppColors.borderStrong(context)),
         ),
-        child: const Text(
+        child: Text(
           'No matching accounts found.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Color.fromARGB(255, 181, 184, 189),
+            color: AppColors.textSecondary(context),
             fontSize: 13,
           ),
         ),
@@ -295,13 +299,13 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isSelected
-                  ? const Color(0xFF1E293B)
-                  : const Color.fromARGB(255, 28, 29, 29),
+                  ? AppColors.elevated(context)
+                  : AppColors.card(context),
               borderRadius: BorderRadius.circular(14),
               border: Border.all(
                 color: isSelected
-                    ? const Color(0xFF3B82F6)
-                    : const Color.fromARGB(255, 42, 44, 45),
+                    ? AppColors.secondaryText()
+                    : AppColors.border(context),
                 width: isSelected ? 1.5 : 1.0,
               ),
             ),
@@ -310,15 +314,16 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                 CircleAvatar(
                   radius: 18,
                   backgroundColor: isSelected
-                      ? const Color(0xFF2563EB)
-                      : const Color(0xFF1F2937),
+                      ? AppColors.secondaryText()
+                      : AppColors.chipBg(context),
                   child: Text(
                     account.ownerName.isNotEmpty
                         ? account.ownerName[0].toUpperCase()
                         : 'A',
                     style: TextStyle(
-                      color:
-                          isSelected ? Colors.white : const Color(0xFF9CA3AF),
+                      color: isSelected
+                          ? AppColors.onSecondary(context)
+                          : AppColors.textMuted(context),
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
@@ -331,8 +336,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                     children: [
                       Text(
                         account.ownerName,
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: AppColors.textPrimary(context),
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -340,8 +345,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                       const Gap(2),
                       Text(
                         'ID: ${account.accountId}',
-                        style: const TextStyle(
-                          color: Color(0xFF9CA3AF),
+                        style: TextStyle(
+                          color: AppColors.textMuted(context),
                           fontSize: 12,
                         ),
                       ),
@@ -349,15 +354,15 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                   ),
                 ),
                 if (isSelected)
-                  const Icon(
+                  Icon(
                     Icons.check_circle_rounded,
-                    color: Color(0xFF3B82F6),
+                    color: AppColors.secondaryText(),
                     size: 22,
                   )
                 else
-                  const Icon(
+                  Icon(
                     Icons.chevron_right_rounded,
-                    color: Color(0xFF475569),
+                    color: AppColors.textMuted(context),
                     size: 20,
                   ),
               ],
@@ -368,7 +373,7 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountDetails(ScenarioAccount account) {
+  Widget _buildAccountDetails(BuildContext context, ScenarioAccount account) {
     final isTarget = account.isTarget;
     return Container(
       width: double.infinity,
@@ -376,15 +381,15 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color.fromARGB(255, 22, 23, 24),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color.fromARGB(255, 42, 44, 45)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Account Details',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.textPrimary(context),
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -392,8 +397,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
           const Gap(12),
           Text(
             account.ownerName,
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: AppColors.textPrimary(context),
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -401,7 +406,7 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
           const Gap(4),
           Text(
             'ID: ${account.accountId}',
-            style: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 13),
           ),
           const Gap(14),
           ...account.details.entries.map(
@@ -414,8 +419,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                     width: 120,
                     child: Text(
                       e.key,
-                      style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 12,
                       ),
                     ),
@@ -423,8 +428,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                   Expanded(
                     child: Text(
                       e.value,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: AppColors.textPrimary(context),
                         fontSize: 13,
                         height: 1.35,
                       ),
@@ -440,20 +445,20 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFF064E3B),
+                color: AppColors.nextTint(context),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF059669)),
+                border: Border.all(color: AppColors.primaryText()),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.check_circle_rounded,
-                      color: Color(0xFF34D399), size: 20),
+                      color: AppColors.successText(), size: 20),
                   Gap(8),
                   Text(
                     'Issue Resolved in System',
                     style: TextStyle(
-                      color: Color(0xFF34D399),
+                      color: AppColors.successText(),
                       fontWeight: FontWeight.w600,
                       fontSize: 14,
                     ),
@@ -469,8 +474,8 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
                 icon: const Icon(Icons.flash_on_rounded, size: 18),
                 label: Text(_actionLabel(sector)),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2563EB),
-                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.secondaryText(),
+                  foregroundColor: AppColors.onPrimary(context),
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -484,20 +489,20 @@ class ScenarioAccountLookupPanel extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0x80451A03),
+                color: AppColors.warningWash(context),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFB45309)),
+                border: Border.all(color: AppColors.warningText()),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.warning_amber_rounded,
-                      color: Color(0xFFFBBF24), size: 18),
+                      color: AppColors.warningText(), size: 18),
                   Gap(8),
                   Expanded(
                     child: Text(
                       "This is not the customer's active account.",
                       style: TextStyle(
-                        color: Color(0xFFFBBF24),
+                        color: AppColors.warningText(),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),

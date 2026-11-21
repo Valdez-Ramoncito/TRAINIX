@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/size.dart';
 import 'package:trainixprogram/screens/page/profile.dart';
@@ -18,18 +19,18 @@ class TrainerHeader extends StatelessWidget {
             Text(
               'Create Room',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontSize: context.responsiveFont(7),
-              ),
+                    fontSize: context.responsiveFont(7),
+                  ),
             ),
             const Gap(8),
             Text(
               'Set up a one-on-one coaching room with a trainee.\n'
               'Public rooms show their code; private rooms stay locked until the code is entered.',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white54,
-                fontSize: 13,
-                height: 1.4,
-              ),
+                    color: AppColors.textMuted(context),
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
             ),
           ],
         ),
@@ -48,7 +49,7 @@ class TrainerHeader extends StatelessWidget {
                 Stack(
                   children: [
                     CircleAvatar(
-                      backgroundColor: const Color(0xFF374151),
+                      backgroundColor: AppColors.borderStrong(context),
                       backgroundImage: const AssetImage(
                         'assets/images/defaultProfile.png',
                       ),
@@ -62,9 +63,9 @@ class TrainerHeader extends StatelessWidget {
                         height: 10,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color.fromARGB(255, 138, 251, 9),
+                          color: AppColors.primaryText(),
                           border: Border.all(
-                            color: const Color.fromARGB(255, 23, 23, 23),
+                            color: AppColors.card(context),
                             width: 1.5,
                           ),
                         ),

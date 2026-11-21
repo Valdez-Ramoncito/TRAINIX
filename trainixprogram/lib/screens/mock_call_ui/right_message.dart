@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:lottie/lottie.dart';
 import 'package:gap/gap.dart';
 import 'package:provider/provider.dart';
@@ -96,13 +97,13 @@ class RightMessage extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color bgColor = isDark
         ? Theme.of(context).colorScheme.surface
-        : const Color(0xFF0B0F17);
+        : AppColors.scaffold(context);
 
     final mainColumn = Column(
       children: [
-        _buildTabBar(),
-        const Divider(height: 1, thickness: .5, color: Color(0xFF1E293B)),
-        Expanded(child: customContent ?? _buildTabContent()),
+        _buildTabBar(context),
+        Divider(height: 1, thickness: .5, color: AppColors.elevated(context)),
+        Expanded(child: customContent ?? _buildTabContent(context)),
       ],
     );
 
@@ -115,10 +116,10 @@ class RightMessage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: mainColumn),
-                const VerticalDivider(
+                VerticalDivider(
                   width: 1,
                   thickness: 0.5,
-                  color: Color(0xFF1E293B),
+                  color: AppColors.elevated(context),
                 ),
                 CollapsibleScriptGuide(
                   initiallyExpanded: scriptGuideExpanded,
@@ -152,10 +153,10 @@ class RightMessage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: mainColumn),
-                const VerticalDivider(
+                VerticalDivider(
                   width: 1,
                   thickness: 0.5,
-                  color: Color(0xFF1E293B),
+                  color: AppColors.elevated(context),
                 ),
                 const SizedBox(
                   width: 300,
@@ -175,12 +176,11 @@ class RightMessage extends StatelessWidget {
       sector: sector,
     );
     // Mission packs that require tools must always show Account Lookup
-    final fromGuide =
-        coachVm != null &&
+    final fromGuide = coachVm != null &&
         (coachVm!.highlightToolTab == 1 ||
             (coachVm!.amberOverride ?? '').toLowerCase().contains(
-              'account lookup',
-            ));
+                  'account lookup',
+                ));
     return fromProblem || fromGuide;
   }
 
@@ -198,22 +198,22 @@ class RightMessage extends StatelessWidget {
     return selectedTab;
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(BuildContext context) {
     final tab = _effectiveTab;
     final hasCustomer =
         (customerProblem != null && customerProblem!.trim().isNotEmpty) ||
-        (customerNameForGuide != null &&
-            customerNameForGuide!.trim().isNotEmpty) ||
-        (customerName.isNotEmpty && customerName != 'Customer');
+            (customerNameForGuide != null &&
+                customerNameForGuide!.trim().isNotEmpty) ||
+            (customerName.isNotEmpty && customerName != 'Customer');
     if (tab == 1 && _showAccountLookup) {
       if (!hasCustomer) {
-        return const Center(
+        return Center(
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
               'Waiting for a customer. Account Lookup unlocks once the conversation starts.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: AppColors.textMuted(context)),
             ),
           ),
         );
@@ -222,13 +222,13 @@ class RightMessage extends StatelessWidget {
     }
     if (tab == 2 && _showSectorGuide) {
       if (!hasCustomer) {
-        return const Center(
+        return Center(
           child: Padding(
             padding: EdgeInsets.all(24),
             child: Text(
               'Waiting for a customer. Sector guidance unlocks once their issue is known.',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white54),
+              style: TextStyle(color: AppColors.textMuted(context)),
             ),
           ),
         );
@@ -239,10 +239,10 @@ class RightMessage extends StatelessWidget {
         onIssueOpened: onSectorGuideIssueOpened,
       );
     }
-    return _buildChatBody();
+    return _buildChatBody(context);
   }
 
-  Widget _buildTabBar() {
+  Widget _buildTabBar(BuildContext context) {
     final items = <Map<String, Object>>[
       {'id': 0, 'label': 'Non-Voice'},
       if (_showAccountLookup) {'id': 1, 'label': 'Account Lookup'},
@@ -265,8 +265,7 @@ class RightMessage extends StatelessWidget {
             final id = item['id'] as int;
             final label = item['label'] as String;
             final isSelected = current == id;
-            final needsAttention =
-                highlightToolTab != null &&
+            final needsAttention = highlightToolTab != null &&
                 highlightToolTab == id &&
                 !isSelected;
             return MouseRegion(
@@ -282,10 +281,10 @@ class RightMessage extends StatelessWidget {
                       ? BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: const Color(0xFFF59E0B),
+                            color: AppColors.warningText(),
                             width: 1.5,
                           ),
-                          color: const Color(0x33F59E0B),
+                          color: AppColors.warningTint(context),
                         )
                       : null,
                   child: Column(
@@ -300,10 +299,10 @@ class RightMessage extends StatelessWidget {
                               ? FontWeight.w600
                               : FontWeight.w400,
                           color: isSelected
-                              ? Colors.white
+                              ? AppColors.textPrimary(context)
                               : needsAttention
-                              ? const Color(0xFFFBBF24)
-                              : const Color(0xFFB0B8C4),
+                                  ? AppColors.warningText()
+                                  : AppColors.textSecondary(context),
                         ),
                       ),
                       const Gap(10),
@@ -311,10 +310,10 @@ class RightMessage extends StatelessWidget {
                         height: 2,
                         width: isSelected || needsAttention ? 36 : 0,
                         color: isSelected
-                            ? const Color(0xFF3B82F6)
+                            ? AppColors.secondaryText()
                             : needsAttention
-                            ? const Color(0xFFF59E0B)
-                            : Colors.transparent,
+                                ? AppColors.warningText()
+                                : Colors.transparent,
                       ),
                     ],
                   ),
@@ -329,13 +328,13 @@ class RightMessage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: waitWarm
-                    ? const Color(0x33F59E0B)
-                    : const Color(0xFF1F2937),
+                    ? AppColors.warningTint(context)
+                    : AppColors.chipBg(context),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: waitWarm
-                      ? const Color(0xFFF59E0B)
-                      : const Color(0xFF374151),
+                      ? AppColors.warningText()
+                      : AppColors.borderStrong(context),
                 ),
               ),
               child: Row(
@@ -345,10 +344,10 @@ class RightMessage extends StatelessWidget {
                     Icons.hourglass_top,
                     size: 14,
                     color: waitWarm
-                        ? const Color(0xFFFBBF24)
-                        : const Color(0xFF9CA3AF),
+                        ? AppColors.warningText()
+                        : AppColors.textMuted(context),
                   ),
-                  const SizedBox(width: 6),
+                  SizedBox(width: 6),
                   Text(
                     agentAdvisedWait
                         ? 'Customer waiting · $waitLabel'
@@ -357,8 +356,8 @@ class RightMessage extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: waitWarm
-                          ? const Color(0xFFFBBF24)
-                          : const Color(0xFFD1D5DB),
+                          ? AppColors.warningText()
+                          : AppColors.textSecondary(context),
                     ),
                   ),
                 ],
@@ -369,7 +368,7 @@ class RightMessage extends StatelessWidget {
     );
   }
 
-  Widget _buildChatBody() {
+  Widget _buildChatBody(BuildContext context) {
     return Column(
       children: [
         if (chatHeader != null) chatHeader!,
@@ -378,17 +377,17 @@ class RightMessage extends StatelessWidget {
             child: _AutoScrollMessageList(customerName: customerName),
           ),
         ),
-        RepaintBoundary(child: _buildChatInput()),
+        RepaintBoundary(child: _buildChatInput(context)),
       ],
     );
   }
 
-  Widget _buildChatInput() {
+  Widget _buildChatInput(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
       child: Container(
         decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 26, 26, 27),
+          color: AppColors.card(context),
           borderRadius: BorderRadius.circular(30),
         ),
         padding: const EdgeInsets.only(left: 24, right: 8, top: 6, bottom: 6),
@@ -399,13 +398,14 @@ class RightMessage extends StatelessWidget {
                 controller: inputController,
                 focusNode: inputFocusNode,
                 enabled: customerHasSpoken && !isSending && !waitingForCustomer,
-                style: const TextStyle(color: Colors.white, fontSize: 15),
+                style: TextStyle(
+                    color: AppColors.textPrimary(context), fontSize: 15),
                 decoration: InputDecoration(
                   hintText: waitingForCustomer
                       ? 'Customer is checking... please wait'
                       : (isSending ? 'Sending...' : (inputHint ?? 'Message..')),
-                  hintStyle: const TextStyle(
-                    color: Color(0xFFB0B8C4),
+                  hintStyle: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 16,
                   ),
                   border: InputBorder.none,
@@ -429,13 +429,13 @@ class RightMessage extends StatelessWidget {
               child: Container(
                 width: 44,
                 height: 44,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xFF2563EB),
+                  color: AppColors.primaryText(),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_upward_rounded,
-                  color: Colors.white,
+                  color: AppColors.onPrimary(context),
                   size: 22,
                 ),
               ),
@@ -510,20 +510,21 @@ class _AutoScrollMessageListState extends State<_AutoScrollMessageList> {
                   children: [
                     Row(
                       children: [
-                        const CircleAvatar(
+                        CircleAvatar(
                           radius: 18,
-                          backgroundColor: Color.fromARGB(255, 95, 94, 94),
+                          backgroundColor: AppColors.secondaryText()
+                              .withValues(alpha: 0.18),
                           child: Icon(
-                            Icons.person,
-                            color: Color.fromARGB(255, 239, 240, 242),
-                            size: 24,
+                            Icons.person_rounded,
+                            color: AppColors.secondaryText(),
+                            size: 22,
                           ),
                         ),
                         const Gap(15),
                         Text(
                           widget.customerName,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppColors.textPrimary(context),
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -535,13 +536,13 @@ class _AutoScrollMessageListState extends State<_AutoScrollMessageList> {
                       margin: const EdgeInsets.only(left: 48, right: 32),
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 26, 26, 27),
+                        color: AppColors.card(context),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: Text(
                         display,
-                        style: const TextStyle(
-                          color: Color(0xFFE5E7EB),
+                        style: TextStyle(
+                          color: AppColors.textSecondary(context),
                           fontSize: 14,
                           height: 1.5,
                         ),
@@ -562,13 +563,13 @@ class _AutoScrollMessageListState extends State<_AutoScrollMessageList> {
                   ),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
+                    color: AppColors.primaryText(),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     msg.message.replaceFirst('[AGENT]:', ''),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: AppColors.onPrimary(context),
                       fontSize: 14,
                       height: 1.4,
                     ),

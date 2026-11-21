@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/screens/dashboard.dart';
 import 'package:trainixprogram/screens/page/trainer_session.dart';
 import 'package:trainixprogram/screens/page/mini_training.dart';
@@ -24,15 +25,14 @@ class NotificationBellAnchor extends StatelessWidget {
     return ListenableBuilder(
       listenable: NotificationInboxService.instance,
       builder: (context, _) {
-        final signedIn =
-            SupabaseService.isReady &&
+        final signedIn = SupabaseService.isReady &&
             SupabaseService.client.auth.currentUser != null;
         if (!signedIn || LoginScreen.isActive) {
           return const SizedBox.shrink();
         }
         final unread = NotificationInboxService.instance.unreadCount;
         return Material(
-          color: const Color(0xFF1A1A1A),
+          color: AppColors.elevated(context),
           elevation: 4,
           shape: const CircleBorder(),
           child: InkWell(
@@ -46,9 +46,9 @@ class NotificationBellAnchor extends StatelessWidget {
                 alignment: Alignment.center,
                 clipBehavior: Clip.none,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.notifications_outlined,
-                    color: Colors.white70,
+                    color: AppColors.textSecondary(context),
                     size: 22,
                   ),
                   if (unread > 0)
@@ -61,13 +61,13 @@ class NotificationBellAnchor extends StatelessWidget {
                           vertical: 1,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444),
+                          color: AppColors.levelNeedsWork(context),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           unread > 9 ? '9+' : '$unread',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: AppColors.onPrimary(context),
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                           ),
@@ -99,14 +99,13 @@ class NotificationBellAnchor extends StatelessWidget {
           builder: (context, _) {
             final items = NotificationInboxService.instance.items;
             final recent = items.take(5).toList();
-            final history = items.length > 5
-                ? items.sublist(5)
-                : <InboxNotification>[];
+            final history =
+                items.length > 5 ? items.sublist(5) : <InboxNotification>[];
             final size = MediaQuery.of(context).size;
             final wide = size.width >= 960;
 
             return Dialog(
-              backgroundColor: const Color(0xFF1A1A1A),
+              backgroundColor: AppColors.elevated(context),
               insetPadding: EdgeInsets.symmetric(
                 horizontal: wide ? size.width * 0.08 : 20,
                 vertical: 40,
@@ -125,6 +124,12 @@ class NotificationBellAnchor extends StatelessWidget {
                       padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
                       child: Row(
                         children: [
+                          Icon(
+                            Icons.notifications_active_outlined,
+                            size: 20,
+                            color: AppColors.secondaryText(),
+                          ),
+                          const Gap(8),
                           const Expanded(
                             child: Text(
                               'Notifications',
@@ -142,79 +147,84 @@ class NotificationBellAnchor extends StatelessWidget {
                           IconButton(
                             mouseCursor: SystemMouseCursors.click,
                             onPressed: () => Navigator.pop(ctx),
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.close,
-                              color: Colors.white38,
+                              color: AppColors.textMuted(context),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                    Divider(height: 1, color: AppColors.border(context)),
                     Expanded(
                       child: items.isEmpty
-                          ? const Center(
+                          ? Center(
                               child: Text(
                                 'No notifications yet.',
-                                style: TextStyle(color: Colors.white38),
+                                style: TextStyle(
+                                    color: AppColors.textMuted(context)),
                               ),
                             )
                           : wide
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  flex: 3,
-                                  child: _RecentList(
-                                    items: recent,
-                                    onOpen: (n) => _handleOpen(ctx, n),
-                                  ),
-                                ),
-                                Container(
-                                  width: 1,
-                                  color: const Color(0xFF2A2A2A),
-                                ),
-                                Expanded(
-                                  flex: 2,
-                                  child: _HistoryList(
-                                    items: history,
-                                    onOpen: (n) => _handleOpen(ctx, n),
-                                  ),
-                                ),
-                              ],
-                            )
-                          : DefaultTabController(
-                              length: 2,
-                              child: Column(
-                                children: [
-                                  const TabBar(
-                                    labelColor: Color(0xFF70BD8A),
-                                    unselectedLabelColor: Colors.white54,
-                                    indicatorColor: Color(0xFF70BD8A),
-                                    tabs: [
-                                      Tab(text: 'Recent'),
-                                      Tab(text: 'History'),
+                              ? Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: _RecentList(
+                                        items: recent,
+                                        onOpen: (n) => _handleOpen(ctx, n),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: 1,
+                                      color: AppColors.border(context),
+                                    ),
+                                    Expanded(
+                                      flex: 2,
+                                      child: _HistoryList(
+                                        items: history,
+                                        onOpen: (n) => _handleOpen(ctx, n),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : DefaultTabController(
+                                  length: 2,
+                                  child: Column(
+                                    children: [
+                                      TabBar(
+                                        labelColor: AppColors.primaryText(),
+                                        unselectedLabelColor:
+                                            AppColors.textMuted(context),
+                                        indicatorColor: AppColors.primaryText(),
+                                        tabs: const [
+                                          Tab(text: 'Recent'),
+                                          Tab(text: 'History'),
+                                        ],
+                                      ),
+                                      Expanded(
+                                        child: TabBarView(
+                                          children: [
+                                            _RecentList(
+                                              items: recent,
+                                              onOpen: (n) =>
+                                                  _handleOpen(ctx, n),
+                                            ),
+                                            _HistoryList(
+                                              items: history.isEmpty
+                                                  ? recent
+                                                  : history,
+                                              onOpen: (n) =>
+                                                  _handleOpen(ctx, n),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ],
                                   ),
-                                  Expanded(
-                                    child: TabBarView(
-                                      children: [
-                                        _RecentList(
-                                          items: recent,
-                                          onOpen: (n) => _handleOpen(ctx, n),
-                                        ),
-                                        _HistoryList(
-                                          items: history.isEmpty
-                                              ? recent
-                                              : history,
-                                          onOpen: (n) => _handleOpen(ctx, n),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
                     ),
                   ],
                 ),
@@ -306,23 +316,23 @@ class _RecentList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
             'Recent',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
             ),
           ),
         ),
         Expanded(
           child: items.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No recent notifications.',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(color: AppColors.textMuted(context)),
                   ),
                 )
               : ListView.separated(
@@ -352,23 +362,24 @@ class _HistoryList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(16, 12, 16, 4),
           child: Text(
             'History',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textMuted(context),
             ),
           ),
         ),
         Expanded(
           child: items.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'Older notifications will appear here.',
-                    style: TextStyle(color: Colors.white38, fontSize: 12),
+                    style: TextStyle(
+                        color: AppColors.textMuted(context), fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 )
@@ -388,6 +399,30 @@ class _HistoryList extends StatelessWidget {
   }
 }
 
+(IconData, Color) _iconFor(
+  InboxNotification note,
+  String? action,
+  String hint,
+) {
+  if (action == 'join_room' || hint.contains('trainer session')) {
+    return (Icons.videocam_outlined, AppColors.secondaryText());
+  }
+  if (note.title.toLowerCase().contains('deleted') ||
+      note.title.toLowerCase().contains('cancelled')) {
+    return (Icons.delete_outline_rounded, AppColors.errorText());
+  }
+  if (hint.contains('mini training') ||
+      hint.contains('scenario practice') ||
+      hint.contains('categories')) {
+    return (Icons.lock_open_rounded, AppColors.primaryText());
+  }
+  if (hint.contains('dashboard') ||
+      note.title.toLowerCase().contains('saved')) {
+    return (Icons.insights_outlined, AppColors.primaryText());
+  }
+  return (Icons.notifications_none_rounded, AppColors.textMuted());
+}
+
 class _NotificationTile extends StatelessWidget {
   final InboxNotification note;
   final bool emphasize;
@@ -403,34 +438,43 @@ class _NotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final hint = (note.locationHint ?? '').toLowerCase();
     final action = note.actionType?.trim();
-    final clickable =
-        action != null && action.isNotEmpty ||
+    final clickable = action != null && action.isNotEmpty ||
         hint.contains('trainer session') ||
         hint.contains('mini training') ||
         hint.contains('scenario practice') ||
         hint.contains('categories') ||
         hint.contains('simulation') ||
         hint.contains('create room');
-    final openLabel = action == 'join_room'
-        ? 'Click to open the room'
-        : 'Click to open';
+    final openLabel =
+        action == 'join_room' ? 'Click to open the room' : 'Click to open';
+    final (icon, tone) = _iconFor(note, action, hint);
 
     return Material(
       color: note.isRead
-          ? const Color(0xFF141414)
-          : (emphasize ? const Color(0xFF1E2A22) : const Color(0xFF1A2220)),
+          ? AppColors.surface(context)
+          : (emphasize
+              ? AppColors.nextTint(context)
+              : AppColors.nextTint(context)),
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        mouseCursor: clickable
-            ? SystemMouseCursors.click
-            : SystemMouseCursors.basic,
+        mouseCursor:
+            clickable ? SystemMouseCursors.click : SystemMouseCursors.basic,
         onTap: clickable ? onOpen : null,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: tone.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: tone),
+              ),
+              const Gap(10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,9 +482,8 @@ class _NotificationTile extends StatelessWidget {
                     Text(
                       note.title,
                       style: TextStyle(
-                        fontWeight: note.isRead
-                            ? FontWeight.w500
-                            : FontWeight.w700,
+                        fontWeight:
+                            note.isRead ? FontWeight.w500 : FontWeight.w700,
                         fontSize: emphasize ? 13 : 12,
                       ),
                     ),
@@ -450,8 +493,8 @@ class _NotificationTile extends StatelessWidget {
                         note.body,
                         if (note.locationHint != null) note.locationHint!,
                       ].join('\n'),
-                      style: const TextStyle(
-                        color: Colors.white54,
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 11,
                         height: 1.35,
                       ),
@@ -460,8 +503,8 @@ class _NotificationTile extends StatelessWidget {
                       const Gap(6),
                       Text(
                         openLabel,
-                        style: const TextStyle(
-                          color: Color(0xFF70BD8A),
+                        style: TextStyle(
+                          color: AppColors.primaryText(),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                         ),

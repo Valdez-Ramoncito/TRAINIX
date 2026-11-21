@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/button/back_button.dart';
 import 'package:trainixprogram/components/button/create_button.dart';
@@ -34,26 +35,33 @@ class _LiveTrainingHistoryScreenState extends State<LiveTrainingHistoryScreen> {
                     child: Text(
                       'Live training history',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontSize: context.responsiveFont(6),
-                      ),
+                            fontSize: context.responsiveFont(6),
+                          ),
                     ),
                   ),
-                  CreateButton(text: 'Refresh', onTap: () => setState(() {})),
+                  CreateButton(
+                    text: 'Refresh',
+                    icon: Icons.refresh_rounded,
+                    onTap: () => setState(() {}),
+                  ),
                 ],
               ),
               const Gap(6),
-              const Text(
+              Text(
                 'Ended one-on-one sessions with notes, checklist progress, and feedback.',
-                style: TextStyle(color: Colors.white54, fontSize: 12),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 12),
               ),
               const Gap(18),
               Expanded(
                 child: entries.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
                           'No ended live sessions yet.\nOpen a room, use Session tools, then End session.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.white38, fontSize: 13),
+                          style: TextStyle(
+                              color: AppColors.textMuted(context),
+                              fontSize: 13),
                         ),
                       )
                     : ListView.separated(
@@ -87,9 +95,9 @@ class _HistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(180, 21, 21, 21),
+        color: AppColors.panel(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color.fromARGB(255, 49, 48, 48)),
+        border: Border.all(color: AppColors.borderIdle(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,12 +120,13 @@ class _HistoryCard extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFB74D).withValues(alpha: 0.15),
+                    color: AppColors.warningText().withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Follow-up',
-                    style: TextStyle(color: Color(0xFFFFB74D), fontSize: 11),
+                    style:
+                        TextStyle(color: AppColors.warningText(), fontSize: 11),
                   ),
                 ),
             ],
@@ -125,24 +134,26 @@ class _HistoryCard extends StatelessWidget {
           const Gap(6),
           Text(
             'Code ${entry.roomId}  ·  ${entry.mode.name}',
-            style: const TextStyle(color: Colors.white38, fontSize: 11),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 11),
           ),
           const Gap(8),
           Text(
             'Trainer: ${entry.trainerName}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
+            style: TextStyle(
+                color: AppColors.textSecondary(context), fontSize: 12),
           ),
           if (entry.traineeName != null) ...[
             const Gap(4),
             Text(
               'Trainee: ${entry.traineeName}',
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
           ],
           const Gap(8),
           Text(
             'Ended ${formatCreatedAt(entry.endedAt)}',
-            style: const TextStyle(color: Colors.white38, fontSize: 11),
+            style: TextStyle(color: AppColors.textMuted(context), fontSize: 11),
           ),
           const Gap(8),
           Row(
@@ -150,22 +161,24 @@ class _HistoryCard extends StatelessWidget {
               if (entry.rating != null) ...[
                 ...List.generate(
                   entry.rating!,
-                  (_) => const Icon(
+                  (_) => Icon(
                     Icons.star_rounded,
                     size: 14,
-                    color: Color(0xFFFFB74D),
+                    color: AppColors.warningText(),
                   ),
                 ),
                 const Gap(10),
               ],
               Text(
                 'Checklist ${entry.checklistDone}/${entry.checklistTotal}',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 11),
               ),
               const Gap(12),
               Text(
                 '${entry.noteCount} note${entry.noteCount == 1 ? '' : 's'}',
-                style: const TextStyle(color: Colors.white54, fontSize: 11),
+                style: TextStyle(
+                    color: AppColors.textMuted(context), fontSize: 11),
               ),
             ],
           ),
@@ -173,7 +186,8 @@ class _HistoryCard extends StatelessWidget {
             const Gap(8),
             Text(
               'Takeaway: ${entry.takeaway}',
-              style: const TextStyle(color: Colors.white70, fontSize: 12),
+              style: TextStyle(
+                  color: AppColors.textSecondary(context), fontSize: 12),
             ),
           ],
           if (entry.feedback.trim().isNotEmpty) ...[
@@ -182,7 +196,8 @@ class _HistoryCard extends StatelessWidget {
               entry.feedback,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white54, fontSize: 12),
+              style:
+                  TextStyle(color: AppColors.textMuted(context), fontSize: 12),
             ),
           ],
         ],

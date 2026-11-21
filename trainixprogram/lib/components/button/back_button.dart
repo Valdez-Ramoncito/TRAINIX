@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class TrainingBackButton extends StatefulWidget {
   TrainingBackButton({super.key, required this.onTap, this.expand = true});
@@ -17,6 +18,11 @@ class TrainingBackButtonState extends State<TrainingBackButton> {
 
   @override
   Widget build(BuildContext context) {
+    final elevated = AppColors.elevated(context);
+    final cardHover = AppColors.cardHover(context);
+    final textPrimary = AppColors.textPrimary(context);
+    final textSecondary = AppColors.textSecondary(context);
+
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       width: widget.expand ? double.infinity : null,
@@ -25,13 +31,11 @@ class TrainingBackButtonState extends State<TrainingBackButton> {
         vertical: 12,
       ),
       decoration: BoxDecoration(
-        color: _isHovered
-            ? const Color.fromARGB(255, 55, 62, 70)
-            : const Color.fromARGB(255, 35, 39, 43),
+        color: _isHovered ? cardHover : elevated,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: _isHovered
-              ? Colors.white.withValues(alpha: 0.2)
+              ? textPrimary.withValues(alpha: 0.2)
               : Colors.transparent,
         ),
       ),
@@ -42,13 +46,13 @@ class TrainingBackButtonState extends State<TrainingBackButton> {
           Icon(
             Icons.arrow_back_ios_rounded,
             size: 14,
-            color: _isHovered ? Colors.white : Colors.grey,
+            color: _isHovered ? textPrimary : textSecondary,
           ),
           const SizedBox(width: 6),
           Text(
             'Back',
             style: TextStyle(
-              color: _isHovered ? Colors.white : Colors.grey,
+              color: _isHovered ? textPrimary : textSecondary,
               fontSize: 13,
               fontWeight: FontWeight.w500,
             ),

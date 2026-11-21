@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 
@@ -33,6 +34,8 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
         return !MiniTrainingProgress.seenSimulationIntro;
       case 'typing_practice_intro':
         return !MiniTrainingProgress.seenTypingIntro;
+      case 'speaking_practice_intro':
+        return !MiniTrainingProgress.seenSpeakingIntro;
       default:
         return false;
     }
@@ -52,18 +55,18 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF15261C),
+        color: AppColors.nextTint(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: const Color(0xFF70BD8A).withValues(alpha: 0.45),
+          color: AppColors.primaryText().withValues(alpha: 0.45),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
+          Icon(
             Icons.lightbulb_outline_rounded,
-            color: Color(0xFF70BD8A),
+            color: AppColors.primaryText(),
             size: 20,
           ),
           const Gap(10),
@@ -73,8 +76,8 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
               children: [
                 Text(
                   widget.title,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                   ),
@@ -82,8 +85,8 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
                 const Gap(4),
                 Text(
                   widget.body,
-                  style: const TextStyle(
-                    color: Color(0xFFD1D5DB),
+                  style: TextStyle(
+                    color: AppColors.textSecondary(context),
                     fontSize: 13,
                     height: 1.35,
                   ),
@@ -94,7 +97,8 @@ class _OnboardingIntroBannerState extends State<OnboardingIntroBanner> {
           IconButton(
             onPressed: _dismiss,
             tooltip: 'Dismiss',
-            icon: const Icon(Icons.close, size: 18, color: Color(0xFF9CA3AF)),
+            icon: Icon(Icons.close,
+                size: 18, color: AppColors.textMuted(context)),
           ),
         ],
       ),
@@ -121,18 +125,18 @@ class LockedPathBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: AppColors.elevated(context),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF333333)),
+        border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             message,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.white70,
+              color: AppColors.textSecondary(context),
               height: 1.4,
             ),
           ),
@@ -141,8 +145,8 @@ class LockedPathBanner extends StatelessWidget {
             TextButton(
               onPressed: onAction,
               style: TextButton.styleFrom(
-                backgroundColor: const Color(0xFF243447),
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.completeTint(context),
+                foregroundColor: AppColors.textPrimary(context),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 10,

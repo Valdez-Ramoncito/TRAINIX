@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 
 enum ScenarioFeedbackKind { success, error }
@@ -17,10 +18,21 @@ class ScenarioFeedbackBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSuccess = kind == ScenarioFeedbackKind.success;
-    final border = isSuccess ? const Color(0xFF059669) : const Color(0xFFDC2626);
-    final bg = isSuccess ? const Color(0xFF064E3B) : const Color(0xFF450A0A);
-    final fg = isSuccess ? const Color(0xFF34D399) : const Color(0xFFFCA5A5);
+    // Dark keeps the deep semantic banner; light gets a tinted banner that
+    // belongs to the pale surface system instead of a dark hole in the page.
+    final border = isSuccess
+        ? (isDark ? const Color(0xFF059669) : AppColors.primaryText())
+        : (isDark ? const Color(0xFFDC2626) : AppColors.errorStrongText());
+    final bg = isSuccess
+        ? (isDark ? const Color(0xFF064E3B) : AppColors.nextTint(context))
+        : (isDark
+            ? const Color(0xFF450A0A)
+            : AppColors.errorStrongText().withValues(alpha: 0.10));
+    final fg = isSuccess
+        ? AppColors.successText(context)
+        : AppColors.errorText(context);
     final icon = isSuccess ? Icons.check_circle_rounded : Icons.cancel_rounded;
 
     return Container(
@@ -51,8 +63,9 @@ class ScenarioFeedbackBanner extends StatelessWidget {
                 const Gap(4),
                 Text(
                   message,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color:
+                        isDark ? Colors.white : AppColors.textPrimary(context),
                     fontSize: 13,
                     height: 1.35,
                   ),

@@ -5,6 +5,7 @@ import 'package:trainixprogram/models/customer_account.dart';
 import 'package:trainixprogram/models/messages.dart';
 import 'package:trainixprogram/models/simulation_history.dart';
 import 'package:trainixprogram/providers/simulation_provider.dart';
+import 'package:trainixprogram/providers/theme_controller.dart';
 import 'package:trainixprogram/screens/auth/loginscreen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:trainixprogram/services/supabase_service.dart';
@@ -16,50 +17,61 @@ import 'package:trainixprogram/models/training/notifications/training_notificati
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
+  await dotenv.load(fileName: '.env');
   await SupabaseService.initialize();
   await AppSettings.load();
 
-  runApp(const MyApp());
+  final themeController = ThemeController();
+  await themeController.load();
+
+  runApp(MyApp(themeController: themeController));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.themeController});
+
+  final ThemeController themeController;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: themeController),
         ChangeNotifierProvider(create: (_) => MessageProvider()),
         ChangeNotifierProvider(create: (_) => AccountProvider()),
         ChangeNotifierProvider(create: (_) => SimulationHistoryProvider()),
         ChangeNotifierProvider(create: (_) => SimulationProvider()),
       ],
-      child: MaterialApp(
-        title: 'TRAINIX',
-        theme: AppTheme.dark(),
-        themeMode: ThemeMode.dark,
-        debugShowCheckedModeBanner: false,
-        navigatorKey: AppNavigator.key,
-        builder: (context, child) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            final overlay = AppNavigator.key.currentState?.overlay;
-            if (overlay != null) {
-              TrainingNotificationCenter.attachOverlay(overlay);
-            }
-          });
-          return Stack(
-            children: [
-              child ?? const SizedBox.shrink(),
-              const Positioned(
-                right: 16,
-                bottom: 20,
-                child: SafeArea(child: NotificationBellAnchor()),
-              ),
-            ],
+      child: Consumer<ThemeController>(
+        builder: (context, theme, _) {
+          return MaterialApp(
+            title: 'TRAINIX',
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: theme.mode,
+            debugShowCheckedModeBanner: false,
+            navigatorKey: AppNavigator.key,
+            builder: (context, child) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                final overlay = AppNavigator.key.currentState?.overlay;
+                if (overlay != null) {
+                  TrainingNotificationCenter.attachOverlay(overlay);
+                }
+              });
+              return Stack(
+                children: [
+                  child ?? const SizedBox.shrink(),
+                  const Positioned(
+                    right: 16,
+                    bottom: 20,
+                    child: SafeArea(child: NotificationBellAnchor()),
+                  ),
+                ],
+              );
+            },
+            home: const LoginScreen(),
           );
         },
-        home: const LoginScreen(),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/background.dart';
 import 'package:trainixprogram/components/animation_effect/hover_button.dart';
@@ -52,8 +53,8 @@ class HomeScreen extends StatelessWidget {
                   const Gap(6),
                   Text(
                     welcomeLine,
-                    style: const TextStyle(
-                      color: Color(0xFF9CA3AF),
+                    style: TextStyle(
+                      color: AppColors.textMuted(context),
                       fontSize: 13,
                       height: 1.35,
                     ),
@@ -110,8 +111,8 @@ class HomeScreen extends StatelessWidget {
                     const Gap(12),
                     Text(
                       'Welcome back, ${ProfileData.displayName}',
-                      style: const TextStyle(
-                        color: Color(0xFF9CA3AF),
+                      style: TextStyle(
+                        color: AppColors.textMuted(context),
                         fontSize: 14,
                       ),
                     ),

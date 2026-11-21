@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 
 class MenuButton extends StatefulWidget {
   final IconData icon;
@@ -6,7 +7,7 @@ class MenuButton extends StatefulWidget {
   final VoidCallback? onTap;
   final bool isSelected;
 
-   MenuButton({
+  MenuButton({
     required this.icon,
     required this.label,
     this.onTap,
@@ -23,6 +24,10 @@ class MenuButtonState extends State<MenuButton> {
   @override
   Widget build(BuildContext context) {
     final active = widget.isSelected || _isHovered;
+    final primary = AppColors.primary(context);
+    final textPrimary = AppColors.textPrimary(context);
+    final textSecondary = AppColors.textSecondary(context);
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
@@ -35,25 +40,15 @@ class MenuButtonState extends State<MenuButton> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 15),
           decoration: BoxDecoration(
             color: widget.isSelected
-                ? const Color.fromARGB(
-                    255,
-                    213,
-                    169,
-                    249,
-                  ).withValues(alpha: 0.18)
+                ? primary.withValues(alpha: 0.18)
                 : _isHovered
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.transparent,
+                    ? textPrimary.withValues(alpha: 0.08)
+                    : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
             border: widget.isSelected
                 ? Border.all(
-                    color: const Color.fromARGB(
-                      255,
-                      213,
-                      169,
-                      249,
-                    ).withValues(alpha: 0.5),
-                    width: .5,
+                    color: primary.withValues(alpha: 0.5),
+                    width: 0.5,
                   )
                 : Border.all(color: Colors.transparent),
           ),
@@ -62,17 +57,13 @@ class MenuButtonState extends State<MenuButton> {
               Icon(
                 widget.icon,
                 size: 16,
-                color: active
-                    ? const Color.fromARGB(255, 242, 216, 248)
-                    : Colors.grey,
+                color: active ? primary : textSecondary,
               ),
               const SizedBox(width: 15),
               Text(
                 widget.label,
                 style: TextStyle(
-                  color: active
-                      ? const Color.fromARGB(255, 242, 216, 248)
-                      : Colors.grey,
+                  color: active ? textPrimary : textSecondary,
                   fontSize: 13,
                   fontWeight: widget.isSelected
                       ? FontWeight.w600

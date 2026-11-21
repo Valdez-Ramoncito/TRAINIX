@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
+import 'package:trainixprogram/components/layout/content_bounds.dart';
 import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/components/decoration/check.dart';
 import 'package:gap/gap.dart';
@@ -77,137 +79,173 @@ class _ScenarioPracticeScreenState extends State<ScenarioPracticeScreen> {
     final scenarios = _scenarios;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
+      backgroundColor: AppColors.inputFill(context),
       appBar: AppBar(
         centerTitle: true,
         title: Text('${widget.stageName} Scenario Practice'),
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: AppColors.elevated(context),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${widget.stageName} Scenario Practice',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
-            ),
-            const Gap(8),
-            Text(
-              _isChat
-                  ? 'Predefined non-voice scenarios by sector. Difficulty increases as you go.'
-                  : 'Voice scenarios including Account Lookup, no-lookup, and already-resolved cases.',
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.white70,
-                height: 1.4,
+      body: ContentBounds(
+        maxWidth: 1100,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${widget.stageName} Scenario Practice',
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
               ),
-            ),
-            if (TrainixDebug.unlocked) ...[
-              const Gap(12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton(
-                  onPressed: _debugClearStage,
-                  child: Text('DEBUG: Clear ${widget.stageName} stage'),
+              const Gap(8),
+              Text(
+                _isChat
+                    ? 'Predefined non-voice scenarios by sector. Difficulty increases as you go.'
+                    : 'Voice scenarios including Account Lookup, no-lookup, and already-resolved cases.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary(context),
+                  height: 1.4,
                 ),
               ),
-            ],
-            const Gap(8),
-            Expanded(
-              child: scenarios.isEmpty
-                  ? const Text(
-                      'No scenarios added for this stage yet.',
-                      style: TextStyle(color: Colors.white54),
-                    )
-                  : ListView.separated(
-                      itemCount: scenarios.length,
-                      separatorBuilder: (_, __) => const Gap(12),
-                      itemBuilder: (context, index) {
-                        final s = scenarios[index];
-                        final done = _completed.contains(s.id);
-                        final unlocked = _isUnlocked(index);
-                        return MouseRegion(
-                          cursor: unlocked
-                              ? SystemMouseCursors.click
-                              : SystemMouseCursors.basic,
-                          child: GestureDetector(
-                          onTap: unlocked ? () => _openScenario(s) : null,
-                          child: Container(
-                            width: double.infinity,
-                            height: 92,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            decoration: boxDecoration(done, unlocked && !done),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        s.title,
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: unlocked || done
-                                              ? Colors.white
-                                              : Colors.white54,
-                                        ),
-                                      ),
-                                      const Gap(8),
-                                      Text(
-                                        done
-                                            ? 'Completed'
-                                            : unlocked
-                                            ? '${s.sector} • ${s.emotion} • ${s.isGuided ? "Guided" : "Practice"}'
-                                            : 'Locked — finish the previous scenario first',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: unlocked || done
-                                              ? const Color.fromARGB(
-                                                  255,
-                                                  210,
-                                                  210,
-                                                  210,
-                                                )
-                                              : Colors.white38,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+              if (TrainixDebug.unlocked) ...[
+                const Gap(12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: _debugClearStage,
+                    child: Text('DEBUG: Clear ${widget.stageName} stage'),
+                  ),
+                ),
+              ],
+              const Gap(8),
+              Expanded(
+                child: scenarios.isEmpty
+                    ? Text(
+                        'No scenarios added for this stage yet.',
+                        style: TextStyle(color: AppColors.textMuted(context)),
+                      )
+                    : ListView.separated(
+                        itemCount: scenarios.length,
+                        separatorBuilder: (_, __) => const Gap(12),
+                        itemBuilder: (context, index) {
+                          final s = scenarios[index];
+                          final done = _completed.contains(s.id);
+                          final unlocked = _isUnlocked(index);
+                          return MouseRegion(
+                            cursor: unlocked
+                                ? SystemMouseCursors.click
+                                : SystemMouseCursors.basic,
+                            child: GestureDetector(
+                              onTap: unlocked ? () => _openScenario(s) : null,
+                              child: Container(
+                                width: double.infinity,
+                                height: 92,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 20),
+                                decoration: themedBoxDecoration(
+                                  context,
+                                  isComplete: done,
+                                  isNext: unlocked && !done,
                                 ),
-                                if (done)
-                                  const CheckProgress()
-                                else if (!unlocked)
-                                  Container(
-                                    width: 28,
-                                    height: 28,
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Color(0xFF2A2A2A),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      margin: const EdgeInsets.only(right: 14),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.card(context),
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.borderIdle(context),
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        done
+                                            ? Icons.check_rounded
+                                            : unlocked
+                                                ? (_isChat
+                                                    ? Icons.forum_outlined
+                                                    : Icons.graphic_eq_rounded)
+                                                : Icons.lock_outline_rounded,
+                                        size: 18,
+                                        color: done
+                                            ? AppColors.primaryText()
+                                            : unlocked
+                                                ? AppColors.secondaryText()
+                                                : AppColors.textMuted(context),
+                                      ),
                                     ),
-                                    child: const Icon(
-                                      Icons.lock_rounded,
-                                      size: 14,
-                                      color: Colors.white38,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Text(
+                                            s.title,
+                                            style: TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: unlocked || done
+                                                  ? AppColors.textPrimary(
+                                                      context)
+                                                  : AppColors.textMuted(
+                                                      context),
+                                            ),
+                                          ),
+                                          const Gap(8),
+                                          Text(
+                                            done
+                                                ? 'Completed'
+                                                : unlocked
+                                                    ? '${s.sector} • ${s.emotion} • ${s.isGuided ? "Guided" : "Practice"}'
+                                                    : 'Locked — finish the previous scenario first',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: unlocked || done
+                                                  ? AppColors.textSecondary(
+                                                      context)
+                                                  : AppColors.textMuted(
+                                                      context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  )
-                                else
-                                  const Icon(
-                                    Icons.chevron_right_rounded,
-                                    color: Colors.white54,
-                                  ),
-                              ],
+                                    if (done)
+                                      const CheckProgress()
+                                    else if (!unlocked)
+                                      Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: AppColors.border(context),
+                                        ),
+                                        child: Icon(
+                                          Icons.lock_rounded,
+                                          size: 14,
+                                          color: AppColors.textMuted(context),
+                                        ),
+                                      )
+                                    else
+                                      Icon(
+                                        Icons.chevron_right_rounded,
+                                        color: AppColors.textMuted(context),
+                                      ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );

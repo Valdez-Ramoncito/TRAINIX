@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/script_personalization.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -67,25 +68,24 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
     final isIncorrect = widget.typingFeedback == "Incorrect";
     final normalizedTarget = _normalize(target);
     final normalizedInput = _normalize(input);
-    final diffIndex = isIncorrect
-        ? _firstDiffIndex(normalizedInput, normalizedTarget)
-        : null;
+    final diffIndex =
+        isIncorrect ? _firstDiffIndex(normalizedInput, normalizedTarget) : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Type the same meaning as the target. Exact wording is not required.",
-          style: TextStyle(fontSize: 13, color: Colors.white54),
+          style: TextStyle(fontSize: 13, color: AppColors.textMuted(context)),
         ),
         const Gap(10),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF1A1A1A),
+            color: AppColors.elevated(context),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF333333)),
+            border: Border.all(color: AppColors.border(context)),
           ),
           child: Text(
             target,
@@ -106,24 +106,24 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
           onSubmitted: (_) {
             if (!widget.lockedIn) widget.onCheck();
           },
-          style: const TextStyle(fontSize: 15, color: Colors.white),
+          style: TextStyle(fontSize: 15, color: AppColors.textPrimary(context)),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF1A1A1A),
+            fillColor: AppColors.elevated(context),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF333333)),
+              borderSide: BorderSide(color: AppColors.border(context)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF333333)),
+              borderSide: BorderSide(color: AppColors.border(context)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.green),
+              borderSide: BorderSide(color: AppColors.primary(context)),
             ),
             hintText: 'Type here...',
-            hintStyle: const TextStyle(color: Color(0xFFB0B8C4)),
+            hintStyle: TextStyle(color: AppColors.textSecondary(context)),
           ),
         ),
         const Gap(14),
@@ -133,11 +133,11 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
             height: 44,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary(context),
+                foregroundColor: AppColors.onPrimary(context),
               ),
               onPressed: widget.onCheck,
-              child: const Text("Check"),
+              child: Text("Check"),
             ),
           ),
         if (isCorrect) ...[
@@ -146,16 +146,17 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A3A1A),
+              color: AppColors.nextTint(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.green.withOpacity(0.5)),
+              border: Border.all(
+                  color: AppColors.primary(context).withValues(alpha: 0.5)),
             ),
-            child: const Text(
+            child: Text(
               "Correct",
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: Colors.green,
+                color: AppColors.primary(context),
               ),
             ),
           ),
@@ -166,46 +167,48 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFF3A1A1A),
+              color: AppColors.elevated(context),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
+              border: Border.all(color: AppColors.errorText().withOpacity(0.5)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Incorrect",
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Colors.redAccent,
+                    color: AppColors.errorText(),
                   ),
                 ),
                 const Gap(10),
-                const Text(
+                Text(
                   "Your answer",
-                  style: TextStyle(fontSize: 12, color: Colors.white54),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textMuted(context)),
                 ),
                 const Gap(4),
                 Text(
                   normalizedInput.isEmpty ? "(blank)" : normalizedInput,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.redAccent,
+                    color: AppColors.errorText(),
                     height: 1.4,
                   ),
                 ),
                 const Gap(10),
-                const Text(
+                Text(
                   "Target text",
-                  style: TextStyle(fontSize: 12, color: Colors.white54),
+                  style: TextStyle(
+                      fontSize: 12, color: AppColors.textMuted(context)),
                 ),
                 const Gap(4),
                 Text(
                   normalizedTarget,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.green,
+                    color: AppColors.primary(context),
                     height: 1.4,
                   ),
                 ),
@@ -213,9 +216,9 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
                   const Gap(10),
                   Text(
                     "First difference around character ${diffIndex + 1}. Check spelling, spacing, and punctuation from that point.",
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
-                      color: Colors.white70,
+                      color: AppColors.textSecondary(context),
                       height: 1.4,
                     ),
                   ),
@@ -231,16 +234,17 @@ class _AssessmentTypingViewState extends State<AssessmentTypingView> {
                     child: const Text("Show hint"),
                   ),
                 if (_hintVisible) ...[
-                  const Text(
+                  Text(
                     "Hint",
-                    style: TextStyle(fontSize: 12, color: Colors.white54),
+                    style: TextStyle(
+                        fontSize: 12, color: AppColors.textMuted(context)),
                   ),
                   const Gap(4),
                   Text(
                     _hintText(normalizedTarget),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white70,
+                      color: AppColors.textSecondary(context),
                       height: 1.4,
                     ),
                   ),

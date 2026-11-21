@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:trainixprogram/components/app_colors.dart';
 import 'package:gap/gap.dart';
 import 'package:trainixprogram/components/decoration/box_decoration.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
@@ -17,6 +18,20 @@ class CategoryTimeline extends StatefulWidget {
 }
 
 class _CategoryTimelineState extends State<CategoryTimeline> {
+  IconData _categoryIcon(String name) {
+    final n = name.toLowerCase();
+    if (n.contains('open')) return Icons.waving_hand_outlined;
+    if (n.contains('script')) return Icons.menu_book_outlined;
+    if (n.contains('empath')) return Icons.favorite_border_rounded;
+    if (n.contains('listen')) return Icons.hearing_rounded;
+    if (n.contains('question')) return Icons.help_outline_rounded;
+    if (n.contains('hold')) return Icons.pause_circle_outline_rounded;
+    if (n.contains('escalat')) return Icons.trending_up_rounded;
+    if (n.contains('close') || n.contains('end'))
+      return Icons.check_circle_outline_rounded;
+    return Icons.school_outlined;
+  }
+
   void _syncFromTrainingData() {
     for (int i = 0; i < categories.length; i++) {
       final name = categories[i].name;
@@ -63,10 +78,10 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
     required Widget child,
   }) {
     final lineColor = isComplete
-        ? const Color.fromARGB(255, 21, 44, 76)
+        ? AppColors.completeTint(context)
         : isNext
-        ? const Color.fromARGB(255, 12, 67, 30)
-        : const Color.fromARGB(251, 30, 30, 30);
+            ? AppColors.nextTint(context)
+            : AppColors.card(context);
 
     return IntrinsicHeight(
       child: Row(
@@ -89,7 +104,7 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                     height: 50,
                     child: Container(width: 2, color: lineColor),
                   ),
-                Positioned(child: node(isComplete, isNext)),
+                Positioned(child: node(isComplete, isNext, context)),
               ],
             ),
           ),
@@ -129,9 +144,12 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
           ],
         ),
         const Gap(8),
-        const Text(
+        Text(
           'Finish lessons and category finals in order, then the Grand Final.',
-          style: TextStyle(fontSize: 14, color: Colors.white70, height: 1.4),
+          style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary(context),
+              height: 1.4),
         ),
         const Gap(16),
         Expanded(
@@ -142,8 +160,7 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                 var data = categories[index];
                 final trainingCategory = trainingData[data.name];
                 final total = trainingCategory?.lessons.length ?? 0;
-                final done =
-                    trainingCategory?.lessons
+                final done = trainingCategory?.lessons
                         .where((l) => l.isCompleted)
                         .length ??
                     0;
@@ -157,156 +174,181 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                         ? SystemMouseCursors.click
                         : SystemMouseCursors.basic,
                     child: GestureDetector(
-                    onTap: () async {
-                      if (data.isNext || data.isComplete) {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => CategoryTrain(
-                              categoryChosen: data.name,
-                              categoryDescription: data.sub,
+                      onTap: () async {
+                        if (data.isNext || data.isComplete) {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CategoryTrain(
+                                categoryChosen: data.name,
+                                categoryDescription: data.sub,
+                              ),
                             ),
-                          ),
-                        );
-                        setState(() {
-                          _syncFromTrainingData();
-                        });
-                      }
-                    },
-                    child: Container(
-                      height: 100,
-                      decoration: boxDecoration(data.isComplete, data.isNext),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 25),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  data.name,
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
-                                        fontSize: context.responsiveFont(5.5),
-                                      ),
-                                ),
-                                Gap(10),
-                                Text(
-                                  data.sub,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        fontSize: context.responsiveFont(3.5),
-                                        color: const Color.fromARGB(
-                                          255,
-                                          210,
-                                          210,
-                                          210,
-                                        ),
-                                      ),
-                                ),
-                              ],
-                            ),
-                            if (data.isComplete)
-                              CheckProgress()
-                            else if (!data.isNext)
+                          );
+                          setState(() {
+                            _syncFromTrainingData();
+                          });
+                        }
+                      },
+                      child: Container(
+                        height: 100,
+                        decoration: themedBoxDecoration(
+                          context,
+                          isComplete: data.isComplete,
+                          isNext: data.isNext,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 25),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
                               Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 10,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF2A2A2A),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(
-                                        color: const Color(0xFF4A4A4A),
-                                        width: 0.8,
-                                      ),
-                                    ),
-                                    child: const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.lock_rounded,
-                                          size: 14,
-                                          color: Color(0xFF9CA3AF),
-                                        ),
-                                        SizedBox(width: 6),
-                                        Text(
-                                          'Locked',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF9CA3AF),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const Gap(6),
-                                  Text(
-                                    'Finish previous category first',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: Colors.white38,
-                                    ),
-                                  ),
-                                ],
-                              )
-                            else
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    total == 0
-                                        ? "0%"
-                                        : "${((done / total) * 100).round()}%",
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const Gap(8),
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
-                                    children: List.generate(total, (
-                                      lessonIndex,
-                                    ) {
-                                      final lesson = trainingCategory
-                                          ?.lessons[lessonIndex];
-                                      Color dotColor;
-                                      if (lesson == null) {
-                                        dotColor = const Color(0xFF555555);
-                                      } else if (lesson.isCompleted) {
-                                        dotColor = const Color(0xFF3B82F6);
-                                      } else if (lesson.isUnlocked) {
-                                        dotColor = const Color(0xFF22C55E);
-                                      } else {
-                                        dotColor = const Color(0xFF555555);
-                                      }
-                                      return Container(
-                                        width: 10,
-                                        height: 10,
-                                        margin: const EdgeInsets.only(left: 4),
-                                        decoration: BoxDecoration(
-                                          color: dotColor,
-                                          shape: BoxShape.circle,
+                                    children: [
+                                      Icon(
+                                        _categoryIcon(data.name),
+                                        size: 18,
+                                        color: data.isComplete
+                                            ? AppColors.primaryText()
+                                            : AppColors.secondaryText(),
+                                      ),
+                                      const Gap(8),
+                                      Flexible(
+                                        child: Text(
+                                          data.name,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontSize:
+                                                    context.responsiveFont(5.5),
+                                              ),
                                         ),
-                                      );
-                                    }),
+                                      ),
+                                    ],
+                                  ),
+                                  Gap(10),
+                                  Text(
+                                    data.sub,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontSize: context.responsiveFont(3.5),
+                                          color:
+                                              AppColors.textSecondary(context),
+                                        ),
                                   ),
                                 ],
                               ),
-                          ],
+                              if (data.isComplete)
+                                CheckProgress()
+                              else if (!data.isNext)
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.border(context),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color:
+                                              AppColors.borderStrong(context),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.lock_rounded,
+                                            size: 14,
+                                            color: AppColors.textMuted(context),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Text(
+                                            'Locked',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  AppColors.textMuted(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const Gap(6),
+                                    Text(
+                                      'Finish previous category first',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textMuted(context),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      total == 0
+                                          ? "0%"
+                                          : "${((done / total) * 100).round()}%",
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const Gap(8),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: List.generate(total, (
+                                        lessonIndex,
+                                      ) {
+                                        final lesson = trainingCategory
+                                            ?.lessons[lessonIndex];
+                                        Color dotColor;
+                                        if (lesson == null) {
+                                          dotColor =
+                                              AppColors.borderStrong(context);
+                                        } else if (lesson.isCompleted) {
+                                          dotColor = AppColors.secondaryText();
+                                        } else if (lesson.isUnlocked) {
+                                          dotColor = AppColors.primaryText();
+                                        } else {
+                                          dotColor =
+                                              AppColors.borderStrong(context);
+                                        }
+                                        return Container(
+                                          width: 10,
+                                          height: 10,
+                                          margin:
+                                              const EdgeInsets.only(left: 4),
+                                          decoration: BoxDecoration(
+                                            color: dotColor,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        );
+                                      }),
+                                    ),
+                                  ],
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
                   ),
                 );
               }
@@ -320,71 +362,71 @@ class _CategoryTimelineState extends State<CategoryTimeline> {
                       ? SystemMouseCursors.click
                       : SystemMouseCursors.basic,
                   child: GestureDetector(
-                  onTap: () async {
-                    if (!grandUnlocked) return;
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const GrandFinalAssessmentScreen(),
+                    onTap: () async {
+                      if (!grandUnlocked) return;
+                      await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const GrandFinalAssessmentScreen(),
+                        ),
+                      );
+                      setState(() {
+                        _syncFromTrainingData();
+                      });
+                    },
+                    child: Container(
+                      height: 100,
+                      decoration: themedBoxDecoration(
+                        context,
+                        isComplete: grandPassed,
+                        isNext: grandUnlocked && !grandPassed,
                       ),
-                    );
-                    setState(() {
-                      _syncFromTrainingData();
-                    });
-                  },
-                  child: Container(
-                    height: 100,
-                    decoration: boxDecoration(
-                      grandPassed,
-                      grandUnlocked && !grandPassed,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 25),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                "Grand Final Assessment",
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      fontSize: context.responsiveFont(5.5),
-                                    ),
-                              ),
-                              Gap(10),
-                              Text(
-                                grandPassed
-                                    ? "Completed"
-                                    : grandUnlocked
-                                    ? "Covers everything learned across all categories"
-                                    : "Locked - finish all categories first",
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(
-                                      fontSize: context.responsiveFont(3.5),
-                                      color: const Color.fromARGB(
-                                        255,
-                                        210,
-                                        210,
-                                        210,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 25),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Grand Final Assessment",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleSmall
+                                      ?.copyWith(
+                                        fontSize: context.responsiveFont(5.5),
                                       ),
-                                    ),
-                              ),
-                            ],
-                          ),
-                          if (grandPassed)
-                            CheckProgress()
-                          else if (!grandUnlocked)
-                            const Icon(
-                              Icons.lock,
-                              size: 18,
-                              color: Colors.white54,
+                                ),
+                                Gap(10),
+                                Text(
+                                  grandPassed
+                                      ? "Completed"
+                                      : grandUnlocked
+                                          ? "Covers everything learned across all categories"
+                                          : "Locked - finish all categories first",
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        fontSize: context.responsiveFont(3.5),
+                                        color: AppColors.textSecondary(context),
+                                      ),
+                                ),
+                              ],
                             ),
-                        ],
+                            if (grandPassed)
+                              CheckProgress()
+                            else if (!grandUnlocked)
+                              Icon(
+                                Icons.lock,
+                                size: 18,
+                                color: AppColors.textMuted(context),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
                   ),
                 ),
               );
