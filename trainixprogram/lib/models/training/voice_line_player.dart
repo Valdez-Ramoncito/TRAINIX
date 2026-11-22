@@ -27,44 +27,43 @@ class VoiceLinePlayer {
   }
 
   EmotionPreset _emotion(String emotion) {
-    switch (emotion.toLowerCase()) {
-      case 'angry':
-      case 'frustrated':
-        return EmotionPreset.angry;
-      case 'impatient':
-        return EmotionPreset.toneup;
-      case 'anxious':
-      case 'sad':
-        return EmotionPreset.sad;
-      case 'concerned':
-        return EmotionPreset.tonedown;
-      case 'calm':
-      case 'polite':
-      case 'professional':
-        return EmotionPreset.normal;
-      default:
-        return EmotionPreset.normal;
+    final e = emotion.toLowerCase();
+    if (e.contains('angry') || e.contains('upset') || e.contains('frustrat')) {
+      return EmotionPreset.angry;
     }
+    if (e.contains('impatient') || e.contains('annoy')) {
+      return EmotionPreset.toneup;
+    }
+    if (e.contains('anxious') || e.contains('sad')) {
+      return EmotionPreset.sad;
+    }
+    if (e.contains('concern') || e.contains('worried')) {
+      return EmotionPreset.tonedown;
+    }
+    if (e.contains('calm') || e.contains('polite') || e.contains('professional')) {
+      return EmotionPreset.normal;
+    }
+    return EmotionPreset.normal;
   }
 
   double _intensity(String emotion) {
-    switch (emotion.toLowerCase()) {
-      case 'angry':
-        return 1.5;
-      case 'frustrated':
-      case 'impatient':
-        return 1.2;
-      case 'anxious':
-        return 0.9;
-      case 'concerned':
-        return 0.8;
-      case 'calm':
-      case 'polite':
-      case 'professional':
-        return 0.5;
-      default:
-        return 0.7;
+    final e = emotion.toLowerCase();
+    if (e.contains('angry') || e.contains('upset')) {
+      return 1.6;
     }
+    if (e.contains('frustrat') || e.contains('impatient') || e.contains('annoy')) {
+      return 1.25;
+    }
+    if (e.contains('anxious')) {
+      return 0.9;
+    }
+    if (e.contains('concern') || e.contains('worried')) {
+      return 0.8;
+    }
+    if (e.contains('calm') || e.contains('polite') || e.contains('professional')) {
+      return 0.5;
+    }
+    return 0.7;
   }
 
   Future<void> stop() async {

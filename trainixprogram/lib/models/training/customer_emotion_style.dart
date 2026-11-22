@@ -2,6 +2,42 @@
 /// Does not append stock waiting/urgency phrases onto complete scripted turns.
 /// Voice uses Typecast presets; mission script lines should stay natural.
 class CustomerEmotionStyle {
+  /// Session heat ladder driven by agent behavior.
+  /// 0 = base pack emotion, 1 = warmer, 2 = hot, 3 = angry peak.
+  static String effectiveEmotion({
+    required String baseEmotion,
+    required int heatLevel,
+  }) {
+    final base = baseEmotion.trim().isEmpty ? 'neutral' : baseEmotion.trim();
+    final level = heatLevel.clamp(0, 3);
+    if (level <= 0) return base;
+    final b = base.toLowerCase();
+    if (level >= 3) return 'angry';
+    if (level == 2) {
+      if (b.contains('angry') || b.contains('upset')) return 'angry';
+      return 'frustrated';
+    }
+    if (b.contains('angry') ||
+        b.contains('upset') ||
+        b.contains('frustrat') ||
+        b.contains('impatient') ||
+        b.contains('annoy')) {
+      return base;
+    }
+    if (b.contains('disappoint') ||
+        b.contains('worried') ||
+        b.contains('anxious') ||
+        b.contains('concern')) {
+      return 'frustrated';
+    }
+    return 'impatient';
+  }
+
+  static int coolHeat(int heatLevel) => (heatLevel - 1).clamp(0, 3);
+
+  static int raiseHeat(int heatLevel, {bool strong = false}) =>
+      (heatLevel + (strong ? 2 : 1)).clamp(0, 3);
+
   static bool _isClosingOrResolved(String t) {
     final l = t.toLowerCase();
     return l.contains('thank you') ||
@@ -81,12 +117,22 @@ class CustomerEmotionStyle {
 
     if (e.contains('angry') || e.contains('upset')) {
       var out = t;
-      if (out.length <= 72 && out == out.toLowerCase()) {
+      // Short and medium lines: full caps + emphasis so chat shows heat.
+      if (out.length <= 110 && out == out.toLowerCase()) {
         out = out.toUpperCase();
         if (!out.endsWith('!') && !out.endsWith('?')) out = '$out!';
         return out;
       }
       if (!out.contains('!') && !out.endsWith('?')) out = '$out!';
+      // Longer scripted turns: punch the first clause for emphasis.
+      if (out.length > 110 && !out.contains('!')) {
+        final cut = out.indexOf('.');
+        if (cut > 12 && cut < 80) {
+          final head = out.substring(0, cut).toUpperCase();
+          final tail = out.substring(cut);
+          return '$head!$tail';
+        }
+      }
       return out.trim();
     }
 

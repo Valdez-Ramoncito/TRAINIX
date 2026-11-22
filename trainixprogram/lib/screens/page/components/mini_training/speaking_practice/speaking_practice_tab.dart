@@ -422,7 +422,7 @@ class _HistoryRow extends StatelessWidget {
             Text(
               result.scoredScores.isEmpty
                   ? '${result.roundedWordsPerMinute} WPM'
-                  : result.overallScore.toStringAsFixed(1),
+                  : '${result.overallScore.toStringAsFixed(1)} · ${result.scoredScores.length}/7 dims',
               style: TextStyle(
                 color: AppColors.primaryText(),
                 fontWeight: FontWeight.w700,

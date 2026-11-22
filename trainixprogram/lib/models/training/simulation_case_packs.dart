@@ -76,31 +76,33 @@ class SimulationCaseLibrary {
       id: 'telco_outage',
       sector: 'Telco',
       name: 'Grace Villanueva',
-      emotion: 'Impatient',
+      emotion: 'Angry',
       problem: 'Home internet is down while neighbors still have service.',
       openingReply:
-          'My home internet has been down for hours while my neighbors still have service.',
+          'My home internet has been down for hours while my neighbors still have service. This is unacceptable.',
       acknowledgeReplies: [
-        'Yes, it dropped this morning and has not come back.',
-        'Thanks. I already restarted the modem twice.',
+        'Yes, it dropped this morning and has not come back. I already wasted enough time on this.',
+        'I already restarted the modem twice. I need this fixed, not more basic steps.',
       ],
       verifyReplies: [
         'Service address is under Grace Villanueva. Modem lights are red on internet.',
-        'Yes, that is my account. Outage map shows clear but I am still offline.',
+        'Yes, that is my account. Outage map shows clear but I am still offline. Do not tell me everything looks fine.',
       ],
       fixReplies: [
-        'If you can run a line test or open a ticket, please do that.',
-        'Okay, what should I check on the modem next?',
+        'Run a line test or open a ticket now. I need real action.',
+        'Stop stalling. What is the next concrete step on your side?',
       ],
       escalateReplies: [
-        'Please escalate to field support if remote checks fail.',
+        'Escalate to field support if remote checks fail. I want a specialist on this.',
       ],
-      closeReplies: ['Alright, I will wait for the ticket update. Thanks.'],
+      closeReplies: [
+        'Fine. I will wait for the ticket update. This should not have taken so long.',
+      ],
       otherReplies: [
-        'I still need my internet restored.',
-        'Service is still down on my end. Any update?',
-        'Can we stay on restoring my internet connection?',
-        'My connection is still out. What can you do next?',
+        'I still need my internet restored. Move faster.',
+        'Service is still down on my end. Any real update?',
+        'Stay on restoring my internet. I am not dropping this.',
+        'My connection is still out. What can you do next that actually helps?',
       ],
     ),
     SimulationCasePack(

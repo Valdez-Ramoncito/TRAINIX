@@ -77,16 +77,17 @@ class _LiveTrainingRoomState extends State<LiveTrainingRoom> {
 
   void _onStoreChanged() {
     if (!mounted || _kicked) return;
-    final live = LiveSessionStore.instance.findByCode(widget.session.id);
-    final ended = live == null || live.closed;
+    final roomId = widget.session.id;
+    final live = LiveSessionStore.instance.findByCode(roomId);
+    final markedEnded = LiveSessionStore.instance.wasRoomEnded(roomId);
+    final ended = live == null || live.closed || markedEnded;
     if (ended) {
       _kicked = true;
+      LiveSessionStore.instance.clearEndedRoom(roomId);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            live == null
-                ? 'Session ended. Results were saved to your dashboard.'
-                : 'Session ended. You have left the room.',
+            'Session ended. Results were saved to your dashboard.',
           ),
         ),
       );

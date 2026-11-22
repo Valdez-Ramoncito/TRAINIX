@@ -306,6 +306,7 @@ class LiveSessionStore {
 
   final List<LiveTrainingSession> _sessions = [];
   final Set<String> _remindedIds = {};
+  final Set<String> _endedRoomIds = {};
   final Map<String, SessionWorkbench> _workbenches = {};
   final List<LiveTrainingHistoryEntry> _historyArchive = [];
   final List<void Function()> _listeners = [];
@@ -321,17 +322,20 @@ class LiveSessionStore {
     DateTime? localUpdatedAt,
     DateTime? remoteUpdatedAt,
   }) {
-    if (!localVal &&
+    // Prefer remote true so the first joiner sees the second joiner's presence.
+    if (remoteVal) return true;
+    // Protect a recent local true against a stale remote false (race on write).
+    if (localVal &&
         localUpdatedAt != null &&
         DateTime.now().difference(localUpdatedAt).inSeconds < 6) {
-      return false;
+      return true;
     }
     if (!remoteVal &&
         remoteUpdatedAt != null &&
         (localUpdatedAt == null || !localUpdatedAt.isAfter(remoteUpdatedAt))) {
       return false;
     }
-    return remoteVal || localVal;
+    return localVal;
   }
 
   RoomPresence _mergePresence(
@@ -884,11 +888,16 @@ class LiveSessionStore {
     );
   }
 
+  bool wasRoomEnded(String roomId) => _endedRoomIds.contains(roomId);
+
+  void clearEndedRoom(String roomId) => _endedRoomIds.remove(roomId);
+
   SessionWorkbench endSession(String roomId) {
     final current = _require(roomId);
     final endedAt = DateTime.now();
     final next = current.copyWith(ended: true, endedAt: endedAt);
     _workbenches[roomId] = next;
+    _endedRoomIds.add(roomId);
     final i = _sessions.indexWhere((s) => s.id == roomId);
     if (i != -1) {
       final s = _sessions[i];
@@ -916,6 +925,8 @@ class LiveSessionStore {
         updatedAt: endedAt,
       );
       _sessions[i] = closed;
+      // Remove from active list so listeners see null and exit.
+      _sessions.removeWhere((s) => s.id == roomId);
       LiveRoomRepository.instance.upsert(closed);
       LiveRoomRepository.instance.patchPresence(
         roomId: roomId,

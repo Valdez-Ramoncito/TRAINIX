@@ -175,8 +175,16 @@ class _ChatPanelState extends State<ChatPanel> {
   Timer? _toolWaitTicker;
   int _customerWaitSeconds = 0;
   int _refusalStreak = 0;
+  int _customerHeatLevel = 0;
   int _idleNudgeCount = 0;
   final List<String> _recentCustomerReactions = [];
+
+  String _liveCustomerEmotion(String base) {
+    return CustomerEmotionStyle.effectiveEmotion(
+      baseEmotion: base,
+      heatLevel: _customerHeatLevel,
+    );
+  }
 
   @override
   void initState() {
@@ -362,7 +370,9 @@ class _ChatPanelState extends State<ChatPanel> {
       'Just checking in. Are you still working on my request?',
       'I am still here whenever you have an update for me.',
     ];
-    final emotion = openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+    final emotion = _liveCustomerEmotion(
+      openRouterAPI.chosenSimulation['emotion']?.toString() ?? '',
+    );
     final line = CustomerEmotionStyle.apply(
       lines[Random().nextInt(lines.length)],
       emotion,
@@ -644,8 +654,11 @@ class _ChatPanelState extends State<ChatPanel> {
         await Future<void>.delayed(Duration(milliseconds: delayMs));
         if (!mounted) return;
         if (line.trim().isEmpty) continue;
-        final emotion =
-            openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+        final emotion = _liveCustomerEmotion(
+          openRouterAPI.chosenSimulation['emotion']?.toString() ??
+              _sessionController.mission.pack?.emotion ??
+              '',
+        );
         final styled = CustomerEmotionStyle.apply(line.trim(), emotion);
         messageProvider.addMessage('assistant', styled);
         if (!mounted) return;
@@ -961,8 +974,9 @@ class _ChatPanelState extends State<ChatPanel> {
               'Thank you. I will wait for the next team to contact me.',
               'Alright. Please note that I already explained the full issue.',
             ];
-            final emotion =
-                openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
+            final emotion = _liveCustomerEmotion(
+              openRouterAPI.chosenSimulation['emotion']?.toString() ?? '',
+            );
             final line = CustomerEmotionStyle.apply(
               reactions[Random().nextInt(reactions.length)],
               emotion,
@@ -1447,6 +1461,7 @@ class _ChatPanelState extends State<ChatPanel> {
     _customerCheckTimer?.cancel();
     _idleNudgeTimer?.cancel();
     _refusalStreak = 0;
+    _customerHeatLevel = 0;
     _idleNudgeCount = 0;
     _recentCustomerReactions.clear();
     SimulationCoach.clearOffTrackMemory();
@@ -1723,8 +1738,9 @@ class _ChatPanelState extends State<ChatPanel> {
         );
         final emotion =
             openRouterAPI.chosenSimulation['emotion']?.toString() ?? '';
-        final packEmotion =
-            _sessionController.mission.pack?.emotion.toString() ?? emotion;
+        final packEmotion = _liveCustomerEmotion(
+          _sessionController.mission.pack?.emotion.toString() ?? emotion,
+        );
         final line = _buildIdleNudgeLine(packEmotion);
         _idleNudgeCount += 1;
         setState(() => _waitingForCustomer = true);
@@ -1935,11 +1951,19 @@ class _ChatPanelState extends State<ChatPanel> {
         if (rude || (offTopic && wordCount <= 8)) {
           if (rude) {
             _refusalStreak += 1;
+            _customerHeatLevel = CustomerEmotionStyle.raiseHeat(
+              _customerHeatLevel,
+              strong: _refusalStreak >= 2,
+            );
+          } else {
+            _customerHeatLevel =
+                CustomerEmotionStyle.raiseHeat(_customerHeatLevel);
           }
+          final liveEmotion = _liveCustomerEmotion(pack.emotion);
           final reaction = SimulationCoach.offTrackCustomerReaction(
             agentText: text,
             problem: pack.problemSummary,
-            emotion: pack.emotion,
+            emotion: liveEmotion,
             customerName: pack.customerName,
             refusalStreak: _refusalStreak,
             avoidRecent: List<String>.from(_recentCustomerReactions),
@@ -1953,26 +1977,31 @@ class _ChatPanelState extends State<ChatPanel> {
             _sessionController.mission.lastTraineeDidNotAdvance &&
             step != null &&
             step.kind != SimStepKind.tool) {
+          final liveEmotion = _liveCustomerEmotion(pack.emotion);
           final judged = await openRouterAPI.judgeMissionTurn(
             agentMessage: text,
             stepLabel: step.label,
             stepTip: step.tip,
             stepExamples: step.examples,
             problem: pack.problemSummary,
-            emotion: pack.emotion,
+            emotion: liveEmotion,
             customerName: pack.customerName,
           );
           if (!mounted) return;
           if (judged.adequate) {
             _refusalStreak = 0;
+            _customerHeatLevel =
+                CustomerEmotionStyle.coolHeat(_customerHeatLevel);
             _sessionController.mission.forceCompleteCurrentSpeakStep(
               fallbackCustomerLine: judged.customerReply,
             );
           } else {
+            _customerHeatLevel =
+                CustomerEmotionStyle.raiseHeat(_customerHeatLevel);
             final reply = SimulationCoach.offTrackCustomerReaction(
               agentText: text,
               problem: pack.problemSummary,
-              emotion: pack.emotion,
+              emotion: _liveCustomerEmotion(pack.emotion),
               customerName: pack.customerName,
               refusalStreak: _refusalStreak,
               avoidRecent: List<String>.from(_recentCustomerReactions),
@@ -1987,6 +2016,14 @@ class _ChatPanelState extends State<ChatPanel> {
           }
         } else {
           _refusalStreak = 0;
+          // Mission advanced with a helpful turn: cool customer heat.
+          if (_sessionController.mission.pendingCustomerLines.isNotEmpty ||
+              (step != null &&
+                  _sessionController.mission.state.done
+                      .contains(step.id))) {
+            _customerHeatLevel =
+                CustomerEmotionStyle.coolHeat(_customerHeatLevel);
+          }
         }
         await _postScriptedCustomerLines();
         if (!mounted) return;

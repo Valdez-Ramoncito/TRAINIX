@@ -113,13 +113,18 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
     if (!mounted) return;
 
     final cleaned = transcript.trim();
-    if (cleaned.isEmpty) {
+    final wordCount = cleaned.isEmpty
+        ? 0
+        : cleaned.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    // Reject empty, near-empty, or too-short takes so silence/noise is not scored.
+    if (cleaned.isEmpty || wordCount < 3 || _elapsedSeconds < 2) {
       setState(() {
         _phase = _SpeakPhase.failed;
-        _transcript = '';
+        _transcript = cleaned;
         _audioPath = path;
-        _error =
-            'No speech was detected. Keep the mic close and try again. Your attempt was not scored.';
+        _error = cleaned.isEmpty || wordCount < 3
+            ? 'No usable speech was detected. Keep the mic close and try again. Your attempt was not scored.'
+            : 'Recording was too short to score. Speak for at least a couple of seconds.';
       });
       return;
     }
@@ -621,138 +626,6 @@ class _MessageCard extends StatelessWidget {
               height: 1.4,
             ),
             textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ResultPanel extends StatelessWidget {
-  const _ResultPanel({
-    required this.result,
-    required this.promptLabel,
-    required this.transcript,
-  });
-
-  final SpeakingResult result;
-  final String promptLabel;
-  final String transcript;
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Take saved',
-            style: TextStyle(
-              color: AppColors.primaryText(),
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
-          ),
-          const Gap(4),
-          Text(
-            promptLabel,
-            style: TextStyle(
-              color: AppColors.textMuted(context),
-              fontSize: 12,
-            ),
-          ),
-          const Gap(14),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _metric(context, 'Duration', '${result.durationSeconds}s'),
-              _metric(context, 'Words', '${result.wordCount}'),
-              _metric(context, 'WPM', '${result.roundedWordsPerMinute}'),
-              _metric(context, 'Fillers', '${result.fillerCount}'),
-            ],
-          ),
-          const Gap(14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.panel(context),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderIdle(context)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Transcript',
-                  style: TextStyle(
-                    color: AppColors.textMuted(context),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const Gap(8),
-                Text(
-                  transcript,
-                  style: TextStyle(
-                    color: AppColors.textPrimary(context),
-                    fontSize: 14,
-                    height: 1.45,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Gap(12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.completeTint(context),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'AI dimension scores (grammar, pronunciation, confidence) land in the next agenda (S4). Deterministic metrics above are stored for this session.',
-              style: TextStyle(
-                color: AppColors.successText(),
-                fontSize: 12,
-                height: 1.35,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _metric(BuildContext context, String label, String value) {
-    return Container(
-      width: 120,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.card(context),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderIdle(context)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.textMuted(context),
-              fontSize: 11,
-            ),
-          ),
-          const Gap(2),
-          Text(
-            value,
-            style: TextStyle(
-              color: AppColors.textPrimary(context),
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
           ),
         ],
       ),

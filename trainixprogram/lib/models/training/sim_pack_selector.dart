@@ -303,6 +303,12 @@ class SimPackSelector {
             openingCustomerLine:
                 'I need help with a pending payment that still has not cleared. I do not want a double charge.',
           ),
+          SimIdentityVariant(
+            customerName: 'Rico Mendoza',
+            emotion: 'angry',
+            openingCustomerLine:
+                'This unauthorized charge is unacceptable. I want it reversed now and I want a clear explanation.',
+          ),
         ];
       case ProblemFamily.fundTransfer:
         return const [
@@ -346,6 +352,12 @@ class SimPackSelector {
             emotion: 'disappointed',
             openingCustomerLine:
                 'I was told my claim would be updated by now. Can you check what is taking so long?',
+          ),
+          SimIdentityVariant(
+            customerName: 'Benito Salcedo',
+            emotion: 'angry',
+            openingCustomerLine:
+                'My claim has been stuck for weeks with no answers. This is unacceptable. I need a status and a next step now.',
           ),
         ];
       case ProblemFamily.prescriptionRefill:
@@ -465,7 +477,13 @@ class SimPackSelector {
             customerName: 'Irene Castillo',
             emotion: 'angry',
             openingCustomerLine:
-                'I already tried the usual steps and this still is not resolved. I need this escalated.',
+                'I already tried the usual steps and this still is not resolved. I need this escalated now. This has gone on long enough.',
+          ),
+          SimIdentityVariant(
+            customerName: 'Carlo Dizon',
+            emotion: 'angry',
+            openingCustomerLine:
+                'I am done repeating myself. Escalate this to a specialist and give me a real timeline.',
           ),
         ];
       case ProblemFamily.genericAccount:

@@ -18,6 +18,7 @@ import 'package:trainixprogram/models/problem_family.dart';
 import 'package:trainixprogram/models/coach_view_model.dart';
 import 'package:trainixprogram/models/simulation_session_controller.dart';
 import 'package:trainixprogram/models/sim_mission.dart';
+import 'package:trainixprogram/models/training/customer_emotion_style.dart';
 import 'package:trainixprogram/models/training/pack_session_scorer.dart';
 import 'package:trainixprogram/models/training/sim_pack_selector.dart';
 import 'package:trainixprogram/screens/mock_call_ui/left_call.dart';
@@ -147,9 +148,17 @@ class _VoicePanelState extends State<VoicePanel> {
   bool _awaitingAgentResumeLine = false;
   Timer? _voiceSilenceTimer;
   int _refusalStreak = 0;
+  int _customerHeatLevel = 0;
   int _idleNudgeCount = 0;
   final List<String> _recentCustomerReactions = [];
   final ScrollController _historyScrollController = ScrollController();
+
+  String _liveCustomerEmotion(String base) {
+    return CustomerEmotionStyle.effectiveEmotion(
+      baseEmotion: base,
+      heatLevel: _customerHeatLevel,
+    );
+  }
 
   /// Opening customer lines held until the agent finishes the open step.
   final List<String> _heldOpeningLines = [];
@@ -524,10 +533,12 @@ class _VoicePanelState extends State<VoicePanel> {
         _scheduleVoiceSilenceNudge();
         return;
       }
-      final emotion = (_sessionController.mission.pack?.emotion ??
-              _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
-              'neutral')
-          .toString();
+      final emotion = _liveCustomerEmotion(
+        (_sessionController.mission.pack?.emotion ??
+                _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
+                'neutral')
+            .toString(),
+      );
       final line = _buildVoiceIdleNudgeLine(emotion);
       _idleNudgeCount += 1;
       _coachMessages.add(CoachMessage(isTrainee: false, text: line));
@@ -734,6 +745,7 @@ class _VoicePanelState extends State<VoicePanel> {
           _lastSyncedToolWork = null;
           _lastSyncedToolAction = '';
           _refusalStreak = 0;
+          _customerHeatLevel = 0;
           _idleNudgeCount = 0;
           _recentCustomerReactions.clear();
           SimulationCoach.clearOffTrackMemory();
@@ -861,19 +873,24 @@ class _VoicePanelState extends State<VoicePanel> {
     if (lines.isEmpty) return;
     _postingScripted = true;
     try {
-      final emotion =
-          _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
-              'neutral';
+      final emotion = _liveCustomerEmotion(
+        (_sessionController.mission.pack?.emotion ??
+                _typeCastService.openRouterAPI.chosenSimulation['emotion'] ??
+                'neutral')
+            .toString(),
+      );
       for (final line in lines) {
         if (!mounted) return;
         if (line.trim().isEmpty) continue;
-        _coachMessages.add(CoachMessage(isTrainee: false, text: line.trim()));
+        final styled = CustomerEmotionStyle.apply(line.trim(), emotion);
+        _coachMessages.add(CoachMessage(isTrainee: false, text: styled));
         setState(() {
-          _customerTranscript = line;
+          _customerTranscript = styled;
           _voicePhase = _VoicePhase.customerSpeaking;
         });
         _scrollHistoryToEnd();
-        await _typeCastService.playCustomerLine(line, emotion);
+        // Speak the natural line; Typecast uses emotion preset for tone.
+        await _typeCastService.playCustomerLine(line.trim(), emotion);
       }
       if (mounted &&
           widget.phase == SimulationPhase.active &&
@@ -1031,14 +1048,24 @@ class _VoicePanelState extends State<VoicePanel> {
     if (SimulationSessionController.useMissionGuide &&
         _sessionController.mission.pack != null) {
       try {
-        _syncMissionFromCoach();
+        final holdAdvisory = SimulationCoach.isHoldAdvisory(spoken) &&
+            widget.phase == SimulationPhase.active;
+        // Hold advice must not advance mission steps or queue scripted lines.
+        if (!holdAdvisory) {
+          _syncMissionFromCoach();
+        }
         final openDoneNow = _sessionController.mission.state.done.contains(
           'open',
         );
-        if (openDoneNow && _heldOpeningLines.isNotEmpty) {
-          _sessionController.mission.pendingCustomerLines.addAll(
-            _heldOpeningLines,
-          );
+        final releasingHeldOpen =
+            openDoneNow && _heldOpeningLines.isNotEmpty;
+        if (releasingHeldOpen) {
+          // Agent-first open: only the held opening should play once.
+          // Completing the open step also queues after-pass / next-step lines;
+          // those would double the customer reply right after the spiel.
+          _sessionController.mission.pendingCustomerLines
+            ..clear()
+            ..addAll(_heldOpeningLines);
           _heldOpeningLines.clear();
         }
         final pack = _sessionController.mission.pack!;
@@ -1054,14 +1081,26 @@ class _VoicePanelState extends State<VoicePanel> {
             .split(RegExp(r'\s+'))
             .where((w) => w.isNotEmpty)
             .length;
-        if (rude || (offTopic && wordCount <= 8)) {
+        if (holdAdvisory) {
+          // Hold advice is not a mission speak turn. Do not advance steps or
+          // post scripted customer lines; the hold-ack path handles the reply.
+          _sessionController.mission.pendingCustomerLines.clear();
+        } else if (rude || (offTopic && wordCount <= 8)) {
           if (rude) {
             _refusalStreak += 1;
+            _customerHeatLevel = CustomerEmotionStyle.raiseHeat(
+              _customerHeatLevel,
+              strong: _refusalStreak >= 2,
+            );
+          } else {
+            _customerHeatLevel =
+                CustomerEmotionStyle.raiseHeat(_customerHeatLevel);
           }
+          final liveEmotion = _liveCustomerEmotion(pack.emotion);
           final reaction = SimulationCoach.offTrackCustomerReaction(
             agentText: spoken,
             problem: pack.problemSummary,
-            emotion: pack.emotion,
+            emotion: liveEmotion,
             customerName: pack.customerName,
             refusalStreak: _refusalStreak,
             avoidRecent: List<String>.from(_recentCustomerReactions),
@@ -1071,30 +1110,36 @@ class _VoicePanelState extends State<VoicePanel> {
             _recentCustomerReactions.removeAt(0);
           }
           _sessionController.mission.queueOffTrackCustomerReaction(reaction);
-        } else if (_sessionController.mission.pendingCustomerLines.isEmpty &&
+        } else if (!releasingHeldOpen &&
+            _sessionController.mission.pendingCustomerLines.isEmpty &&
             _sessionController.mission.lastTraineeDidNotAdvance &&
             step != null &&
             step.kind != SimStepKind.tool) {
+          final liveEmotion = _liveCustomerEmotion(pack.emotion);
           final judged = await _typeCastService.openRouterAPI.judgeMissionTurn(
             agentMessage: spoken,
             stepLabel: step.label,
             stepTip: step.tip,
             stepExamples: step.examples,
             problem: pack.problemSummary,
-            emotion: pack.emotion,
+            emotion: liveEmotion,
             customerName: pack.customerName,
           );
           if (!mounted) return;
           if (judged.adequate) {
             _refusalStreak = 0;
+            _customerHeatLevel =
+                CustomerEmotionStyle.coolHeat(_customerHeatLevel);
             _sessionController.mission.forceCompleteCurrentSpeakStep(
               fallbackCustomerLine: judged.customerReply,
             );
           } else {
+            _customerHeatLevel =
+                CustomerEmotionStyle.raiseHeat(_customerHeatLevel);
             final reply = SimulationCoach.offTrackCustomerReaction(
               agentText: spoken,
               problem: pack.problemSummary,
-              emotion: pack.emotion,
+              emotion: _liveCustomerEmotion(pack.emotion),
               customerName: pack.customerName,
               refusalStreak: _refusalStreak,
               avoidRecent: List<String>.from(_recentCustomerReactions),
@@ -1109,9 +1154,19 @@ class _VoicePanelState extends State<VoicePanel> {
           }
         } else {
           _refusalStreak = 0;
+          if (!releasingHeldOpen &&
+              (_sessionController.mission.pendingCustomerLines.isNotEmpty ||
+                  (step != null &&
+                      _sessionController.mission.state.done
+                          .contains(step.id)))) {
+            _customerHeatLevel =
+                CustomerEmotionStyle.coolHeat(_customerHeatLevel);
+          }
         }
         _idleNudgeCount = 0;
-        await _postScriptedCustomerLinesVoice();
+        if (!holdAdvisory) {
+          await _postScriptedCustomerLinesVoice();
+        }
         if (!mounted) return;
         final closeDone = _sessionController.mission.state.done.contains(
           'close',
@@ -1137,8 +1192,7 @@ class _VoicePanelState extends State<VoicePanel> {
         if (mounted && _voicePhase == _VoicePhase.processing) {
           setState(() => _voicePhase = _VoicePhase.customerSpeaking);
         }
-        if (SimulationCoach.isHoldAdvisory(spoken) &&
-            widget.phase == SimulationPhase.active) {
+        if (holdAdvisory) {
           await _preAckHoldWhileActive();
         }
       } catch (e) {

@@ -152,11 +152,20 @@ class SpeakingResultView extends StatelessWidget {
                         RubricHowScoredCard(
                           title: 'How this was scored',
                           formula:
-                              'Each speaking dimension starts at 10. Deductions need a quote or clear audio evidence. No evidence means no cut. Pronunciation and confidence need audio.',
+                              'Each speaking dimension starts at 10. The evaluator deducts only for observed gaps in the transcript or audio. Overall is the average of scored dimensions. Practice pass mark is 7.0. Excellent is 8.5 and above.',
                           rules: const [
-                            'Measured WPM and filler counts are computed locally.',
-                            'AI dimensions use the Speaking Practice rubric when the model is available.',
+                            'Evidence rule: if the model cannot cite a concrete quote or audio moment, that category stays at 10 (full marks).',
+                            'Measured WPM and filler counts are computed locally from the transcript and duration.',
+                            'Pronunciation Clarity and Speaking Confidence need clear audio. Without audio they show Not scored.',
+                            'Expand each skill for criteria, possible deductions, evidence quotes, and a stronger line when available.',
                           ],
+                          showBands: true,
+                          footer:
+                              'Bands match Dashboard and Session Report: 9-10 Excellent, 7-8 Good, 5-6 Developing, 0-4 Needs work.',
+                          notice: !aiAvailable
+                              ? (aiNote ??
+                                  'AI was unavailable. Local measured dimensions still use the same rubric anchors.')
+                              : null,
                         ),
                         const Gap(12),
                         ...ScoringTransparency.speakingDimensions.map((dim) {
@@ -178,6 +187,15 @@ class SpeakingResultView extends StatelessWidget {
                               .map((i) => i.suggestion)
                               .where((s) => s.isNotEmpty)
                               .toList();
+                          final deducted = notScored
+                              ? null
+                              : ScoringTransparency.deductedFromTen(score);
+                          final level = notScored
+                              ? null
+                              : ScoringTransparency.levelFor(score);
+                          final justification = notScored
+                              ? null
+                              : _bandJustification(dim, level!);
                           return RubricDimensionTile(
                             label: dim.label,
                             bandLabel: notScored
@@ -189,6 +207,19 @@ class SpeakingResultView extends StatelessWidget {
                                 : score.toStringAsFixed(1),
                             fraction: notScored ? 0 : score / 10.0,
                             basis: dim.short,
+                            summary: justification,
+                            parts: [
+                              'Excellent (9-10): ${dim.excellent}',
+                              'Good (7-8): ${dim.good}',
+                              'Developing (5-6): ${dim.developing}',
+                              'Needs work (0-4): ${dim.needsWork}',
+                              if (dim.gapExamples.isNotEmpty)
+                                'Gap examples: ${dim.gapExamples}',
+                              if (deducted != null && deducted > 0.05)
+                                'This take: deducted ${deducted.toStringAsFixed(1)} from 10.',
+                              if (deducted != null && deducted <= 0.05)
+                                'This take: full marks (no deduction applied).',
+                            ],
                             anchors: dim.deductionAnchors,
                             sourceNote: dim.sourceNote,
                             evidence: evidence,
@@ -199,6 +230,7 @@ class SpeakingResultView extends StatelessWidget {
                                 ? _notScoredReason(dim.key, result)
                                 : null,
                             icon: ScoringTransparency.iconFor(dim.label),
+                            initiallyOpen: issues.isNotEmpty,
                           );
                         }),
                         const Gap(8),
@@ -314,39 +346,43 @@ class SpeakingResultView extends StatelessWidget {
     );
   }
 
+  String _bandJustification(ScoringDimension dim, ScoreLevel level) {
+    final criterion = dim.criterionForScore(
+      level.id == 'excellent'
+          ? 9.5
+          : level.id == 'proficient'
+              ? 8.0
+              : level.id == 'developing'
+                  ? 6.0
+                  : 3.0,
+    );
+    return '${level.label} (${level.rangeLabel}): $criterion ${level.meaning}';
+  }
+
   bool _issueMatchesDimension(String kind, String dimKey) {
-    final k = kind.toLowerCase();
-    if (dimKey.contains('Grammar')) return k.contains('grammar');
-    if (dimKey.contains('Word') || dimKey == 'speakingWordChoice') {
+    final k = kind.toLowerCase().replaceAll(' ', '_');
+    final key = dimKey.toLowerCase();
+    if (key.contains('grammar')) return k.contains('grammar');
+    if (key.contains('word')) {
       return k.contains('word');
     }
-    if (dimKey.contains('Fluency') || dimKey == 'speakingFluency') {
-      return k.contains('fluency');
-    }
-    if (dimKey.contains('Pronunciation') ||
-        dimKey == 'speakingPronunciationClarity') {
-      return k.contains('pronun');
-    }
-    if (dimKey.contains('Filler') || dimKey == 'speakingFillerUsage') {
-      return k.contains('filler');
-    }
-    if (dimKey.contains('Confidence') || dimKey == 'speakingConfidence') {
-      return k.contains('confidence');
-    }
-    if (dimKey.contains('Completeness') || dimKey == 'speakingCompleteness') {
-      return k.contains('complete');
-    }
+    if (key.contains('fluency')) return k.contains('fluency');
+    if (key.contains('pronun')) return k.contains('pronun');
+    if (key.contains('filler')) return k.contains('filler');
+    if (key.contains('confidence')) return k.contains('confidence');
+    if (key.contains('complete')) return k.contains('complete');
     return false;
   }
 
   String _notScoredReason(String key, SpeakingResult r) {
-    if (key.contains('Pronunciation') || key.contains('Confidence')) {
+    final k = key.toLowerCase();
+    if (k.contains('pronun')) {
       if (!r.audioRetained) {
-        return 'Audio was not available for this take.';
+        return 'Pronunciation needs retained audio. Other dimensions were still scored.';
       }
-      return 'Model did not return a score for this dimension.';
+      return 'Pronunciation could not be scored on this take.';
     }
-    return 'No AI score for this dimension on this take.';
+    return 'No score available for this dimension on this take.';
   }
 
   Widget _metric(BuildContext context, String label, String value) {
