@@ -355,21 +355,6 @@ class SessionEvaluation {
     final toneProxy =
         double.parse(((empathy + clarity) / 2).toStringAsFixed(1));
 
-    final overall =
-        [
-          opening,
-          positive,
-          empathy,
-          active,
-          problemId,
-          solution,
-          clarity,
-          toneProxy,
-          sectorKnowledge,
-          closing,
-        ].reduce((a, b) => a + b) /
-        10;
-
     const noteKeys = {
       'OPENING_SPIEL': 'Opening Spiel',
       'POSITIVE_SCRIPTING': 'Positive Scripting',
@@ -548,22 +533,9 @@ class SessionEvaluation {
     final sectorKnowledge = parse('SECTOR_KNOWLEDGE');
     final closing = parse('CLOSING_SPIEL');
 
-    //Overall Score uses spoken clarity as Communication Clarity, not
-    //pronunciation. Delivery categories stay separate on the report.
-    final overall =
-        [
-          opening,
-          positive,
-          empathy,
-          active,
-          problemId,
-          solution,
-          spokenClarity,
-          tone,
-          sectorKnowledge,
-          closing,
-        ].reduce((a, b) => a + b) /
-        10;
+    // Overall uses spoken clarity as Communication Clarity, not pronunciation.
+    // Delivery categories stay separate on the report. Final overall is overallE
+    // after evidence gating below.
 
     const noteKeys = {
       'OPENING_SPIEL': 'Opening Spiel',

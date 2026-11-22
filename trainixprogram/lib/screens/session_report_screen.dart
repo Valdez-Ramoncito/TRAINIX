@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/scoring_transparency.dart';
 import 'package:trainixprogram/models/session_score.dart';
 import 'package:trainixprogram/screens/report_ui/report_ui.dart';

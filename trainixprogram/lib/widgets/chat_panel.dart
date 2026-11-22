@@ -113,7 +113,6 @@ class _ChatPanelState extends State<ChatPanel> {
 
   // true when a large single insert was detected (paste / autofill)
   bool _pasteSuspectedThisMessage = false;
-  int _pasteEventsThisInteraction = 0;
 
   //whether a send is currently in progress
   //blocks a second send from starting before the first one
@@ -998,7 +997,6 @@ class _ChatPanelState extends State<ChatPanel> {
         } else if (delta >= 12) {
           // Large single insert is almost always paste or autofill, not keystrokes.
           _pasteSuspectedThisMessage = true;
-          _pasteEventsThisInteraction += 1;
         }
         _previousInputLength = value.length;
         if (value.isNotEmpty && _typingStartTime == null) {

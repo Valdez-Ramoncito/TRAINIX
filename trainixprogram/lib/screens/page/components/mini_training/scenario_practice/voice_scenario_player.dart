@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';
 import 'package:trainixprogram/models/training/voice_line_player.dart';

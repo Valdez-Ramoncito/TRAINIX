@@ -2334,55 +2334,6 @@ class _VoicePanelState extends State<VoicePanel> {
     );
   }
 
-  Widget _voiceTranscriptCard({
-    required String label,
-    required String text,
-    required bool empty,
-    required Color accent,
-    required bool active,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: active ? accent : AppColors.border(context),
-          width: active ? 1.5 : 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: accent,
-            ),
-          ),
-          SizedBox(height: 6),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Text(
-                text,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.4,
-                  color: empty
-                      ? AppColors.textMuted(context)
-                      : AppColors.textPrimary(context),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildOnHold(
     BuildContext context,
   ) {

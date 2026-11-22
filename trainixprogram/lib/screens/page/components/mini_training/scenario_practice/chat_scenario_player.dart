@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:trainixprogram/components/app_colors.dart';
 import 'package:trainixprogram/models/training/scenarios/scenario_models.dart';
 import 'package:trainixprogram/models/training/soft_text_match.dart';
 import 'package:trainixprogram/models/training/training_categories.dart';

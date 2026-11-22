@@ -35,7 +35,6 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
   _SpeakPhase _phase = _SpeakPhase.ready;
   int _elapsedSeconds = 0;
   Timer? _timer;
-  String _transcript = '';
   String? _audioPath;
   String? _error;
   SpeakingResult? _result;
@@ -84,7 +83,6 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
     setState(() {
       _phase = _SpeakPhase.recording;
       _elapsedSeconds = 0;
-      _transcript = '';
       _audioPath = null;
       _error = null;
       _result = null;
@@ -120,7 +118,6 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
     if (cleaned.isEmpty || wordCount < 3 || _elapsedSeconds < 2) {
       setState(() {
         _phase = _SpeakPhase.failed;
-        _transcript = cleaned;
         _audioPath = path;
         _error = cleaned.isEmpty || wordCount < 3
             ? 'No usable speech was detected. Keep the mic close and try again. Your attempt was not scored.'
@@ -130,7 +127,6 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
     }
 
     setState(() {
-      _transcript = cleaned;
       _audioPath = path;
       _phase = _SpeakPhase.scoring;
     });
@@ -159,7 +155,6 @@ class _SpeakingTestScreenState extends State<SpeakingTestScreen> {
     }
     setState(() {
       _phase = _SpeakPhase.ready;
-      _transcript = '';
       _error = null;
       _result = null;
       _elapsedSeconds = 0;

@@ -727,7 +727,6 @@ class SimulationSessionHistoryScreen extends StatelessWidget {
                         itemBuilder: (_, index) {
                           final session = reversed[index];
                           final number = reversed.length - index;
-                          final modeLabel = session.mode.name;
                           final customerLabel = session.evaluations
                               .map((e) => friendlyCustomerName(e.customerName))
                               .where((n) => n.isNotEmpty)

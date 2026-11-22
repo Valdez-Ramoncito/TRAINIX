@@ -27,7 +27,6 @@ class TypingTestScreen extends StatefulWidget {
 
 class _TypingTestScreenState extends State<TypingTestScreen> {
   static Color get _green => AppColors.primaryText();
-  static Color get _red => AppColors.errorText();
 
   final FocusNode _focusNode = FocusNode();
   final TextEditingController _controller = TextEditingController();
